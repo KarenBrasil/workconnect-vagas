@@ -14,8 +14,7 @@ export {
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: 'index',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -45,15 +44,39 @@ export default function RootLayout() {
   return <RootLayoutNav />;
 }
 
+import { View, Platform, StyleSheet } from 'react-native';
+
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
+      <View style={styles.webContainer}>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="register" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        </Stack>
+      </View>
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  webContainer: {
+    flex: 1,
+    ...(Platform.OS === 'web' && {
+      maxWidth: 480,
+      width: '100%',
+      marginHorizontal: 'auto',
+      backgroundColor: '#FAFAFC',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.1,
+      shadowRadius: 20,
+      overflow: 'hidden',
+    }),
+  },
+});
