@@ -191,7 +191,7 @@ export default function Home() {
                   />
                 </View>
                 <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitulo} numberOfLines={1}>{vaga.titulo}</Text>
+                  <Text style={[styles.cardTitulo, { fontSize: 15 }]}>{vaga.titulo}</Text>
                   <Text style={styles.cardEmpresa}>{vaga.empresa}</Text>
                 </View>
                 <TouchableOpacity onPress={() => toggleFavorito(vaga)}>
@@ -232,15 +232,26 @@ export default function Home() {
               style={styles.card}
               onPress={() => abrirVagaExterna(vaga.link)}
             >
-              <View style={styles.cardHeader}>
+              <View style={[styles.cardHeader, { alignItems: 'flex-start' }]}>
                 <View style={styles.cardIconExterno}>
                   <FontAwesome name="globe" size={20} color="#FFFFFF" />
                 </View>
                 <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitulo} numberOfLines={1}>{vaga.titulo}</Text>
+                  <Text style={[styles.cardTitulo, { fontSize: 15 }]}>{vaga.titulo}</Text>
                   <Text style={styles.cardEmpresa}>{vaga.empresa}</Text>
+                  
+                  {/* Tags */}
+                  {vaga.tags && vaga.tags.length > 0 && (
+                    <View style={styles.tagsContainer}>
+                      {vaga.tags.map((tag, idx) => (
+                        <View key={idx} style={styles.tagBadge}>
+                          <Text style={styles.tagText}>{tag}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
-                <TouchableOpacity onPress={() => toggleFavorito(vaga)}>
+                <TouchableOpacity onPress={() => toggleFavorito(vaga)} style={{ padding: 4 }}>
                   <FontAwesome
                     name={favoritos.includes(vaga.id) ? 'heart' : 'heart-o'}
                     size={20}
@@ -249,8 +260,8 @@ export default function Home() {
                 </TouchableOpacity>
               </View>
               <View style={styles.cardFooter}>
-                <Text style={styles.cardFonte}>📌 {vaga.fonte}</Text>
-                <Text style={styles.cardExterno}>Toque para abrir →</Text>
+                <Text style={styles.cardFonte}>⏱️ {vaga.tempoPostagem || 'Recente'} • {vaga.fonte}</Text>
+                <Text style={styles.cardExterno}>Ver Detalhes →</Text>
               </View>
             </TouchableOpacity>
           ))
@@ -324,6 +335,9 @@ const styles = StyleSheet.create({
   cardSalario: { fontSize: 14, color: '#6A3093', fontWeight: 'bold' },
   cardFonte: { fontSize: 13, color: '#6B7280' },
   cardExterno: { fontSize: 13, color: '#2E9D4D', fontWeight: '600' },
+  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  tagBadge: { backgroundColor: '#EFEFEF', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  tagText: { fontSize: 11, color: '#312651', fontWeight: '600' },
   emptyCard: {
     backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24,
     alignItems: 'center', marginBottom: 24, borderWidth: 1, borderColor: '#EFEFEF',
