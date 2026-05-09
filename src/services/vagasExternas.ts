@@ -2,14 +2,21 @@ export interface VagaExterna {
   id: string;
   titulo: string;
   empresa: string;
-  local: string;
+  local: string;         // Cidade/País real (ex: "São Paulo, Brasil" ou "Worldwide")
   link: string;
   fonte: string;
   descricao: string;
   tempoPostagem: string;
-  tags: string[];
+  tags: string[];        // Apenas: contrato (PJ/CLT), modalidade (Remoto/Híbrido), senioridade (Pleno/Sênior)
   dataOriginal: Date;
 }
+
+// Lista de termos que NÃO são cidades mas aparecem no campo "location" das APIs
+const NAO_SAO_CIDADES = new Set([
+  'greenhouse', 'lever', 'workday', 'bamboohr', 'kiavi', 'nava', 'pbc',
+  'remote', 'anywhere', 'worldwide', 'global', 'n/a', 'tbd', 'various',
+  'multiple', 'hybrid', 'flexible', 'see job description', 'see description',
+]);
 
 function calcularTempoPostagem(data: Date): string {
   const agora = new Date();
@@ -23,56 +30,63 @@ function calcularTempoPostagem(data: Date): string {
   return `Há ${difDias} dias`;
 }
 
-function extrairTags(texto: string, labelsBase: string[] = []): string[] {
-  const tags = new Set<string>();
-  
-  labelsBase.forEach(l => {
-    if (l) tags.add(l.trim());
-  });
+// Valida se uma string parece ser um local real (cidade ou país)
+function validarLocal(local: string): string {
+  if (!local || local.trim().length < 2) return '';
+  const localLower = local.toLowerCase().trim();
+  if (NAO_SAO_CIDADES.has(localLower)) return '';
+  // Remove locais que parecem nomes de ferramentas (sem espaço, todo minúsculo, <6 chars)
+  if (localLower.length < 4 && !localLower.includes(',')) return '';
+  return local.trim();
+}
 
+// Extrai SOMENTE tags de contrato, modalidade e senioridade (NÃO localização)
+function extrairTagsContrato(texto: string, labelsBase: string[] = []): string[] {
+  const tags = new Set<string>();
   const lower = texto.toLowerCase();
 
-  // Modelos de Contrato
-  if (lower.includes('pj') && !tags.has('PJ')) tags.add('PJ');
-  if (lower.includes('clt') && !tags.has('CLT')) tags.add('CLT');
-  if ((lower.includes('freelance') || lower.includes('freela')) && !tags.has('Freelance')) tags.add('Freelance');
+  // De labels do GitHub, incluir apenas os que são tipo/contrato
+  labelsBase.forEach(l => {
+    const lLower = l.toLowerCase();
+    if (['pj', 'clt', 'remoto', 'híbrido', 'hibrido', 'remote', 'freelance', 'junior', 'pleno', 'sênior', 'senior'].includes(lLower)) {
+      tags.add(l.trim());
+    }
+  });
 
-  // Modelos de Trabalho
-  if ((lower.includes('remoto') || lower.includes('remote') || lower.includes('home office')) && !tags.has('Remoto')) tags.add('Remoto');
-  if ((lower.includes('híbrido') || lower.includes('hibrido') || lower.includes('hybrid')) && !tags.has('Híbrido')) tags.add('Híbrido');
-  if ((lower.includes('presencial') || lower.includes('onsite')) && !tags.has('Presencial')) tags.add('Presencial');
+  // Contrato
+  if (lower.includes(' pj') || lower.startsWith('pj')) tags.add('PJ');
+  if (lower.includes('clt')) tags.add('CLT');
+  if (lower.includes('freelance') || lower.includes('freela')) tags.add('Freelance');
+  if (lower.includes('estágio') || lower.includes('estagio') || lower.includes('intern')) tags.add('Estágio');
 
-  // Locais Internacionais Comuns
-  if (lower.includes('worldwide') || lower.includes('anywhere')) tags.add('Worldwide 🌍');
-  if (lower.includes('europe') || lower.includes('europa')) tags.add('Europa 🇪🇺');
-  if (lower.includes('portugal')) tags.add('Portugal 🇵🇹');
-  if (lower.includes('eua') || lower.includes('usa') || lower.includes('united states')) tags.add('EUA 🇺🇸');
-  
-  // Áreas Específicas
-  if (lower.includes('redes') || lower.includes('network')) tags.add('Redes');
-  if (lower.includes('suporte') || lower.includes('support')) tags.add('Suporte');
-  if (lower.includes('devops')) tags.add('DevOps');
-  if (lower.includes('dados') || lower.includes('data')) tags.add('Dados');
-  
+  // Modalidade
+  if (lower.includes('remoto') || lower.includes('remote') || lower.includes('home office')) tags.add('Remoto');
+  if (lower.includes('híbrido') || lower.includes('hibrido') || lower.includes('hybrid')) tags.add('Híbrido');
+  if (lower.includes('presencial') || lower.includes('on-site') || lower.includes('onsite')) tags.add('Presencial');
+
+  // Senioridade
+  if (lower.includes('júnior') || lower.includes('junior') || lower.includes('jr.') || lower.includes(' jr ')) tags.add('Júnior');
+  if (lower.includes('pleno') || lower.includes('mid-level') || lower.includes('mid level')) tags.add('Pleno');
+  if (lower.includes('sênior') || lower.includes('senior') || lower.includes('sr.') || lower.includes(' sr ')) tags.add('Sênior');
+
   return Array.from(tags).slice(0, 4);
 }
 
-// Limpa colchetes e parênteses do título para ficar puro
+// Limpa colchetes, parênteses e prefixos comuns do título
 function limparTitulo(titulo: string): string {
   return titulo
     .replace(/\[.*?\]/g, '')
     .replace(/\(.*?\)/g, '')
-    .replace(/-/g, ' ')
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
 
 const reposGithub = [
-  { fonte: 'Front-End BR', url: 'https://api.github.com/repos/frontendbr/vagas/issues?state=open&sort=created&direction=desc&per_page=12' },
-  { fonte: 'Back-End BR', url: 'https://api.github.com/repos/backend-br/vagas/issues?state=open&sort=created&direction=desc&per_page=12' },
+  { fonte: 'Front-End BR', url: 'https://api.github.com/repos/frontendbr/vagas/issues?state=open&sort=created&direction=desc&per_page=15' },
+  { fonte: 'Back-End BR', url: 'https://api.github.com/repos/backend-br/vagas/issues?state=open&sort=created&direction=desc&per_page=15' },
   { fonte: 'React BR', url: 'https://api.github.com/repos/react-brasil/vagas/issues?state=open&sort=created&direction=desc&per_page=8' },
-  { fonte: 'QA Brasil', url: 'https://api.github.com/repos/qa-brasil/vagas/issues?state=open&sort=created&direction=desc&per_page=5' },
-  { fonte: 'Infra & Redes', url: 'https://api.github.com/repos/devopsbr/vagas/issues?state=open&sort=created&direction=desc&per_page=5' }
+  { fonte: 'QA Brasil', url: 'https://api.github.com/repos/qa-brasil/vagas/issues?state=open&sort=created&direction=desc&per_page=6' },
+  { fonte: 'Infra & DevOps', url: 'https://api.github.com/repos/devopsbr/vagas/issues?state=open&sort=created&direction=desc&per_page=6' },
 ];
 
 export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExterna[]> => {
@@ -81,43 +95,54 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
   tresMesesAtras.setMonth(tresMesesAtras.getMonth() - 3);
   const termoBusca = termo.toLowerCase().trim();
 
-  // 1. Busca no GITHUB
+  // 1. GitHub (Vagas BR)
   for (const repo of reposGithub) {
     try {
       const response = await fetch(repo.url, {
         headers: { 'Accept': 'application/vnd.github.v3+json' },
       });
-
       if (!response.ok) continue;
       const items = await response.json();
 
       const vagasFiltradas = items.filter((item: any) => {
         if (item.pull_request) return false;
-        const texto = `${item.title} ${item.body || ''}`.toLowerCase();
-        if (termoBusca && termoBusca !== 'desenvolvedor' && termoBusca !== '') {
+        if (termoBusca) {
+          const texto = `${item.title} ${item.body || ''}`.toLowerCase();
           if (!texto.includes(termoBusca)) return false;
         }
         return new Date(item.created_at) >= tresMesesAtras;
       });
 
       const vagas = vagasFiltradas.map((item: any) => {
+        // Extrai empresa do padrão [Empresa] no título
         let empresa = '';
-        const matchEmpresa = item.title.match(/\[(.*?)\]/);
-        if (matchEmpresa && matchEmpresa[1] && !matchEmpresa[1].toLowerCase().includes('remoto')) {
-            empresa = matchEmpresa[1];
+        const matchEmpresa = item.title.match(/\[([^\]]+)\]/);
+        if (matchEmpresa) {
+          const candidato = matchEmpresa[1].trim();
+          const lower = candidato.toLowerCase();
+          // Só usa como empresa se não for palavra reservada
+          if (!['remoto', 'remote', 'híbrido', 'presencial', 'pj', 'clt', 'junior', 'pleno', 'senior'].includes(lower)) {
+            empresa = candidato;
+          }
         }
 
         const labels = item.labels ? item.labels.map((l: any) => l.name) : [];
-        const tags = extrairTags(`${item.title} ${item.body || ''}`, labels);
+        const tags = extrairTagsContrato(`${item.title} ${item.body || ''}`, labels);
+
+        // Local: tenta extrair cidade do corpo da issue
+        let local = '';
+        const bodyText = item.body || '';
+        const matchLocal = bodyText.match(/(?:local|cidade|location|city)[:\s]+([^\n\r,]+)/i);
+        if (matchLocal) local = validarLocal(matchLocal[1]);
 
         return {
           id: `github-${item.id}`,
           titulo: limparTitulo(item.title),
-          empresa: empresa,
-          local: '', // Deixamos vazio se não for explícito para não poluir
+          empresa,
+          local,
           link: item.html_url,
           fonte: 'GitHub BR',
-          descricao: item.body || '',
+          descricao: bodyText,
           tempoPostagem: calcularTempoPostagem(new Date(item.created_at)),
           tags,
           dataOriginal: new Date(item.created_at)
@@ -126,38 +151,43 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
 
       todas.push(...vagas);
     } catch (e) {
-      console.log(`Erro ao buscar feed ${repo.fonte}:`, e);
+      console.log(`Erro ao buscar ${repo.fonte}:`, e);
     }
   }
 
-  // 2. Busca no REMOTIVE (Internacional - Todas as categorias de TI)
+  // 2. Remotive (Internacional)
   try {
     const url = `https://remotive.com/api/remote-jobs?limit=40`;
     const response = await fetch(url);
     if (response.ok) {
       const json = await response.json();
+      const CATEGORIAS_TI = ['software-dev', 'devops', 'data', 'qa', 'design', 'product', 'customer-support'];
+      
       const vagasRemotive = json.jobs.filter((item: any) => {
-        const texto = `${item.title} ${item.category} ${item.description || ''}`.toLowerCase();
-        // Filtramos para áreas de tecnologia que importam (inclui QA, Data, Design, Support, Dev)
-        const isTech = ['software-dev', 'data', 'qa', 'devops', 'customer-support', 'design'].includes(item.category);
-        if (!isTech) return false;
-
-        if (termoBusca && termoBusca !== 'desenvolvedor' && termoBusca !== '') {
-            if (!texto.includes(termoBusca)) return false;
+        if (!CATEGORIAS_TI.includes(item.category)) return false;
+        if (termoBusca) {
+          const texto = `${item.title} ${item.description || ''}`.toLowerCase();
+          if (!texto.includes(termoBusca)) return false;
         }
         return new Date(item.publication_date) >= tresMesesAtras;
       }).map((item: any) => {
-        const baseTags = [];
-        if (item.candidate_required_location) baseTags.push(item.candidate_required_location);
-        const tags = extrairTags(`${item.title} ${item.job_type}`, baseTags);
+        const rawLocal = item.candidate_required_location || '';
+        // Para Remotive, "Worldwide" e variantes se tornam um local internacional legível
+        let local = '';
+        if (rawLocal && !NAO_SAO_CIDADES.has(rawLocal.toLowerCase())) {
+          local = rawLocal;
+        } else if (rawLocal.toLowerCase().includes('worldwide') || rawLocal.toLowerCase().includes('anywhere')) {
+          local = 'Internacional 🌍';
+        }
 
+        const tags = extrairTagsContrato(`${item.title} ${item.job_type || ''} ${item.description || ''}`);
         if (!tags.includes('Remoto')) tags.push('Remoto');
 
         return {
           id: `remotive-${item.id}`,
           titulo: limparTitulo(item.title),
-          empresa: item.company_name,
-          local: item.candidate_required_location || '',
+          empresa: item.company_name || '',
+          local,
           link: item.url,
           fonte: 'Remotive',
           descricao: item.description || '',
@@ -170,37 +200,44 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
       todas.push(...vagasRemotive);
     }
   } catch (e) {
-    console.log(`Erro ao buscar feed Remotive:`, e);
+    console.log('Erro ao buscar Remotive:', e);
   }
 
-  // 3. Busca no RemoteOK (Internacional)
+  // 3. RemoteOK (Internacional)
   try {
     const response = await fetch('https://remoteok.com/api', {
-        headers: { 'User-Agent': 'WorkConnect App' }
+      headers: { 'User-Agent': 'WorkConnect App' }
     });
     if (response.ok) {
       const json = await response.json();
-      const jobs = json.slice(1, 20);
+      const jobs = json.slice(1, 25);
+      
       const vagasRemoteOK = jobs.filter((item: any) => {
-        const texto = `${item.position} ${item.description || ''} ${(item.tags||[]).join(' ')}`.toLowerCase();
-        if (termoBusca && termoBusca !== 'desenvolvedor' && termoBusca !== '') {
-            if (!texto.includes(termoBusca)) return false;
+        if (termoBusca) {
+          const texto = `${item.position || ''} ${(item.tags || []).join(' ')}`.toLowerCase();
+          if (!texto.includes(termoBusca)) return false;
         }
         return new Date(item.date) >= tresMesesAtras;
       }).map((item: any) => {
-        const baseTags = [];
-        if (item.location) baseTags.push(item.location);
+        const rawLocal = item.location || '';
+        const local = validarLocal(rawLocal) ? validarLocal(rawLocal) : 'Internacional 🌍';
+
+        const baseTags: string[] = [];
         if (item.tags && Array.isArray(item.tags)) {
-            baseTags.push(...item.tags.slice(0, 2));
+          // Filtramos tags do RemoteOK que sejam relevantes (senioridade/contrato)
+          const tagsRelevantes = item.tags.filter((t: string) =>
+            ['senior', 'junior', 'mid', 'fulltime', 'parttime', 'contract', 'intern'].includes(t.toLowerCase())
+          );
+          baseTags.push(...tagsRelevantes.slice(0, 2));
         }
-        const tags = extrairTags(`${item.position}`, baseTags);
+        const tags = extrairTagsContrato(`${item.position || ''}`, baseTags);
         if (!tags.includes('Remoto')) tags.push('Remoto');
 
         return {
           id: `remoteok-${item.id}`,
-          titulo: limparTitulo(item.position),
-          empresa: item.company,
-          local: item.location || '',
+          titulo: limparTitulo(item.position || ''),
+          empresa: item.company || '',
+          local,
           link: item.url,
           fonte: 'RemoteOK',
           descricao: item.description || '',
@@ -213,11 +250,10 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
       todas.push(...vagasRemoteOK);
     }
   } catch (e) {
-    console.log(`Erro ao buscar feed RemoteOK:`, e);
+    console.log('Erro ao buscar RemoteOK:', e);
   }
 
-  // Misturar todas as vagas ordenando de forma cronológica exata (da mais recente para a mais antiga)
+  // Mistura cronológica real: mais recente no topo, independente da fonte
   todas.sort((a, b) => b.dataOriginal.getTime() - a.dataOriginal.getTime());
-
   return todas;
 };
