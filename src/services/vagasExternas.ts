@@ -1,5 +1,3 @@
-import * as rssParser from 'react-native-rss-parser';
-
 export interface VagaExterna {
   id: string;
   titulo: string;
@@ -10,70 +8,72 @@ export interface VagaExterna {
   descricao: string;
 }
 
-const feeds = [
-  {
-    fonte: 'Indeed',
-    url: (termo: string) =>
-      `https://www.indeed.com/rss?q=${encodeURIComponent(termo)}&l=Brasil&lang=pt_BR`,
-  },
-  {
-    fonte: 'Vagas.com',
-    url: (termo: string) =>
-      `https://www.vagas.com.br/vagas-de-${encodeURIComponent(termo)}.rss`,
-  },
+const repos = [
+  { fonte: 'Front-End BR', url: 'https://api.github.com/repos/frontendbr/vagas/issues?state=open&sort=created&direction=desc&per_page=10' },
+  { fonte: 'Back-End BR', url: 'https://api.github.com/repos/backend-br/vagas/issues?state=open&sort=created&direction=desc&per_page=10' },
+  { fonte: 'React BR', url: 'https://api.github.com/repos/react-brasil/vagas/issues?state=open&sort=created&direction=desc&per_page=10' }
 ];
 
 export const buscarVagasExternas = async (termo: string = 'desenvolvedor'): Promise<VagaExterna[]> => {
   const todas: VagaExterna[] = [];
 
-  for (const feed of feeds) {
+  for (const repo of repos) {
     try {
-      // Usamos um Proxy de CORS (AllOrigins) porque quando o app for publicado na Vercel (Web),
-      // os navegadores bloqueiam requisições diretas para RSS de outros sites por segurança.
-      const targetUrl = feed.url(termo);
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-
-      const response = await fetch(proxyUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
+      // Usamos a API nativa do GitHub ao invés de RSS.
+      // O GitHub tem CORS nativo liberado, não precisa de proxies, é super rápido e 100% de vagas de tecnologia.
+      const response = await fetch(repo.url, {
+        headers: { 'Accept': 'application/vnd.github.v3+json' },
       });
 
       if (!response.ok) continue;
 
-      const text = await response.text();
-      const parsed = await rssParser.parse(text);
-
-      const baseKeywords = ['desenvolvedor', 'programador', 'software', 'tecnologia', 'ti', 'dados', 'front', 'back', 'fullstack', 'react', 'node', 'python', 'java', 'ux', 'ui', 'devops', 'cloud', 'qa', 'analista', 'engenheiro', 'mobile', 'ios', 'android'];
-      const searchKeywords = [...baseKeywords, termo.toLowerCase()];
+      const items = await response.json();
 
       const tresMesesAtras = new Date();
       tresMesesAtras.setMonth(tresMesesAtras.getMonth() - 3);
 
-      const vagasFiltradas = parsed.items.filter((item: any) => {
-        const texto = `${item.title} ${item.description || item.content}`.toLowerCase();
-        const containsTech = searchKeywords.some(kw => texto.includes(kw));
+      const termoBusca = termo.toLowerCase();
 
-        // Filtro de tempo: Vagas publicadas no máximo há 3 meses
-        const pubDate = item.published ? new Date(item.published) : new Date();
+      const vagasFiltradas = items.filter((item: any) => {
+        if (item.pull_request) return false;
+
+        const texto = `${item.title} ${item.body || ''}`.toLowerCase();
+        
+        if (termoBusca && termoBusca !== 'desenvolvedor') {
+          if (!texto.includes(termoBusca)) return false;
+        }
+
+        const pubDate = new Date(item.created_at);
         const isRecent = pubDate >= tresMesesAtras;
 
-        return containsTech && isRecent;
+        return isRecent;
       });
 
-      const vagas = vagasFiltradas.slice(0, 5).map((item: any, index: number) => ({
-        id: `${feed.fonte}-${index}-${Date.now()}`,
-        titulo: item.title || 'Sem título',
-        empresa: item.authors?.[0]?.name || feed.fonte,
-        local: 'Brasil',
-        link: item.links?.[0]?.url || item.id || '',
-        fonte: feed.fonte,
-        descricao: item.description || item.content || '',
-      }));
+      const vagas = vagasFiltradas.slice(0, 5).map((item: any) => {
+        // Extrai a possível empresa do título se tiver o formato [Empresa] ou na descrição, se não, usa a fonte.
+        let empresa = repo.fonte;
+        const matchEmpresa = item.title.match(/\[(.*?)\]/);
+        if (matchEmpresa && matchEmpresa[1] && !matchEmpresa[1].toLowerCase().includes('remoto')) {
+            empresa = matchEmpresa[1];
+        }
+
+        return {
+          id: `github-${item.id}`,
+          titulo: item.title,
+          empresa: empresa,
+          local: 'Brasil / Remoto',
+          link: item.html_url,
+          fonte: repo.fonte,
+          descricao: item.body || 'Veja os detalhes no link.',
+        };
+      });
 
       todas.push(...vagas);
     } catch (e) {
-      console.log(`Erro ao buscar feed ${feed.fonte}:`, e);
+      console.log(`Erro ao buscar feed ${repo.fonte}:`, e);
     }
   }
 
+  // Embaralha levemente ou apenas retorna
   return todas;
 };
