@@ -57,9 +57,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     padding: 24,
-    paddingBottom: 48,
   },
   glassContainer: {
     padding: 32,
