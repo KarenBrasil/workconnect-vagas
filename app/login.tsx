@@ -10,7 +10,8 @@ import {
   View,
   ActivityIndicator,
   ImageBackground,
-  StatusBar
+  StatusBar,
+  Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential, createUserWithEmailAndPassword } from 'firebase/auth';
@@ -19,6 +20,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { BlurView } from 'expo-blur';
 import { FontAwesome } from '@expo/vector-icons';
+import { BrandLogo } from '../components/BrandLogo';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -106,9 +108,12 @@ export default function Login() {
         <View style={styles.content}>
           <BlurView intensity={50} tint="dark" style={styles.glassContainer}>
             
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <FontAwesome name="angle-left" size={24} color="#FFF" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <FontAwesome name="angle-left" size={24} color="#FFF" />
+              </TouchableOpacity>
+              <BrandLogo compact={true} />
+            </View>
 
             <Text style={styles.title}>Login</Text>
             <Text style={styles.subtitle}>
@@ -178,7 +183,10 @@ export default function Login() {
               onPress={() => promptAsync()}
               disabled={!request || loading}
             >
-              <FontAwesome name="google" size={18} color="#FFF" style={{marginRight: 10}} />
+              <Image 
+                source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png' }} 
+                style={{ width: 20, height: 20, marginRight: 10 }} 
+              />
               <Text style={styles.googleButtonText}>Entrar com o Google</Text>
             </TouchableOpacity>
 
@@ -225,7 +233,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
   },
   title: {
     fontSize: 32,

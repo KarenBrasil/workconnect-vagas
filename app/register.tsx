@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Alert, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ImageBackground, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
+import { Alert, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ImageBackground, KeyboardAvoidingView, Platform, StatusBar, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { auth } from '../src/services/firebaseConfig';
 import { BlurView } from 'expo-blur';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
+import { BrandLogo } from '../components/BrandLogo';
 
 export default function Register() {
   const router = useRouter();
@@ -91,9 +92,12 @@ export default function Register() {
         <View style={styles.content}>
           <BlurView intensity={50} tint="dark" style={styles.glassContainer}>
             
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <FontAwesome name="angle-left" size={24} color="#FFF" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <FontAwesome name="angle-left" size={24} color="#FFF" />
+              </TouchableOpacity>
+              <BrandLogo compact={true} />
+            </View>
 
             <Text style={styles.title}>Criar Conta</Text>
             <Text style={styles.subtitle}>Junte-se ao WorkConnect e encontre sua próxima oportunidade.</Text>
@@ -110,7 +114,10 @@ export default function Register() {
                 onPress={() => promptAsync()}
                 disabled={!request || loading}
               >
-                <FontAwesome name="google" size={18} color="#FFF" style={{marginRight: 10}} />
+                <Image 
+                  source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png' }} 
+                  style={{ width: 20, height: 20, marginRight: 10 }} 
+                />
                 <Text style={styles.googleButtonText}>Google</Text>
               </TouchableOpacity>
             </View>
@@ -218,7 +225,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
   },
   title: {
     fontSize: 32,
