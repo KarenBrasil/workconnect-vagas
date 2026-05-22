@@ -18,16 +18,14 @@ const NAO_SAO_CIDADES = new Set([
   'multiple', 'hybrid', 'flexible', 'see job description', 'see description',
 ]);
 
-function calcularTempoPostagem(data: Date): string {
-  const agora = new Date();
-  const difMs = agora.getTime() - data.getTime();
-  const difHoras = Math.floor(difMs / (1000 * 60 * 60));
-  const difDias = Math.floor(difHoras / 24);
-
-  if (difHoras < 1) return 'Há menos de 1 hora';
-  if (difHoras < 24) return `Há ${difHoras} hora${difHoras > 1 ? 's' : ''}`;
-  if (difDias === 1) return 'Há 1 dia';
-  return `Há ${difDias} dias`;
+function formatarDataExata(data: Date): string {
+  if (isNaN(data.getTime())) return 'Hora desconhecida';
+  const dia = String(data.getDate()).padStart(2, '0');
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const ano = data.getFullYear();
+  const horas = String(data.getHours()).padStart(2, '0');
+  const minutos = String(data.getMinutes()).padStart(2, '0');
+  return `${dia}/${mes}/${ano} às ${horas}:${minutos}`;
 }
 
 // Valida se uma string parece ser um local real (cidade ou país)
@@ -219,7 +217,7 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
           link: item.html_url,
           fonte: 'GitHub BR',
           descricao: bodyText,
-          tempoPostagem: calcularTempoPostagem(new Date(item.created_at)),
+          tempoPostagem: formatarDataExata(new Date(item.created_at)),
           tags,
           dataOriginal: new Date(item.created_at),
         };
@@ -267,7 +265,7 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
           link: item.url,
           fonte: 'Remotive',
           descricao: item.description || '',
-          tempoPostagem: calcularTempoPostagem(new Date(item.publication_date)),
+          tempoPostagem: formatarDataExata(new Date(item.publication_date)),
           tags: tags.slice(0, 4),
           dataOriginal: new Date(item.publication_date)
         };
@@ -317,7 +315,7 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
           link: item.url,
           fonte: 'RemoteOK',
           descricao: item.description || '',
-          tempoPostagem: calcularTempoPostagem(new Date(item.date)),
+          tempoPostagem: formatarDataExata(new Date(item.date)),
           tags: tags.slice(0, 4),
           dataOriginal: new Date(item.date)
         };
@@ -342,9 +340,9 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
         link: item.url,
         fonte: 'Arbeitnow',
         descricao: item.description || '',
-        tempoPostagem: 'Recente',
+        tempoPostagem: formatarDataExata(item.created_at ? new Date(item.created_at * 1000) : new Date()),
         tags: item.tags || ['TI', 'Global'],
-        dataOriginal: new Date() // API não envia data exata em alguns campos, usamos hoje
+        dataOriginal: item.created_at ? new Date(item.created_at * 1000) : new Date()
       }));
       todas.push(...vagasArbeit);
     }
@@ -371,7 +369,7 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
           link: item.link,
           fonte: 'Jooble',
           descricao: item.snippet,
-          tempoPostagem: item.updated,
+          tempoPostagem: formatarDataExata(new Date(item.updated)),
           tags: ['Jooble', 'Web'],
           dataOriginal: new Date(item.updated)
         }));
@@ -399,9 +397,9 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
           link: item.url,
           fonte: 'InfoJobs',
           descricao: item.description,
-          tempoPostagem: 'Recente',
+          tempoPostagem: formatarDataExata(item.publicationDate ? new Date(item.publicationDate) : new Date()),
           tags: ['InfoJobs', 'Brasil'],
-          dataOriginal: new Date()
+          dataOriginal: item.publicationDate ? new Date(item.publicationDate) : new Date()
         }));
         todas.push(...vagasInfo);
       }
