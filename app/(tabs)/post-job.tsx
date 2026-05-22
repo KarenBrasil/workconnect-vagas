@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator
+  ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Modal
 } from 'react-native';
 import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../../src/services/firebaseConfig';
+import { db, auth } from '../../src/services/firebaseConfig';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -26,6 +26,7 @@ export default function PostJob() {
   const [salario, setSalario] = useState('');
   const [descricao, setDescricao] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const [abaAtiva, setAbaAtiva] = useState<'nova' | 'gerenciar'>('nova');
   const [minhasVagas, setMinhasVagas] = useState<VagaPublicada[]>([]);
@@ -65,15 +66,9 @@ export default function PostJob() {
         salario: salario || 'A combinar',
         descricao,
         criadoEm: new Date().toISOString(),
+        criadoEm: new Date().toISOString(),
       });
-      if (Platform.OS === 'web') {
-        window.alert('Sua publicação foi postada com sucesso!');
-        router.push('/(tabs)');
-      } else {
-        Alert.alert('Publicado!', 'Sua publicação foi postada no feed.', [
-          { text: 'OK', onPress: () => router.push('/(tabs)') }
-        ]);
-      }
+      setShowSuccessModal(true);
       setTitulo(''); setEmpresa(''); setContrato(''); setSalario(''); setDescricao('');
     } catch (e: any) {
       Alert.alert('Erro', 'Não foi possível publicar: ' + e.message);
@@ -112,6 +107,17 @@ export default function PostJob() {
       return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
     } catch { return '—'; }
   };
+
+  const currentUser = auth.currentUser;
+  if (currentUser?.email !== 'admin@workconnect.com') {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <FontAwesome name="lock" size={48} color="#EFEFEF" style={{ marginBottom: 16 }} />
+        <Text style={styles.title}>Acesso Restrito</Text>
+        <Text style={styles.subtitle}>Apenas administradores podem publicar vagas.</Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -249,6 +255,31 @@ export default function PostJob() {
           </View>
         )}
       </ScrollView>
+
+      {/* Modal de Sucesso */}
+      <Modal visible={showSuccessModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalIconContainer}>
+              <FontAwesome name="check" size={32} color="#FFFFFF" />
+            </View>
+            <Text style={styles.modalTitle}>Sucesso!</Text>
+            <Text style={styles.modalText}>
+              Sua publicação foi postada com sucesso no feed.
+            </Text>
+            <TouchableOpacity 
+              style={styles.modalButton} 
+              onPress={() => {
+                setShowSuccessModal(false);
+                router.push('/(tabs)');
+              }}
+            >
+              <Text style={styles.modalButtonText}>Ver no feed</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </KeyboardAvoidingView>
   );
 }
@@ -296,4 +327,58 @@ const styles = StyleSheet.create({
   emptyCard: { backgroundColor: '#FFFFFF', borderRadius: 18, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: '#EFEFEF', gap: 8 },
   emptyText: { fontSize: 16, color: '#312651', fontWeight: 'bold', marginTop: 8 },
   emptySubText: { fontSize: 14, color: '#83829A', textAlign: 'center' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 340,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#2E9D4D',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1A1A2E',
+    marginBottom: 8,
+  },
+  modalText: {
+    fontSize: 15,
+    color: '#83829A',
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 22,
+  },
+  modalButton: {
+    backgroundColor: '#1A1A2E',
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });

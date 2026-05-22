@@ -1,7 +1,19 @@
+import { useState, useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import { auth } from '../../src/services/firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function TabLayout() {
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAdmin(user?.email === 'admin@workconnect.com');
+    });
+    return unsubscribe;
+  }, []);
+
   return (
     <Tabs
       screenOptions={{
@@ -22,6 +34,7 @@ export default function TabLayout() {
         options={{
           title: 'Postar',
           tabBarIcon: ({ color }) => <FontAwesome name="plus-circle" size={24} color={color} />,
+          href: isAdmin ? '/post-job' : null,
         }}
       />
       <Tabs.Screen

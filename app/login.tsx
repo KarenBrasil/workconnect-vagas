@@ -8,15 +8,18 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator
+  ActivityIndicator,
+  ImageBackground,
+  StatusBar
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../src/services/firebaseConfig';
-import { BrandLogo } from '../components/BrandLogo';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session';
+import { BlurView } from 'expo-blur';
+import { FontAwesome } from '@expo/vector-icons';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -26,11 +29,11 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Configuração do Google Auth com o seu Client ID
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: '189326429321-kntm9qp3db45chg2ricg0ijov7rf8ilf.apps.googleusercontent.com',
-    // Garante que o redirecionamento será correto na web (Vercel) e no app
     redirectUri: makeRedirectUri(),
   });
 
@@ -90,164 +93,208 @@ export default function Login() {
   };
 
   return (
-    <KeyboardAvoidingView
+    <ImageBackground 
+      source={require('../assets/images/auth_background.png')} 
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      resizeMode="cover"
     >
-      <View style={styles.content}>
-        <View style={styles.logoContainer}>
-          <BrandLogo />
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <View style={styles.overlay} />
+
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={styles.content}>
+          <BlurView intensity={50} tint="dark" style={styles.glassContainer}>
+            
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <FontAwesome name="angle-left" size={24} color="#FFF" />
+            </TouchableOpacity>
+
+            <Text style={styles.title}>Login</Text>
+            <Text style={styles.subtitle}>
+              Bem-vindo de volta! Por favor, faça login na sua conta.
+            </Text>
+
+            {errorMessage ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="E-mail"
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+                <FontAwesome name="user-o" size={18} color="rgba(255,255,255,0.6)" style={styles.inputIcon} />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Senha"
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                  onSubmitEditing={handleLogin}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.inputIcon}>
+                  <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={18} color="rgba(255,255,255,0.6)" />
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity onPress={() => router.push('/forgot-password')} style={styles.forgotPasswordContainer}>
+                <Text style={styles.forgotText}>Esqueceu a senha?</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.button, loading && styles.buttonDisabled]} 
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.buttonText}>Entrar</Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.dividerContainer}>
+              <View style={styles.divider} />
+              <Text style={styles.dividerText}>OU</Text>
+              <View style={styles.divider} />
+            </View>
+
+            <TouchableOpacity 
+              style={styles.googleButton} 
+              onPress={() => promptAsync()}
+              disabled={!request || loading}
+            >
+              <FontAwesome name="google" size={18} color="#FFF" style={{marginRight: 10}} />
+              <Text style={styles.googleButtonText}>Entrar com o Google</Text>
+            </TouchableOpacity>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Não tem uma conta? </Text>
+              <TouchableOpacity onPress={() => router.push('/register')}>
+                <Text style={styles.registerText}>Cadastre-se</Text>
+              </TouchableOpacity>
+            </View>
+
+          </BlurView>
         </View>
-
-        <Text style={styles.title}>Bem-vindo de volta</Text>
-        <Text style={styles.subtitle}>
-          Faça login para acessar as melhores vagas.
-        </Text>
-
-        {errorMessage ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{errorMessage}</Text>
-          </View>
-        ) : null}
-
-        <Text style={styles.label}>E-mail</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="seu@email.com"
-          placeholderTextColor="#A0A0A0"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-
-        <View style={styles.passwordHeader}>
-          <Text style={styles.label}>Senha</Text>
-          <TouchableOpacity onPress={() => router.push('/forgot-password')}>
-            <Text style={styles.forgotText}>Esqueceu a senha?</Text>
-          </TouchableOpacity>
-        </View>
-        <TextInput
-          style={styles.input}
-          placeholder="Sua senha"
-          placeholderTextColor="#A0A0A0"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          onSubmitEditing={handleLogin}
-        />
-
-        <TouchableOpacity 
-          style={[styles.button, loading && styles.buttonDisabled]} 
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.buttonText}>Entrar</Text>
-          )}
-        </TouchableOpacity>
-
-        <View style={styles.dividerContainer}>
-          <View style={styles.divider} />
-          <Text style={styles.dividerText}>OU</Text>
-          <View style={styles.divider} />
-        </View>
-
-        <TouchableOpacity 
-          style={styles.googleButton} 
-          onPress={() => promptAsync()}
-          disabled={!request || loading}
-        >
-          <Text style={styles.googleButtonText}>Entrar com o Google</Text>
-        </TouchableOpacity>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Ainda não tem uma conta? </Text>
-          <TouchableOpacity onPress={() => router.push('/register')}>
-            <Text style={styles.registerText}>Cadastre-se</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFC',
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    padding: 24,
   },
-  logoContainer: {
+  glassContainer: {
+    padding: 24,
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 36,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#312651',
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#83829A',
-    marginBottom: 24,
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: 32,
     lineHeight: 22,
   },
   errorContainer: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: 'rgba(220, 38, 38, 0.2)',
     padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    borderRadius: 12,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#FCA5A5',
+    borderColor: 'rgba(220, 38, 38, 0.5)',
   },
   errorText: {
-    color: '#DC2626',
+    color: '#FFB4B4',
     fontSize: 14,
     textAlign: 'center',
     fontWeight: '500',
   },
-  passwordHeader: {
+  inputContainer: {
+    gap: 16,
+    marginBottom: 24,
+  },
+  inputWrapper: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    marginTop: 16,
-  },
-  forgotText: {
-    fontSize: 13,
-    color: '#2E9D4D',
-    fontWeight: '600',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#312651',
-    marginBottom: 8,
-    marginTop: 16,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    height: 56,
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EFEFEF',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    flex: 1,
+    color: '#FFFFFF',
     fontSize: 16,
-    color: '#312651',
+  },
+  inputIcon: {
+    marginLeft: 10,
+    padding: 4,
+  },
+  forgotPasswordContainer: {
+    alignItems: 'flex-end',
+    marginTop: -4,
+  },
+  forgotText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    opacity: 0.9,
   },
   button: {
     backgroundColor: '#2E9D4D',
-    paddingVertical: 16,
-    borderRadius: 12,
+    height: 56,
+    borderRadius: 14,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginBottom: 24,
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -260,28 +307,31 @@ const styles = StyleSheet.create({
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    marginBottom: 24,
   },
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: '#EFEFEF',
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   dividerText: {
     marginHorizontal: 16,
-    color: '#83829A',
+    color: 'rgba(255,255,255,0.6)',
     fontWeight: '600',
+    fontSize: 12,
   },
   googleButton: {
-    paddingVertical: 15,
-    borderRadius: 12,
+    height: 56,
+    borderRadius: 14,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   googleButtonText: {
-    color: '#4B5563',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -289,16 +339,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 32,
-    paddingBottom: 20,
   },
   footerText: {
-    fontSize: 15,
-    color: '#83829A',
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
   },
   registerText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#6A3093',
+    color: '#FFFFFF',
   },
 });
-

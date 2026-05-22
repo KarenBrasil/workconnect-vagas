@@ -13,6 +13,21 @@ import {
   VagaExterna
 } from '../../src/services/vagasExternas';
 
+const tempoRelativo = (dataString: string) => {
+  if (!dataString) return '';
+  const diff = Date.now() - new Date(dataString).getTime();
+  if (isNaN(diff)) return '';
+  
+  const minutos = Math.floor(diff / (1000 * 60));
+  if (minutos < 60) return minutos < 2 ? 'há pouco tempo' : `há ${minutos} mins`;
+  
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) return `há ${horas} hora${horas > 1 ? 's' : ''}`;
+  
+  const dias = Math.floor(horas / 24);
+  return `há ${dias} dia${dias > 1 ? 's' : ''}`;
+};
+
 interface VagaInterna {
   id: string;
   titulo: string;
@@ -49,6 +64,7 @@ const FILTROS_TAGS = [
 
 export default function Home() {
   const router = useRouter();
+  const scrollViewRef = useRef<ScrollView>(null);
   const [busca, setBusca] = useState('');
   const [vagasExternas, setVagasExternas] = useState<VagaExterna[]>([]);
   const [vagasInternas, setVagasInternas] = useState<VagaInterna[]>([]);
@@ -106,6 +122,15 @@ export default function Home() {
 
   const limparBusca = () => setBusca('');
 
+  const handleRefreshAndScrollToTop = () => {
+    if (abaAtiva === 'externas') {
+      carregarVagasExternas(true);
+    } else {
+      carregarVagasInternas();
+    }
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
   // Filtro de texto local — nunca re-chama a API
   const termoBusca = busca.toLowerCase().trim();
 
@@ -160,10 +185,16 @@ export default function Home() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        ref={scrollViewRef}
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+        stickyHeaderIndices={[0]}
+      >
 
-        {/* Busca */}
-        <View style={styles.searchContainer}>
+        {/* Busca e Refresh */}
+        <View style={styles.searchHeaderWrapper}>
+          <View style={styles.searchContainer}>
           <View style={styles.searchWrapper}>
             <FontAwesome name="search" size={16} color="#83829A" style={styles.searchIcon} />
             <TextInput
@@ -180,6 +211,9 @@ export default function Home() {
               </TouchableOpacity>
             )}
           </View>
+          <TouchableOpacity onPress={handleRefreshAndScrollToTop} style={styles.refreshTopBtn}>
+            <FontAwesome name="refresh" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
 
         {/* Abas principais */}
@@ -373,6 +407,7 @@ export default function Home() {
                     </View>
                   </View>
                   <View style={styles.cardFooter}>
+                    <Text style={styles.tempoText}>⏱ {tempoRelativo(vaga.criadoEm)}</Text>
                     <Text style={styles.cardContrato}>{vaga.contrato}</Text>
                     <Text style={styles.cardSalario}>{vaga.salario}</Text>
                   </View>
@@ -404,11 +439,33 @@ const styles = StyleSheet.create({
     borderRadius: 23, justifyContent: 'center', alignItems: 'center',
     borderWidth: 1, borderColor: '#EFEFEF',
   },
-  searchContainer: { flexDirection: 'row', height: 48, marginBottom: 14 },
+  searchHeaderWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    paddingTop: 10,
+    backgroundColor: '#F4F5F7',
+    zIndex: 10,
+  },
+  searchContainer: { flex: 1, flexDirection: 'row', height: 48 },
   searchWrapper: {
-    flex: 1, backgroundColor: '#FFFFFF', marginRight: 10,
+    flex: 1, backgroundColor: '#FFFFFF',
     justifyContent: 'center', alignItems: 'center',
     borderRadius: 14, flexDirection: 'row', borderWidth: 1, borderColor: '#E8E8E8',
+  },
+  refreshTopBtn: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#2E9D4D',
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+    shadowColor: '#2E9D4D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   searchIcon: { marginLeft: 14, marginRight: 8 },
   searchInput: { flex: 1, height: '100%', color: '#1A1A2E', fontSize: 14 },
