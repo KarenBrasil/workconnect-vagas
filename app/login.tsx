@@ -16,6 +16,7 @@ import { auth } from '../src/services/firebaseConfig';
 import { BrandLogo } from '../components/BrandLogo';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
+import { makeRedirectUri } from 'expo-auth-session';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -26,9 +27,11 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Configuração do Google Auth
+  // Configuração do Google Auth com o seu Client ID
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: '189326429321-kntm9qp3db45chg2ricg0ijov7rf8ilf.apps.googleusercontent.com',
+    // Garante que o redirecionamento será correto na web (Vercel) e no app
+    redirectUri: makeRedirectUri(),
   });
 
   useEffect(() => {
@@ -45,34 +48,6 @@ export default function Login() {
     }
   }, [response]);
 
-  const handleAdminLogin = async () => {
-    setErrorMessage('');
-    setLoading(true);
-    
-    const adminEmail = 'admin@workconnect.com';
-    const adminPass = 'admin123';
-
-    try {
-      // Tenta fazer o login
-      await signInWithEmailAndPassword(auth, adminEmail, adminPass);
-    } catch (error: any) {
-      // Se a conta admin ainda não existir no Firebase, ele a cria automaticamente
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        try {
-          await createUserWithEmailAndPassword(auth, adminEmail, adminPass);
-        } catch (createError) {
-          setErrorMessage('Erro ao auto-criar a conta admin.');
-          console.error(createError);
-        }
-      } else {
-        setErrorMessage('Erro no login admin.');
-        console.error(error);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleLogin = async () => {
     setErrorMessage('');
     const normalizedEmail = email.trim().toLowerCase();
@@ -87,17 +62,28 @@ export default function Login() {
       await signInWithEmailAndPassword(auth, normalizedEmail, password);
       // O _layout.tsx com o AuthProvider vai redirecionar automaticamente
     } catch (error: any) {
-      console.error("Login Error:", error);
-      let customError = 'Ocorreu um erro ao fazer login.';
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        customError = 'E-mail ou senha incorretos.';
-      } else if (error.code === 'auth/invalid-email') {
-        customError = 'E-mail inválido.';
-      } else if (error.code === 'auth/too-many-requests') {
-        customError = 'Muitas tentativas. Tente novamente mais tarde.';
+      // Cria a conta admin se ela ainda não existir e o usuário digitar essas credenciais
+      if ((error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') && normalizedEmail === 'admin@workconnect.com' && password === 'admin123') {
+        try {
+          await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+          return; // Sucesso na criação e auto-login
+        } catch (createError) {
+          setErrorMessage('Erro ao criar a conta admin automaticamente.');
+          console.error(createError);
+        }
+      } else {
+        console.error("Login Error:", error);
+        let customError = 'Ocorreu um erro ao fazer login.';
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+          customError = 'E-mail ou senha incorretos.';
+        } else if (error.code === 'auth/invalid-email') {
+          customError = 'E-mail inválido.';
+        } else if (error.code === 'auth/too-many-requests') {
+          customError = 'Muitas tentativas. Tente novamente mais tarde.';
+        }
+        setErrorMessage(customError);
+        Alert.alert('Falha no Login', customError);
       }
-      setErrorMessage(customError);
-      Alert.alert('Falha no Login', customError);
     } finally {
       setLoading(false);
     }
@@ -161,14 +147,6 @@ export default function Login() {
           ) : (
             <Text style={styles.buttonText}>Entrar</Text>
           )}
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.adminButton} 
-          onPress={handleAdminLogin}
-          disabled={loading}
-        >
-          <Text style={styles.adminButtonText}>Entrar Fácil (Acesso Admin)</Text>
         </TouchableOpacity>
 
         <View style={styles.dividerContainer}>
@@ -277,20 +255,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
-  },
-  adminButton: {
-    marginTop: 12,
-    paddingVertical: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#2E9D4D',
-  },
-  adminButtonText: {
-    color: '#148243',
-    fontSize: 15,
     fontWeight: '700',
   },
   dividerContainer: {
