@@ -215,6 +215,7 @@ export default function Home() {
             <FontAwesome name="refresh" size={18} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
+        </View>
 
         {/* Abas principais */}
         <View style={styles.abasContainer}>
