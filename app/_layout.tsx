@@ -71,13 +71,13 @@ function ProtectedLayout() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'register' || segments[0] === 'forgot-password';
-    const isRoot = segments.length === 0 || segments[0] === 'index' || segments[0] === '(index)';
+    const isProtected = segments[0] === '(tabs)' || segments[0] === 'job';
     
-    if (!user && !inAuthGroup && !isRoot) {
+    if (!user && isProtected) {
       // Se não estiver logado e tentar acessar área restrita, manda pro login
       router.replace('/login');
-    } else if (user && (inAuthGroup || isRoot)) {
-      // Se estiver logado e tentar acessar login/register/root, manda pras abas
+    } else if (user && inAuthGroup) {
+      // Se estiver logado e tentar acessar login/register, manda pras abas
       router.replace('/(tabs)');
     }
   }, [user, isLoading, segments]);
