@@ -80,13 +80,82 @@ function limparTitulo(titulo: string): string {
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
+// ──────────────────────────────────────────────────────────────────────────
+// CACHE — guarda as vagas no localStorage por 2 horas
+// Assim o app não re-chama as APIs a cada recarregamento de página
+// ──────────────────────────────────────────────────────────────────────────
+const CACHE_KEY = 'wc_vagas_externas_v1';
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 horas em milissegundos
 
+interface CacheEntry {
+  timestamp: number;
+  vagas: VagaExterna[];
+}
+
+function lerCache(): VagaExterna[] | null {
+  try {
+    if (typeof localStorage === 'undefined') return null; // React Native sem web
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const entry: CacheEntry = JSON.parse(raw);
+    const agora = Date.now();
+    if (agora - entry.timestamp > CACHE_TTL_MS) {
+      localStorage.removeItem(CACHE_KEY); // expirado
+      return null;
+    }
+    // Reconstrói as datas (JSON não preserva objetos Date)
+    return entry.vagas.map(v => ({
+      ...v,
+      dataOriginal: new Date(v.dataOriginal),
+    }));
+  } catch {
+    return null;
+  }
+}
+
+function salvarCache(vagas: VagaExterna[]): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const entry: CacheEntry = { timestamp: Date.now(), vagas };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+  } catch {
+    // localStorage cheio ou indisponível — ignora
+  }
+}
+
+/** Retorna quanto tempo falta para o cache expirar (string legível) */
+export function tempoRestanteCache(): string {
+  try {
+    if (typeof localStorage === 'undefined') return '';
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return '';
+    const entry: CacheEntry = JSON.parse(raw);
+    const restanteMs = CACHE_TTL_MS - (Date.now() - entry.timestamp);
+    if (restanteMs <= 0) return '';
+    const min = Math.ceil(restanteMs / 60000);
+    return min >= 60 ? `${Math.floor(min / 60)}h${min % 60 > 0 ? ` ${min % 60}min` : ''}` : `${min}min`;
+  } catch {
+    return '';
+  }
+}
+
+/** Força limpeza do cache (para o botão "Atualizar agora") */
+export function limparCacheVagas(): void {
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.removeItem(CACHE_KEY);
+  } catch {}
+}
+
+// Apenas 2 repos consolidados — reduz chamadas à API do GitHub
 const reposGithub = [
-  { fonte: 'Front-End BR', url: 'https://api.github.com/repos/frontendbr/vagas/issues?state=open&sort=created&direction=desc&per_page=15' },
-  { fonte: 'Back-End BR', url: 'https://api.github.com/repos/backend-br/vagas/issues?state=open&sort=created&direction=desc&per_page=15' },
-  { fonte: 'React BR', url: 'https://api.github.com/repos/react-brasil/vagas/issues?state=open&sort=created&direction=desc&per_page=8' },
-  { fonte: 'QA Brasil', url: 'https://api.github.com/repos/qa-brasil/vagas/issues?state=open&sort=created&direction=desc&per_page=6' },
-  { fonte: 'Infra & DevOps', url: 'https://api.github.com/repos/devopsbr/vagas/issues?state=open&sort=created&direction=desc&per_page=6' },
+  {
+    fonte: 'GitHub BR',
+    url: 'https://api.github.com/repos/frontendbr/vagas/issues?state=open&sort=created&direction=desc&per_page=30',
+  },
+  {
+    fonte: 'GitHub BR',
+    url: 'https://api.github.com/repos/backend-br/vagas/issues?state=open&sort=created&direction=desc&per_page=30',
+  },
 ];
 
 export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExterna[]> => {
@@ -95,13 +164,23 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
   tresMesesAtras.setMonth(tresMesesAtras.getMonth() - 3);
   const termoBusca = termo.toLowerCase().trim();
 
-  // 1. GitHub (Vagas BR)
+  // 1. GitHub (Vagas BR) — com detecção explícita de rate limit
   for (const repo of reposGithub) {
     try {
       const response = await fetch(repo.url, {
-        headers: { 'Accept': 'application/vnd.github.v3+json' },
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'WorkConnect-App',
+        },
       });
+
+      // 403 ou 429 = rate limit atingido — não lança erro, só pula esse repo
+      if (response.status === 403 || response.status === 429) {
+        console.log(`GitHub rate limit atingido para ${repo.url}`);
+        continue;
+      }
       if (!response.ok) continue;
+
       const items = await response.json();
 
       const vagasFiltradas = items.filter((item: any) => {
@@ -114,13 +193,11 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
       });
 
       const vagas = vagasFiltradas.map((item: any) => {
-        // Extrai empresa do padrão [Empresa] no título
         let empresa = '';
         const matchEmpresa = item.title.match(/\[([^\]]+)\]/);
         if (matchEmpresa) {
           const candidato = matchEmpresa[1].trim();
           const lower = candidato.toLowerCase();
-          // Só usa como empresa se não for palavra reservada
           if (!['remoto', 'remote', 'híbrido', 'presencial', 'pj', 'clt', 'junior', 'pleno', 'senior'].includes(lower)) {
             empresa = candidato;
           }
@@ -129,7 +206,6 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
         const labels = item.labels ? item.labels.map((l: any) => l.name) : [];
         const tags = extrairTagsContrato(`${item.title} ${item.body || ''}`, labels);
 
-        // Local: tenta extrair cidade do corpo da issue
         let local = '';
         const bodyText = item.body || '';
         const matchLocal = bodyText.match(/(?:local|cidade|location|city)[:\s]+([^\n\r,]+)/i);
@@ -145,13 +221,13 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
           descricao: bodyText,
           tempoPostagem: calcularTempoPostagem(new Date(item.created_at)),
           tags,
-          dataOriginal: new Date(item.created_at)
+          dataOriginal: new Date(item.created_at),
         };
       });
 
       todas.push(...vagas);
     } catch (e) {
-      console.log(`Erro ao buscar ${repo.fonte}:`, e);
+      console.log(`Erro ao buscar GitHub:`, e);
     }
   }
 
@@ -253,7 +329,106 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
     console.log('Erro ao buscar RemoteOK:', e);
   }
 
-  // Mistura cronológica real: mais recente no topo, independente da fonte
+  // 4. Arbeitnow (Vagas Globais/Europa/Remoto)
+  try {
+    const response = await fetch('https://www.arbeitnow.com/api/job-board-api');
+    if (response.ok) {
+      const { data } = await response.json();
+      const vagasArbeit = (data || []).map((item: any) => ({
+        id: `arbeit-${item.slug}`,
+        titulo: item.title,
+        empresa: item.company_name,
+        local: item.location || 'Remoto 🌍',
+        link: item.url,
+        fonte: 'Arbeitnow',
+        descricao: item.description || '',
+        tempoPostagem: 'Recente',
+        tags: item.tags || ['TI', 'Global'],
+        dataOriginal: new Date() // API não envia data exata em alguns campos, usamos hoje
+      }));
+      todas.push(...vagasArbeit);
+    }
+  } catch (e) {
+    console.log('Erro ao buscar Arbeitnow:', e);
+  }
+
+  // 5. Jooble (O "Jubly" que você pediu — Agregador gigante)
+  try {
+    const JOOBLE_API_KEY = ''; // Espaço para sua chave Jooble
+    if (JOOBLE_API_KEY) {
+      const response = await fetch(`https://jooble.org/api/v2/jobs/${JOOBLE_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keywords: termo || 'TI', location: 'Brasil' })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const vagasJooble = (data.jobs || []).map((item: any) => ({
+          id: `jooble-${item.id}`,
+          titulo: item.title,
+          empresa: item.company || 'Empresa Confidencial',
+          local: item.location,
+          link: item.link,
+          fonte: 'Jooble',
+          descricao: item.snippet,
+          tempoPostagem: item.updated,
+          tags: ['Jooble', 'Web'],
+          dataOriginal: new Date(item.updated)
+        }));
+        todas.push(...vagasJooble);
+      }
+    }
+  } catch (e) {
+    console.log('Erro ao buscar Jooble:', e);
+  }
+
+  // 6. Estrutura para InfoJobs (Pronta para quando você tiver as chaves)
+  const INFOJOBS_TOKEN = ''; // Token Base64 (ClientID:ClientSecret)
+  if (INFOJOBS_TOKEN) {
+    try {
+      const response = await fetch('https://api.infojobs.com.br/v2/job-search?category=it', {
+        headers: { 'Authorization': `Basic ${INFOJOBS_TOKEN}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const vagasInfo = (data.elements || []).map((item: any) => ({
+          id: `infojobs-${item.id}`,
+          titulo: item.title,
+          empresa: item.corporateName,
+          local: item.location,
+          link: item.url,
+          fonte: 'InfoJobs',
+          descricao: item.description,
+          tempoPostagem: 'Recente',
+          tags: ['InfoJobs', 'Brasil'],
+          dataOriginal: new Date()
+        }));
+        todas.push(...vagasInfo);
+      }
+    } catch (e) {
+      console.log('Erro ao buscar InfoJobs:', e);
+    }
+  }
+
+  // Mistura cronológica real: mais recente no topo
   todas.sort((a, b) => b.dataOriginal.getTime() - a.dataOriginal.getTime());
+
+  // Salva no cache para os próximos 2 horas
+  if (todas.length > 0) salvarCache(todas);
+
   return todas;
+};
+
+/**
+ * Versão com cache — use esta no componente.
+ * Só chama as APIs se o cache estiver vazio ou expirado (> 2h).
+ */
+export const buscarVagasComCache = async (): Promise<VagaExterna[]> => {
+  const cached = lerCache();
+  if (cached && cached.length > 0) {
+    console.log(`[Cache] ${cached.length} vagas carregadas do cache local (expira em ${tempoRestanteCache()})`);
+    return cached;
+  }
+  console.log('[Cache] Cache vazio ou expirado — buscando nas APIs...');
+  return buscarVagasExternas('');
 };

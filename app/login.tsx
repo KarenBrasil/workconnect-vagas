@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -8,41 +8,99 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential, createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../src/services/firebaseConfig';
 import { BrandLogo } from '../components/BrandLogo';
-import { getNameFromEmail, getSavedUserByEmail, saveUserSession } from '../utils/userSession';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 
-const ADMIN_PASSWORDS = ['admin', '1234', 'workconnect'];
+WebBrowser.maybeCompleteAuthSession();
 
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const enterApp = async () => {
-    const normalizedEmail = email.trim().toLowerCase() || 'admin@workconnect.com';
-    const savedUser = await getSavedUserByEmail(normalizedEmail);
+  // Configuração do Google Auth
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId: '189326429321-kntm9qp3db45chg2ricg0ijov7rf8ilf.apps.googleusercontent.com',
+  });
 
-    await saveUserSession(
-      savedUser ?? {
-        email: normalizedEmail,
-        name: normalizedEmail === 'admin@workconnect.com' ? 'Admin' : getNameFromEmail(normalizedEmail),
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      const credential = GoogleAuthProvider.credential(id_token);
+      setLoading(true);
+      signInWithCredential(auth, credential)
+        .catch(error => {
+          setErrorMessage('Erro ao autenticar com o Google.');
+          console.error(error);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [response]);
+
+  const handleAdminLogin = async () => {
+    setErrorMessage('');
+    setLoading(true);
+    
+    const adminEmail = 'admin@workconnect.com';
+    const adminPass = 'admin123';
+
+    try {
+      // Tenta fazer o login
+      await signInWithEmailAndPassword(auth, adminEmail, adminPass);
+    } catch (error: any) {
+      // Se a conta admin ainda não existir no Firebase, ele a cria automaticamente
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+        try {
+          await createUserWithEmailAndPassword(auth, adminEmail, adminPass);
+        } catch (createError) {
+          setErrorMessage('Erro ao auto-criar a conta admin.');
+          console.error(createError);
+        }
+      } else {
+        setErrorMessage('Erro no login admin.');
+        console.error(error);
       }
-    );
-
-    router.replace('/(tabs)');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogin = async () => {
-    const normalizedPassword = password.trim().toLowerCase();
+    setErrorMessage('');
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if (ADMIN_PASSWORDS.includes(normalizedPassword)) {
-      await enterApp();
+    if (!normalizedEmail || !password.trim()) {
+      setErrorMessage('Preencha e-mail e senha.');
       return;
     }
 
-    Alert.alert('Acesso admin', 'Use a senha: admin');
+    try {
+      setLoading(true);
+      await signInWithEmailAndPassword(auth, normalizedEmail, password);
+      // O _layout.tsx com o AuthProvider vai redirecionar automaticamente
+    } catch (error: any) {
+      console.error("Login Error:", error);
+      let customError = 'Ocorreu um erro ao fazer login.';
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        customError = 'E-mail ou senha incorretos.';
+      } else if (error.code === 'auth/invalid-email') {
+        customError = 'E-mail inválido.';
+      } else if (error.code === 'auth/too-many-requests') {
+        customError = 'Muitas tentativas. Tente novamente mais tarde.';
+      }
+      setErrorMessage(customError);
+      Alert.alert('Falha no Login', customError);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -57,20 +115,19 @@ export default function Login() {
 
         <Text style={styles.title}>Bem-vindo de volta</Text>
         <Text style={styles.subtitle}>
-          Entre como admin para navegar pelo prototipo e testar as abas.
+          Faça login para acessar as melhores vagas.
         </Text>
 
-        <View style={styles.adminHint}>
-          <Text style={styles.adminHintTitle}>Acesso de teste</Text>
-          <Text style={styles.adminHintText}>
-            Senha: admin. O e-mail e opcional enquanto o cadastro real nao estiver pronto.
-          </Text>
-        </View>
+        {errorMessage ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
 
-        <Text style={styles.label}>E-mail opcional</Text>
+        <Text style={styles.label}>E-mail</Text>
         <TextInput
           style={styles.input}
-          placeholder="admin@workconnect.com"
+          placeholder="seu@email.com"
           placeholderTextColor="#A0A0A0"
           autoCapitalize="none"
           keyboardType="email-address"
@@ -78,10 +135,15 @@ export default function Login() {
           onChangeText={setEmail}
         />
 
-        <Text style={styles.label}>Senha admin</Text>
+        <View style={styles.passwordHeader}>
+          <Text style={styles.label}>Senha</Text>
+          <TouchableOpacity onPress={() => router.push('/forgot-password')}>
+            <Text style={styles.forgotText}>Esqueceu a senha?</Text>
+          </TouchableOpacity>
+        </View>
         <TextInput
           style={styles.input}
-          placeholder="Digite admin"
+          placeholder="Sua senha"
           placeholderTextColor="#A0A0A0"
           secureTextEntry
           value={password}
@@ -89,16 +151,42 @@ export default function Login() {
           onSubmitEditing={handleLogin}
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Entrar</Text>
+        <TouchableOpacity 
+          style={[styles.button, loading && styles.buttonDisabled]} 
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.buttonText}>Entrar</Text>
+          )}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.adminButton} onPress={enterApp}>
-          <Text style={styles.adminButtonText}>Entrar como admin</Text>
+        <TouchableOpacity 
+          style={styles.adminButton} 
+          onPress={handleAdminLogin}
+          disabled={loading}
+        >
+          <Text style={styles.adminButtonText}>Entrar Fácil (Acesso Admin)</Text>
+        </TouchableOpacity>
+
+        <View style={styles.dividerContainer}>
+          <View style={styles.divider} />
+          <Text style={styles.dividerText}>OU</Text>
+          <View style={styles.divider} />
+        </View>
+
+        <TouchableOpacity 
+          style={styles.googleButton} 
+          onPress={() => promptAsync()}
+          disabled={!request || loading}
+        >
+          <Text style={styles.googleButtonText}>Entrar com o Google</Text>
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Ainda nao tem uma conta? </Text>
+          <Text style={styles.footerText}>Ainda não tem uma conta? </Text>
           <TouchableOpacity onPress={() => router.push('/register')}>
             <Text style={styles.registerText}>Cadastre-se</Text>
           </TouchableOpacity>
@@ -134,24 +222,30 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 22,
   },
-  adminHint: {
-    backgroundColor: '#FFFFFF',
+  errorContainer: {
+    backgroundColor: '#FEE2E2',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E8F2EB',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
+    borderColor: '#FCA5A5',
   },
-  adminHintTitle: {
+  errorText: {
+    color: '#DC2626',
     fontSize: 14,
-    fontWeight: '700',
-    color: '#148243',
-    marginBottom: 4,
+    textAlign: 'center',
+    fontWeight: '500',
   },
-  adminHintText: {
+  passwordHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginTop: 16,
+  },
+  forgotText: {
     fontSize: 13,
-    color: '#6B7280',
-    lineHeight: 18,
+    color: '#2E9D4D',
+    fontWeight: '600',
   },
   label: {
     fontSize: 14,
@@ -177,6 +271,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 24,
   },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
@@ -193,13 +290,42 @@ const styles = StyleSheet.create({
   },
   adminButtonText: {
     color: '#148243',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#EFEFEF',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: '#83829A',
+    fontWeight: '600',
+  },
+  googleButton: {
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  googleButtonText: {
+    color: '#4B5563',
+    fontSize: 16,
+    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 32,
+    paddingBottom: 20,
   },
   footerText: {
     fontSize: 15,
@@ -211,3 +337,4 @@ const styles = StyleSheet.create({
     color: '#6A3093',
   },
 });
+

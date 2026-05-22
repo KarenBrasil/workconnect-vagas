@@ -1,54 +1,41 @@
 import { useState } from 'react';
 import { Alert, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../src/services/firebaseConfig';
 import { BrandLogo } from '../components/BrandLogo';
 
-export default function Register() {
+export default function ForgotPassword() {
   const router = useRouter();
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const handleRegister = async () => {
+  const handleResetPassword = async () => {
     setErrorMessage('');
+    setSuccessMessage('');
     const normalizedEmail = email.trim().toLowerCase();
-    const displayName = name.trim();
 
-    if (!normalizedEmail || !password.trim() || !displayName) {
-      setErrorMessage('Preencha nome, e-mail e senha.');
-      Alert.alert('Erro', 'Preencha todos os campos.');
+    if (!normalizedEmail) {
+      setErrorMessage('Por favor, digite seu e-mail.');
       return;
     }
 
     try {
       setLoading(true);
-      const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
-      
-      // Update profile with the name
-      if (userCredential.user) {
-        await updateProfile(userCredential.user, {
-          displayName: displayName
-        });
-      }
-      
-      // O _layout.tsx com o AuthProvider vai redirecionar automaticamente para /(tabs)
+      await sendPasswordResetEmail(auth, normalizedEmail);
+      setSuccessMessage('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
+      Alert.alert('Sucesso', 'Instruções enviadas para o seu e-mail.');
     } catch (error: any) {
-      console.error("Register Error:", error);
-      let customError = 'Ocorreu um erro ao criar a conta.';
-      if (error.code === 'auth/email-already-in-use') {
-        customError = 'Este e-mail já está em uso.';
+      console.error("Reset Password Error:", error);
+      let customError = 'Ocorreu um erro ao tentar recuperar a senha.';
+      if (error.code === 'auth/user-not-found') {
+        customError = 'Não há usuário cadastrado com este e-mail.';
       } else if (error.code === 'auth/invalid-email') {
         customError = 'E-mail inválido.';
-      } else if (error.code === 'auth/weak-password') {
-        customError = 'A senha deve ter pelo menos 6 caracteres.';
       }
       setErrorMessage(customError);
-      Alert.alert('Erro no Cadastro', customError);
     } finally {
       setLoading(false);
     }
@@ -59,8 +46,8 @@ export default function Register() {
       <View style={styles.logoContainer}>
         <BrandLogo />
       </View>
-      <Text style={styles.title}>Criar Conta</Text>
-      <Text style={styles.subtitle}>Junte-se ao WorkConnect</Text>
+      <Text style={styles.title}>Recuperar Senha</Text>
+      <Text style={styles.subtitle}>Enviaremos um link para redefinir sua senha.</Text>
 
       {errorMessage ? (
         <View style={styles.errorContainer}>
@@ -68,18 +55,15 @@ export default function Register() {
         </View>
       ) : null}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Nome Completo"
-        placeholderTextColor="#aaa"
-        autoCapitalize="words"
-        value={name}
-        onChangeText={setName}
-      />
+      {successMessage ? (
+        <View style={styles.successContainer}>
+          <Text style={styles.successText}>{successMessage}</Text>
+        </View>
+      ) : null}
 
       <TextInput
         style={styles.input}
-        placeholder="E-mail"
+        placeholder="Seu e-mail cadastrado"
         placeholderTextColor="#aaa"
         autoCapitalize="none"
         keyboardType="email-address"
@@ -87,29 +71,20 @@ export default function Register() {
         onChangeText={setEmail}
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Senha (mín. 6 caracteres)"
-        placeholderTextColor="#aaa"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-
       <TouchableOpacity 
         style={[styles.button, loading && styles.buttonDisabled]} 
-        onPress={handleRegister}
+        onPress={handleResetPassword}
         disabled={loading}
       >
         {loading ? (
           <ActivityIndicator color="#FFF" />
         ) : (
-          <Text style={styles.buttonText}>Cadastrar</Text>
+          <Text style={styles.buttonText}>Enviar E-mail</Text>
         )}
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.linkButton} onPress={() => router.back()}>
-        <Text style={styles.linkText}>Já tem uma conta? Faça login</Text>
+        <Text style={styles.linkText}>Voltar para o Login</Text>
       </TouchableOpacity>
     </View>
   );
@@ -138,6 +113,7 @@ const styles = StyleSheet.create({
     color: '#83829A',
     marginBottom: 24,
     textAlign: 'center',
+    paddingHorizontal: 20,
   },
   errorContainer: {
     backgroundColor: '#FEE2E2',
@@ -153,6 +129,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
+  successContainer: {
+    backgroundColor: '#D1FAE5',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#6EE7B7',
+  },
+  successText: {
+    color: '#059669',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
   input: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -164,7 +154,7 @@ const styles = StyleSheet.create({
     color: '#312651',
   },
   button: {
-    backgroundColor: '#6A3093', // Roxo da marca para cadastro
+    backgroundColor: '#2E9D4D',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -183,7 +173,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkText: {
-    color: '#2E9D4D', // Verde da marca
+    color: '#83829A',
     fontSize: 14,
     fontWeight: '600',
   },

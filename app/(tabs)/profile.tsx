@@ -4,11 +4,7 @@ import {
   TextInput, ScrollView, ActivityIndicator, Linking
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { auth, db } from '../../src/services/firebaseConfig';
-import { signOut } from 'firebase/auth';
 import { useRouter } from 'expo-router';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getCurrentUserSession, clearCurrentUserSession, UserSession } from '../../utils/userSession';
 
 interface PerfilProfissional {
   nome: string;
@@ -17,7 +13,7 @@ interface PerfilProfissional {
   bio: string;
   githubUrl: string;
   linkedinUrl: string;
-  curriculo: string;  // link externo para PDF (ex: Google Drive, Dropbox)
+  curriculo: string;
 }
 
 const PERFIL_VAZIO: PerfilProfissional = {
@@ -27,25 +23,39 @@ const PERFIL_VAZIO: PerfilProfissional = {
 
 export default function Profile() {
   const router = useRouter();
-  const [userSession, setUserSession] = useState<UserSession | null>(null);
   const [perfil, setPerfil] = useState<PerfilProfissional>(PERFIL_VAZIO);
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
-  const [carregando, setCarregando] = useState(true);
-
-  const userId = auth.currentUser?.uid || '';
-  const userEmail = auth.currentUser?.email || userSession?.email || '';
+  // Começa como false para não travar — só carrega se houver userId
+  const [carregando, setCarregando] = useState(false);
+  const [userId, setUserId] = useState<string>('');
+  const [userEmail, setUserEmail] = useState<string>('');
 
   useEffect(() => {
-    getCurrentUserSession().then(setUserSession);
-    if (userId) carregarPerfil();
+    // Carrega Firebase de forma dinâmica para não bloquear a renderização
+    const inicializar = async () => {
+      try {
+        const { auth } = await import('../../src/services/firebaseConfig');
+        const uid = auth.currentUser?.uid || '';
+        const email = auth.currentUser?.email || '';
+        setUserId(uid);
+        setUserEmail(email);
+        if (uid) {
+          setCarregando(true);
+          await carregarPerfil(uid);
+        }
+      } catch (e) {
+        console.log('Firebase não disponível:', e);
+      }
+    };
+    inicializar();
   }, []);
 
-  const carregarPerfil = async () => {
-    setCarregando(true);
+  const carregarPerfil = async (uid: string) => {
     try {
-      const docRef = doc(db, 'perfis', userId);
-      const snap = await getDoc(docRef);
+      const { doc, getDoc } = await import('firebase/firestore');
+      const { db } = await import('../../src/services/firebaseConfig');
+      const snap = await getDoc(doc(db, 'perfis', uid));
       if (snap.exists()) {
         setPerfil({ ...PERFIL_VAZIO, ...snap.data() as PerfilProfissional });
       }
@@ -57,9 +67,14 @@ export default function Profile() {
   };
 
   const salvarPerfil = async () => {
-    if (!userId) return;
+    if (!userId) {
+      if (Platform.OS === 'web') window.alert('Faça login para salvar o perfil.');
+      return;
+    }
     setSalvando(true);
     try {
+      const { doc, setDoc } = await import('firebase/firestore');
+      const { db } = await import('../../src/services/firebaseConfig');
       await setDoc(doc(db, 'perfis', userId), {
         ...perfil,
         email: userEmail,
@@ -69,7 +84,8 @@ export default function Profile() {
       if (Platform.OS === 'web') window.alert('Perfil salvo com sucesso!');
       else Alert.alert('Salvo!', 'Seu perfil foi atualizado.');
     } catch (e: any) {
-      Alert.alert('Erro', 'Não foi possível salvar: ' + e.message);
+      if (Platform.OS === 'web') window.alert('Não foi possível salvar: ' + e.message);
+      else Alert.alert('Erro', 'Não foi possível salvar: ' + e.message);
     } finally {
       setSalvando(false);
     }
@@ -77,11 +93,13 @@ export default function Profile() {
 
   const executeLogout = async () => {
     try {
-      await clearCurrentUserSession();
+      const { auth } = await import('../../src/services/firebaseConfig');
+      const { signOut } = await import('firebase/auth');
       if (auth.currentUser) await signOut(auth);
       router.replace('/login');
     } catch (e) {
-      Alert.alert('Erro', 'Não foi possível sair.');
+      if (Platform.OS === 'web') window.alert('Não foi possível sair.');
+      else Alert.alert('Erro', 'Não foi possível sair.');
     }
   };
 
@@ -102,16 +120,8 @@ export default function Profile() {
     Linking.openURL(finalUrl);
   };
 
-  const nomeExibido = perfil.nome || userSession?.name || userEmail.split('@')[0] || 'Usuário';
+  const nomeExibido = perfil.nome || userEmail.split('@')[0] || 'Usuário';
   const iniciais = nomeExibido.slice(0, 2).toUpperCase();
-
-  if (carregando) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color="#2E9D4D" size="large" />
-      </View>
-    );
-  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>

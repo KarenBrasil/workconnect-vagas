@@ -45,22 +45,52 @@ export default function RootLayout() {
 }
 
 import { View, Platform, StyleSheet } from 'react-native';
+import { AuthProvider, useAuth } from '../context/AuthContext';
+import { useRouter, useSegments } from 'expo-router';
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <View style={styles.webContainer}>
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="register" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-        </Stack>
-      </View>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <View style={styles.webContainer}>
+          <ProtectedLayout />
+        </View>
+      </ThemeProvider>
+    </AuthProvider>
+  );
+}
+
+function ProtectedLayout() {
+  const { user, isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === 'login' || segments[0] === 'register' || segments[0] === 'forgot-password';
+    
+    if (!user && !inAuthGroup) {
+      // Se não estiver logado e tentar acessar área restrita, manda pro login
+      router.replace('/login');
+    } else if (user && inAuthGroup) {
+      // Se estiver logado e tentar acessar login/register, manda pras abas
+      router.replace('/(tabs)');
+    }
+  }, [user, isLoading, segments]);
+
+  return (
+    <Stack>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="register" options={{ headerShown: false }} />
+      <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="job/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+    </Stack>
   );
 }
 
