@@ -6,7 +6,6 @@ import { auth } from '../src/services/firebaseConfig';
 import { BlurView } from 'expo-blur';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session';
 
 export default function Register() {
   const router = useRouter();
@@ -18,10 +17,9 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Configuração do Google Auth
+  // Configuração do Google Auth com o seu Client ID
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: '189326429321-kntm9qp3db45chg2ricg0ijov7rf8ilf.apps.googleusercontent.com',
-    redirectUri: makeRedirectUri(),
   });
 
   useEffect(() => {
@@ -178,7 +176,7 @@ export default function Register() {
             </TouchableOpacity>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Já tem uma conta? </Text>
+              <Text style={styles.footerText}>Já tem uma conta?{' '}</Text>
               <TouchableOpacity onPress={() => router.push('/login')}>
                 <Text style={styles.loginText}>Faça Login</Text>
               </TouchableOpacity>

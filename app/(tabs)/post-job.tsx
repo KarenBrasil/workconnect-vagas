@@ -133,14 +133,14 @@ export default function PostJob() {
           onPress={() => setAbaAtiva('nova')}
         >
           <FontAwesome name="plus-circle" size={14} color={abaAtiva === 'nova' ? '#2E9D4D' : '#83829A'} />
-          <Text style={[styles.abaText, abaAtiva === 'nova' && styles.abaTextAtiva]}>  Nova Vaga</Text>
+          <Text style={[styles.abaText, abaAtiva === 'nova' && styles.abaTextAtiva]}>{' '}Nova Vaga</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.abaBtn, abaAtiva === 'gerenciar' && styles.abaBtnAtiva]}
           onPress={() => setAbaAtiva('gerenciar')}
         >
           <FontAwesome name="list" size={14} color={abaAtiva === 'gerenciar' ? '#2E9D4D' : '#83829A'} />
-          <Text style={[styles.abaText, abaAtiva === 'gerenciar' && styles.abaTextAtiva]}>  Gerenciar</Text>
+          <Text style={[styles.abaText, abaAtiva === 'gerenciar' && styles.abaTextAtiva]}>{' '}Gerenciar</Text>
         </TouchableOpacity>
       </View>
 
@@ -236,7 +236,7 @@ export default function PostJob() {
                     <View style={{ flex: 1 }}>
                       <Text style={styles.vagaTitulo} numberOfLines={2}>{vaga.titulo}</Text>
                       <Text style={styles.vagaEmpresa}>{vaga.empresa || '—'}</Text>
-                      <Text style={styles.vagaData}>📅 {formatarData(vaga.criadoEm)}</Text>
+                      <Text style={styles.vagaData}>📅{' '}{formatarData(vaga.criadoEm)}</Text>
                     </View>
                   </View>
                   <TouchableOpacity

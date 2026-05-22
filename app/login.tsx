@@ -17,7 +17,6 @@ import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential, c
 import { auth } from '../src/services/firebaseConfig';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session';
 import { BlurView } from 'expo-blur';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -34,7 +33,6 @@ export default function Login() {
   // Configuração do Google Auth com o seu Client ID
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: '189326429321-kntm9qp3db45chg2ricg0ijov7rf8ilf.apps.googleusercontent.com',
-    redirectUri: makeRedirectUri(),
   });
 
   useEffect(() => {
@@ -185,7 +183,7 @@ export default function Login() {
             </TouchableOpacity>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Não tem uma conta? </Text>
+              <Text style={styles.footerText}>Não tem uma conta?{' '}</Text>
               <TouchableOpacity onPress={() => router.push('/register')}>
                 <Text style={styles.registerText}>Cadastre-se</Text>
               </TouchableOpacity>

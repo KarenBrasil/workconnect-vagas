@@ -318,7 +318,7 @@ export default function Home() {
                         {vaga.local ? (
                           <View style={styles.localRow}>
                             <FontAwesome name="map-marker" size={11} color="#2E9D4D" />
-                            <Text style={styles.localText}> {vaga.local}</Text>
+                            <Text style={styles.localText}>{' '}{vaga.local}</Text>
                           </View>
                         ) : null}
                         {vaga.tags && vaga.tags.length > 0 && (
@@ -336,7 +336,7 @@ export default function Home() {
                       <View style={[styles.fonteBadge, { backgroundColor: corFonte + '15' }]}>
                         <Text style={[styles.fonteText, { color: corFonte }]}>{vaga.fonte}</Text>
                       </View>
-                      <Text style={styles.tempoText}>⏱ {vaga.tempoPostagem}</Text>
+                      <Text style={styles.tempoText}>⏱{' '}{vaga.tempoPostagem}</Text>
                       <Text style={styles.cardExterno}>Ver vaga →</Text>
                     </View>
                   </TouchableOpacity>
@@ -408,7 +408,7 @@ export default function Home() {
                     </View>
                   </View>
                   <View style={styles.cardFooter}>
-                    <Text style={styles.tempoText}>⏱ {tempoRelativo(vaga.criadoEm)}</Text>
+                    <Text style={styles.tempoText}>⏱{' '}{tempoRelativo(vaga.criadoEm)}</Text>
                     <Text style={styles.cardContrato}>{vaga.contrato}</Text>
                     <Text style={styles.cardSalario}>{vaga.salario}</Text>
                   </View>
