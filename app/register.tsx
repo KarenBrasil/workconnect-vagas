@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Alert, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ImageBackground, KeyboardAvoidingView, Platform, StatusBar, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
-import { auth } from '../src/services/firebaseConfig';
+import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential, sendEmailVerification } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../src/services/firebaseConfig';
 import { BlurView } from 'expo-blur';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
@@ -29,6 +30,15 @@ export default function Register() {
       const credential = GoogleAuthProvider.credential(id_token);
       setLoading(true);
       signInWithCredential(auth, credential)
+        .then(async (userCred) => {
+          // Salva no banco de usuários se logar via Google (para aparecer no admin)
+          await setDoc(doc(db, 'users', userCred.user.uid), {
+            nome: userCred.user.displayName || 'Usuário Google',
+            email: userCred.user.email,
+            uid: userCred.user.uid,
+            criadoEm: new Date().toISOString()
+          }, { merge: true });
+        })
         .catch(error => {
           setErrorMessage('Erro ao autenticar com o Google.');
           console.error(error);
@@ -56,9 +66,24 @@ export default function Register() {
         await updateProfile(userCredential.user, {
           displayName: displayName
         });
+
+        // Envia email de verificação
+        await sendEmailVerification(userCredential.user);
+
+        // Salva na coleção users para o Painel de Administração
+        await setDoc(doc(db, 'users', userCredential.user.uid), {
+          nome: displayName,
+          email: normalizedEmail,
+          uid: userCredential.user.uid,
+          criadoEm: new Date().toISOString()
+        });
+
+        Alert.alert(
+          'Conta Criada!', 
+          'Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada antes de fazer login.'
+        );
+        router.replace('/login');
       }
-      
-      // O _layout.tsx com o AuthProvider vai redirecionar automaticamente para /(tabs)
     } catch (error: any) {
       console.error("Register Error:", error);
       let customError = 'Ocorreu um erro ao criar a conta.';

@@ -14,8 +14,9 @@ import {
   Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../src/services/firebaseConfig';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential, createUserWithEmailAndPassword, signOut, sendEmailVerification } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../src/services/firebaseConfig';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { BlurView } from 'expo-blur';
@@ -43,6 +44,14 @@ export default function Login() {
       const credential = GoogleAuthProvider.credential(id_token);
       setLoading(true);
       signInWithCredential(auth, credential)
+        .then(async (userCred) => {
+          await setDoc(doc(db, 'users', userCred.user.uid), {
+            nome: userCred.user.displayName || 'Usuário Google',
+            email: userCred.user.email,
+            uid: userCred.user.uid,
+            criadoEm: new Date().toISOString()
+          }, { merge: true });
+        })
         .catch(error => {
           setErrorMessage('Erro ao autenticar com o Google.');
           console.error(error);
@@ -62,7 +71,30 @@ export default function Login() {
 
     try {
       setLoading(true);
-      await signInWithEmailAndPassword(auth, normalizedEmail, password);
+      const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+      
+      if (!userCredential.user.emailVerified && normalizedEmail !== 'admin@workconnect.com') {
+        await signOut(auth);
+        Alert.alert(
+          'E-mail não verificado',
+          'Você precisa confirmar o seu e-mail antes de acessar o aplicativo. Deseja reenviar o link de confirmação?',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { 
+              text: 'Reenviar E-mail', 
+              onPress: async () => {
+                try {
+                  await sendEmailVerification(userCredential.user);
+                  Alert.alert('Sucesso', 'E-mail reenviado! Verifique sua caixa de entrada.');
+                } catch (err) {
+                  Alert.alert('Erro', 'Não foi possível reenviar o e-mail no momento. Tente novamente mais tarde.');
+                }
+              }
+            }
+          ]
+        );
+        return;
+      }
       // O _layout.tsx com o AuthProvider vai redirecionar automaticamente
     } catch (error: any) {
       // Cria a conta admin se ela ainda não existir e o usuário digitar essas credenciais

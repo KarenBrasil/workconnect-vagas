@@ -47,18 +47,21 @@ export default function RootLayout() {
 import { View, Platform, StyleSheet } from 'react-native';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { useRouter, useSegments } from 'expo-router';
+import { ThemeProvider as CustomThemeProvider } from '../src/theme/ThemeContext';
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <AuthProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <View style={styles.webContainer}>
-          <ProtectedLayout />
-        </View>
-      </ThemeProvider>
-    </AuthProvider>
+    <CustomThemeProvider>
+      <AuthProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <View style={styles.webContainer}>
+            <ProtectedLayout />
+          </View>
+        </ThemeProvider>
+      </AuthProvider>
+    </CustomThemeProvider>
   );
 }
 

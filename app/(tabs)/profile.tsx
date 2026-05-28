@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Alert, Platform,
-  TextInput, ScrollView, ActivityIndicator, Linking
+  TextInput, ScrollView, ActivityIndicator, Linking, Switch
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '../../src/theme/ThemeContext';
 
 interface PerfilProfissional {
   nome: string;
@@ -21,8 +22,8 @@ const PERFIL_VAZIO: PerfilProfissional = {
   githubUrl: '', linkedinUrl: '', curriculo: '',
 };
 
-export default function Profile() {
   const router = useRouter();
+  const { themeMode, setThemeMode, colors, isDark } = useTheme();
   const [perfil, setPerfil] = useState<PerfilProfissional>(PERFIL_VAZIO);
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -124,14 +125,14 @@ export default function Profile() {
   const iniciais = nomeExibido.slice(0, 2).toUpperCase();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.scrollContent}>
 
       {/* Header com Avatar */}
-      <View style={styles.heroSection}>
+      <View style={[styles.heroSection, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
         <View style={styles.avatarCircle}>
           <Text style={styles.avatarText}>{iniciais}</Text>
         </View>
-        <Text style={styles.nomeText}>{nomeExibido}</Text>
+        <Text style={[styles.nomeText, { color: colors.textPrimary }]}>{nomeExibido}</Text>
         {perfil.cargo ? <Text style={styles.cargoText}>{perfil.cargo}</Text> : null}
         {perfil.cidade ? (
           <View style={styles.cidadeRow}>
@@ -271,34 +272,49 @@ export default function Profile() {
 
       {/* Configurações */}
       <View style={styles.settingsSection}>
-        <Text style={styles.settingsTitle}>Configurações</Text>
+        <Text style={[styles.settingsTitle, { color: colors.textPrimary }]}>Configurações</Text>
 
-        <TouchableOpacity style={styles.settingRow}>
+        <View style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
           <View style={styles.settingLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: '#EFEFEF' }]}>
-              <FontAwesome name="bell" size={16} color="#312651" />
+            <View style={[styles.settingIcon, { backgroundColor: colors.iconBox }]}>
+              <FontAwesome name="moon-o" size={16} color={colors.textPrimary} />
             </View>
-            <Text style={styles.settingText}>Notificações</Text>
+            <Text style={[styles.settingText, { color: colors.textPrimary }]}>Modo Escuro</Text>
           </View>
-          <FontAwesome name="chevron-right" size={12} color="#83829A" />
+          <Switch 
+            value={isDark} 
+            onValueChange={(val) => setThemeMode(val ? 'dark' : 'light')} 
+            trackColor={{ false: '#767577', true: colors.primary }}
+            thumbColor={'#FFFFFF'}
+          />
+        </View>
+
+        <TouchableOpacity style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+          <View style={styles.settingLeft}>
+            <View style={[styles.settingIcon, { backgroundColor: colors.iconBox }]}>
+              <FontAwesome name="bell" size={16} color={colors.textPrimary} />
+            </View>
+            <Text style={[styles.settingText, { color: colors.textPrimary }]}>Notificações</Text>
+          </View>
+          <FontAwesome name="chevron-right" size={12} color={colors.textSecondary} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.settingRow}>
+        <TouchableOpacity style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
           <View style={styles.settingLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: '#EFEFEF' }]}>
-              <FontAwesome name="lock" size={16} color="#312651" />
+            <View style={[styles.settingIcon, { backgroundColor: colors.iconBox }]}>
+              <FontAwesome name="lock" size={16} color={colors.textPrimary} />
             </View>
-            <Text style={styles.settingText}>Privacidade e Segurança</Text>
+            <Text style={[styles.settingText, { color: colors.textPrimary }]}>Privacidade e Segurança</Text>
           </View>
-          <FontAwesome name="chevron-right" size={12} color="#83829A" />
+          <FontAwesome name="chevron-right" size={12} color={colors.textSecondary} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.settingRow} onPress={handleLogout}>
+        <TouchableOpacity style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} onPress={handleLogout}>
           <View style={styles.settingLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: '#FEE2E2' }]}>
-              <FontAwesome name="sign-out" size={16} color="#DC2626" />
+            <View style={[styles.settingIcon, { backgroundColor: colors.errorBackground }]}>
+              <FontAwesome name="sign-out" size={16} color={colors.error} />
             </View>
-            <Text style={[styles.settingText, { color: '#DC2626' }]}>Sair da Conta</Text>
+            <Text style={[styles.settingText, { color: colors.error }]}>Sair da Conta</Text>
           </View>
         </TouchableOpacity>
       </View>

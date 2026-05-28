@@ -3,9 +3,11 @@ import { Tabs } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { auth } from '../../src/services/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
+import { useTheme } from '../../src/theme/ThemeContext';
 
 export default function TabLayout() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const { colors } = useTheme();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -17,16 +19,23 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: false, // Ocultar o cabeçalho padrão, pois usamos um customizado na Home
-        tabBarStyle: { backgroundColor: '#FFFFFF', borderTopColor: '#EFEFEF', height: 60, paddingBottom: 8 },
-        tabBarActiveTintColor: '#2E9D4D', // Verde Primário
-        tabBarInactiveTintColor: '#83829A',
+        headerShown: false,
+        tabBarStyle: { backgroundColor: colors.tabBackground, borderTopColor: colors.border, height: 60, paddingBottom: 8 },
+        tabBarActiveTintColor: colors.tabActive,
+        tabBarInactiveTintColor: colors.tabInactive,
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Início',
           tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: 'Buscar',
+          tabBarIcon: ({ color }) => <FontAwesome name="search" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -41,14 +50,22 @@ export default function TabLayout() {
         name="favorites"
         options={{
           title: 'Favoritos',
-          tabBarIcon: ({ color }) => <FontAwesome name="heart" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="heart-o" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Perfil',
-          tabBarIcon: ({ color }) => <FontAwesome name="user" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="user-o" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="admin"
+        options={{
+          title: 'Admin',
+          tabBarIcon: ({ color }) => <FontAwesome name="lock" size={24} color={color} />,
+          href: isAdmin ? '/admin' : null,
         }}
       />
     </Tabs>
