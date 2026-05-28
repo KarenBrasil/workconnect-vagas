@@ -22,6 +22,7 @@ const PERFIL_VAZIO: PerfilProfissional = {
   githubUrl: '', linkedinUrl: '', curriculo: '',
 };
 
+export default function ProfileScreen() {
   const router = useRouter();
   const { themeMode, setThemeMode, colors, isDark } = useTheme();
   const [perfil, setPerfil] = useState<PerfilProfissional>(PERFIL_VAZIO);
