@@ -11,7 +11,8 @@ export default function TabLayout() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAdmin(user?.email === 'admin@workconnect.com');
+      const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'admin@workconnect.com';
+      setIsAdmin(user?.email === adminEmail);
     });
     return unsubscribe;
   }, []);

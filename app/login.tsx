@@ -72,7 +72,8 @@ export default function Login() {
       setLoading(true);
       const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
       
-      if (!userCredential.user.emailVerified && normalizedEmail !== 'admin@workconnect.com') {
+      const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'admin@workconnect.com';
+      if (!userCredential.user.emailVerified && normalizedEmail !== adminEmail) {
         await signOut(auth);
         Alert.alert(
           'E-mail não verificado',
@@ -97,7 +98,8 @@ export default function Login() {
       // O _layout.tsx com o AuthProvider vai redirecionar automaticamente
     } catch (error: any) {
       // Cria a conta admin se ela ainda não existir e o usuário digitar essas credenciais
-      if ((error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') && normalizedEmail === 'admin@workconnect.com' && password === 'admin123') {
+      const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'admin@workconnect.com';
+      if ((error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') && normalizedEmail === adminEmail && password === 'admin123') {
         try {
           await createUserWithEmailAndPassword(auth, normalizedEmail, password);
           return; // Sucesso na criação e auto-login

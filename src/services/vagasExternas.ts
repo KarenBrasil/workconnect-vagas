@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export interface VagaExterna {
   id: string;
   titulo: string;
@@ -6,7 +8,7 @@ export interface VagaExterna {
   link: string;
   fonte: string;
   descricao: string;
-  tempoPostagem: string;
+  tempoPostagem: string; // Ficará como "há X horas"
   tags: string[];        // Apenas: contrato (PJ/CLT), modalidade (Remoto/Híbrido), senioridade (Pleno/Sênior)
   dataOriginal: Date;
 }
@@ -18,24 +20,44 @@ const NAO_SAO_CIDADES = new Set([
   'multiple', 'hybrid', 'flexible', 'see job description', 'see description',
 ]);
 
-function formatarDataExata(data: Date): string {
-  if (isNaN(data.getTime())) return 'Hora desconhecida';
-  const dia = String(data.getDate()).padStart(2, '0');
-  const mes = String(data.getMonth() + 1).padStart(2, '0');
-  const ano = data.getFullYear();
-  const horas = String(data.getHours()).padStart(2, '0');
-  const minutos = String(data.getMinutes()).padStart(2, '0');
-  return `${dia}/${mes}/${ano} às ${horas}:${minutos}`;
+// Helper para converter data em tempo relativo ("há 5h", "há 2 dias")
+export function calcularTempoRelativo(data: Date | string): string {
+  try {
+    const dataObj = typeof data === 'string' ? new Date(data) : data;
+    if (isNaN(dataObj.getTime())) return 'recentemente';
+    const agora = new Date();
+    const diffMs = agora.getTime() - dataObj.getTime();
+    if (diffMs < 0) return 'agora'; // Datas no futuro por fuso horário
+
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 60) return `há ${diffMin} min`;
+    const diffHoras = Math.floor(diffMin / 60);
+    if (diffHoras < 24) return `há ${diffHoras}h`;
+    const diffDias = Math.floor(diffHoras / 24);
+    if (diffDias === 1) return 'há 1 dia';
+    if (diffDias < 30) return `há ${diffDias} dias`;
+    const diffMeses = Math.floor(diffDias / 30);
+    if (diffMeses === 1) return 'há 1 mês';
+    return `há ${diffMeses} meses`;
+  } catch {
+    return 'recentemente';
+  }
 }
 
 // Valida se uma string parece ser um local real (cidade ou país)
-function validarLocal(local: string): string {
-  if (!local || local.trim().length < 2) return '';
+function validarLocal(local: string, paisPadrao: string = ''): string {
+  if (!local || local.trim().length < 2) return paisPadrao;
   const localLower = local.toLowerCase().trim();
-  if (NAO_SAO_CIDADES.has(localLower)) return '';
+  if (NAO_SAO_CIDADES.has(localLower)) return paisPadrao;
   // Remove locais que parecem nomes de ferramentas (sem espaço, todo minúsculo, <6 chars)
-  if (localLower.length < 4 && !localLower.includes(',')) return '';
-  return local.trim();
+  if (localLower.length < 4 && !localLower.includes(',')) return paisPadrao;
+  
+  let resultado = local.trim();
+  // Se o local já tem vírgula, provavelmente já tem país/estado. Se não tem, e temos país padrão, adiciona.
+  if (paisPadrao && !resultado.includes(',') && !resultado.toLowerCase().includes(paisPadrao.toLowerCase())) {
+    resultado = `${resultado}, ${paisPadrao}`;
+  }
+  return resultado;
 }
 
 // Extrai SOMENTE tags de contrato, modalidade e senioridade (NÃO localização)
@@ -43,7 +65,6 @@ function extrairTagsContrato(texto: string, labelsBase: string[] = []): string[]
   const tags = new Set<string>();
   const lower = texto.toLowerCase();
 
-  // De labels do GitHub, incluir apenas os que são tipo/contrato
   labelsBase.forEach(l => {
     const lLower = l.toLowerCase();
     if (['pj', 'clt', 'remoto', 'híbrido', 'hibrido', 'remote', 'freelance', 'junior', 'pleno', 'sênior', 'senior'].includes(lLower)) {
@@ -51,18 +72,15 @@ function extrairTagsContrato(texto: string, labelsBase: string[] = []): string[]
     }
   });
 
-  // Contrato
   if (lower.includes(' pj') || lower.startsWith('pj')) tags.add('PJ');
   if (lower.includes('clt')) tags.add('CLT');
   if (lower.includes('freelance') || lower.includes('freela')) tags.add('Freelance');
   if (lower.includes('estágio') || lower.includes('estagio') || lower.includes('intern')) tags.add('Estágio');
 
-  // Modalidade
   if (lower.includes('remoto') || lower.includes('remote') || lower.includes('home office')) tags.add('Remoto');
   if (lower.includes('híbrido') || lower.includes('hibrido') || lower.includes('hybrid')) tags.add('Híbrido');
   if (lower.includes('presencial') || lower.includes('on-site') || lower.includes('onsite')) tags.add('Presencial');
 
-  // Senioridade
   if (lower.includes('júnior') || lower.includes('junior') || lower.includes('jr.') || lower.includes(' jr ')) tags.add('Júnior');
   if (lower.includes('pleno') || lower.includes('mid-level') || lower.includes('mid level')) tags.add('Pleno');
   if (lower.includes('sênior') || lower.includes('senior') || lower.includes('sr.') || lower.includes(' sr ')) tags.add('Sênior');
@@ -70,7 +88,6 @@ function extrairTagsContrato(texto: string, labelsBase: string[] = []): string[]
   return Array.from(tags).slice(0, 4);
 }
 
-// Limpa colchetes, parênteses e prefixos comuns do título
 function limparTitulo(titulo: string): string {
   return titulo
     .replace(/\[.*?\]/g, '')
@@ -78,82 +95,57 @@ function limparTitulo(titulo: string): string {
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
+
 // ──────────────────────────────────────────────────────────────────────────
-// CACHE — guarda as vagas no localStorage por 2 horas
-// Assim o app não re-chama as APIs a cada recarregamento de página
+// CACHE (AGORA COM ASYNCSTORAGE)
 // ──────────────────────────────────────────────────────────────────────────
-const CACHE_KEY = 'wc_vagas_externas_v1';
-const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 horas em milissegundos
+const CACHE_KEY = 'wc_vagas_externas_v2';
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 horas
 
 interface CacheEntry {
   timestamp: number;
   vagas: VagaExterna[];
 }
 
-function lerCache(): VagaExterna[] | null {
+async function lerCache(): Promise<VagaExterna[] | null> {
   try {
-    if (typeof localStorage === 'undefined') return null; // React Native sem web
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = await AsyncStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const entry: CacheEntry = JSON.parse(raw);
     const agora = Date.now();
     if (agora - entry.timestamp > CACHE_TTL_MS) {
-      localStorage.removeItem(CACHE_KEY); // expirado
+      await AsyncStorage.removeItem(CACHE_KEY);
       return null;
     }
-    // Reconstrói as datas (JSON não preserva objetos Date)
     return entry.vagas.map(v => ({
       ...v,
       dataOriginal: new Date(v.dataOriginal),
+      // Recalcula tempo relativo ao ler do cache para ficar atualizado
+      tempoPostagem: calcularTempoRelativo(new Date(v.dataOriginal))
     }));
   } catch {
     return null;
   }
 }
 
-function salvarCache(vagas: VagaExterna[]): void {
+async function salvarCache(vagas: VagaExterna[]): Promise<void> {
   try {
-    if (typeof localStorage === 'undefined') return;
     const entry: CacheEntry = { timestamp: Date.now(), vagas };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(entry));
-  } catch {
-    // localStorage cheio ou indisponível — ignora
+    await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+  } catch (e) {
+    console.log('Erro ao salvar cache:', e);
   }
 }
 
-/** Retorna quanto tempo falta para o cache expirar (string legível) */
-export function tempoRestanteCache(): string {
+export async function limparCacheVagas(): Promise<void> {
   try {
-    if (typeof localStorage === 'undefined') return '';
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return '';
-    const entry: CacheEntry = JSON.parse(raw);
-    const restanteMs = CACHE_TTL_MS - (Date.now() - entry.timestamp);
-    if (restanteMs <= 0) return '';
-    const min = Math.ceil(restanteMs / 60000);
-    return min >= 60 ? `${Math.floor(min / 60)}h${min % 60 > 0 ? ` ${min % 60}min` : ''}` : `${min}min`;
-  } catch {
-    return '';
-  }
-}
-
-/** Força limpeza do cache (para o botão "Atualizar agora") */
-export function limparCacheVagas(): void {
-  try {
-    if (typeof localStorage !== 'undefined') localStorage.removeItem(CACHE_KEY);
+    await AsyncStorage.removeItem(CACHE_KEY);
   } catch {}
 }
 
-// Apenas 2 repos consolidados — reduz chamadas à API do GitHub
 const reposGithub = [
-  {
-    fonte: 'GitHub BR',
-    url: 'https://api.github.com/repos/frontendbr/vagas/issues?state=open&sort=created&direction=desc&per_page=30',
-  },
-  {
-    fonte: 'GitHub BR',
-    url: 'https://api.github.com/repos/backend-br/vagas/issues?state=open&sort=created&direction=desc&per_page=30',
-  },
+  { url: 'https://api.github.com/repos/frontendbr/vagas/issues?state=open&sort=created&direction=desc&per_page=30' },
+  { url: 'https://api.github.com/repos/backend-br/vagas/issues?state=open&sort=created&direction=desc&per_page=30' },
 ];
 
 export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExterna[]> => {
@@ -162,100 +154,60 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
   tresMesesAtras.setMonth(tresMesesAtras.getMonth() - 3);
   const termoBusca = termo.toLowerCase().trim();
 
-  // 1. GitHub (Vagas BR) — com detecção explícita de rate limit
+  // 1. GitHub BR
   for (const repo of reposGithub) {
     try {
-      const response = await fetch(repo.url, {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'WorkConnect-App',
-        },
-      });
-
-      // 403 ou 429 = rate limit atingido — não lança erro, só pula esse repo
-      if (response.status === 403 || response.status === 429) {
-        console.log(`GitHub rate limit atingido para ${repo.url}`);
-        continue;
-      }
+      const response = await fetch(repo.url, { headers: { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'WorkConnect' } });
+      if (response.status === 403 || response.status === 429) continue;
       if (!response.ok) continue;
-
       const items = await response.json();
 
-      const vagasFiltradas = items.filter((item: any) => {
-        if (item.pull_request) return false;
-        if (termoBusca) {
-          const texto = `${item.title} ${item.body || ''}`.toLowerCase();
-          if (!texto.includes(termoBusca)) return false;
-        }
-        return new Date(item.created_at) >= tresMesesAtras;
-      });
-
-      const vagas = vagasFiltradas.map((item: any) => {
+      const vagas = items.filter((i: any) => !i.pull_request && new Date(i.created_at) >= tresMesesAtras).map((item: any) => {
         let empresa = '';
         const matchEmpresa = item.title.match(/\[([^\]]+)\]/);
         if (matchEmpresa) {
           const candidato = matchEmpresa[1].trim();
-          const lower = candidato.toLowerCase();
-          if (!['remoto', 'remote', 'híbrido', 'presencial', 'pj', 'clt', 'junior', 'pleno', 'senior'].includes(lower)) {
-            empresa = candidato;
-          }
+          if (!['remoto', 'remote', 'híbrido', 'pj', 'clt', 'junior', 'pleno', 'senior'].includes(candidato.toLowerCase())) empresa = candidato;
         }
 
         const labels = item.labels ? item.labels.map((l: any) => l.name) : [];
         const tags = extrairTagsContrato(`${item.title} ${item.body || ''}`, labels);
 
         let local = '';
-        const bodyText = item.body || '';
-        const matchLocal = bodyText.match(/(?:local|cidade|location|city)[:\s]+([^\n\r,]+)/i);
-        if (matchLocal) local = validarLocal(matchLocal[1]);
+        const matchLocal = (item.body || '').match(/(?:local|cidade|location)[:\s]+([^\n\r,]+)/i);
+        if (matchLocal) local = validarLocal(matchLocal[1], 'Brasil 🇧🇷');
 
+        const dataOriginal = new Date(item.created_at);
         return {
           id: `github-${item.id}`,
           titulo: limparTitulo(item.title),
           empresa,
-          local,
+          local: local || 'Brasil 🇧🇷',
           link: item.html_url,
           fonte: 'GitHub BR',
-          descricao: bodyText,
-          tempoPostagem: formatarDataExata(new Date(item.created_at)),
+          descricao: item.body || '',
+          tempoPostagem: calcularTempoRelativo(dataOriginal),
           tags,
-          dataOriginal: new Date(item.created_at),
+          dataOriginal,
         };
       });
-
       todas.push(...vagas);
-    } catch (e) {
-      console.log(`Erro ao buscar GitHub:`, e);
-    }
+    } catch (e) { console.log('Erro GitHub:', e); }
   }
 
-  // 2. Remotive (Internacional)
+  // 2. Remotive
   try {
-    const url = `https://remotive.com/api/remote-jobs?limit=40`;
-    const response = await fetch(url);
+    const response = await fetch(`https://remotive.com/api/remote-jobs?limit=40`);
     if (response.ok) {
       const json = await response.json();
-      const CATEGORIAS_TI = ['software-dev', 'devops', 'data', 'qa', 'design', 'product', 'customer-support'];
-      
-      const vagasRemotive = json.jobs.filter((item: any) => {
-        if (!CATEGORIAS_TI.includes(item.category)) return false;
-        if (termoBusca) {
-          const texto = `${item.title} ${item.description || ''}`.toLowerCase();
-          if (!texto.includes(termoBusca)) return false;
-        }
-        return new Date(item.publication_date) >= tresMesesAtras;
-      }).map((item: any) => {
+      const vagasRemotive = json.jobs.filter((i: any) => new Date(i.publication_date) >= tresMesesAtras).map((item: any) => {
         const rawLocal = item.candidate_required_location || '';
-        // Para Remotive, "Worldwide" e variantes se tornam um local internacional legível
-        let local = '';
-        if (rawLocal && !NAO_SAO_CIDADES.has(rawLocal.toLowerCase())) {
-          local = rawLocal;
-        } else if (rawLocal.toLowerCase().includes('worldwide') || rawLocal.toLowerCase().includes('anywhere')) {
-          local = 'Internacional 🌍';
-        }
+        let local = validarLocal(rawLocal, 'Global 🌍');
+        if (rawLocal.toLowerCase().includes('worldwide') || rawLocal.toLowerCase().includes('anywhere')) local = 'Global 🌍';
 
-        const tags = extrairTagsContrato(`${item.title} ${item.job_type || ''} ${item.description || ''}`);
+        const tags = extrairTagsContrato(`${item.title} ${item.job_type || ''}`);
         if (!tags.includes('Remoto')) tags.push('Remoto');
+        const dataOriginal = new Date(item.publication_date);
 
         return {
           id: `remotive-${item.id}`,
@@ -265,47 +217,25 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
           link: item.url,
           fonte: 'Remotive',
           descricao: item.description || '',
-          tempoPostagem: formatarDataExata(new Date(item.publication_date)),
+          tempoPostagem: calcularTempoRelativo(dataOriginal),
           tags: tags.slice(0, 4),
-          dataOriginal: new Date(item.publication_date)
+          dataOriginal
         };
       });
-
       todas.push(...vagasRemotive);
     }
-  } catch (e) {
-    console.log('Erro ao buscar Remotive:', e);
-  }
+  } catch (e) { console.log('Erro Remotive:', e); }
 
-  // 3. RemoteOK (Internacional)
+  // 3. RemoteOK
   try {
-    const response = await fetch('https://remoteok.com/api', {
-      headers: { 'User-Agent': 'WorkConnect App' }
-    });
+    const response = await fetch('https://remoteok.com/api', { headers: { 'User-Agent': 'WorkConnect' } });
     if (response.ok) {
       const json = await response.json();
-      const jobs = json.slice(1, 25);
-      
-      const vagasRemoteOK = jobs.filter((item: any) => {
-        if (termoBusca) {
-          const texto = `${item.position || ''} ${(item.tags || []).join(' ')}`.toLowerCase();
-          if (!texto.includes(termoBusca)) return false;
-        }
-        return new Date(item.date) >= tresMesesAtras;
-      }).map((item: any) => {
-        const rawLocal = item.location || '';
-        const local = validarLocal(rawLocal) ? validarLocal(rawLocal) : 'Internacional 🌍';
-
-        const baseTags: string[] = [];
-        if (item.tags && Array.isArray(item.tags)) {
-          // Filtramos tags do RemoteOK que sejam relevantes (senioridade/contrato)
-          const tagsRelevantes = item.tags.filter((t: string) =>
-            ['senior', 'junior', 'mid', 'fulltime', 'parttime', 'contract', 'intern'].includes(t.toLowerCase())
-          );
-          baseTags.push(...tagsRelevantes.slice(0, 2));
-        }
-        const tags = extrairTagsContrato(`${item.position || ''}`, baseTags);
+      const vagasRemoteOK = json.slice(1, 25).filter((i: any) => new Date(i.date) >= tresMesesAtras).map((item: any) => {
+        const local = validarLocal(item.location || '', 'Global 🌍');
+        const tags = extrairTagsContrato(`${item.position || ''}`);
         if (!tags.includes('Remoto')) tags.push('Remoto');
+        const dataOriginal = new Date(item.date);
 
         return {
           id: `remoteok-${item.id}`,
@@ -315,118 +245,57 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
           link: item.url,
           fonte: 'RemoteOK',
           descricao: item.description || '',
-          tempoPostagem: formatarDataExata(new Date(item.date)),
+          tempoPostagem: calcularTempoRelativo(dataOriginal),
           tags: tags.slice(0, 4),
-          dataOriginal: new Date(item.date)
+          dataOriginal
         };
       });
-
       todas.push(...vagasRemoteOK);
     }
-  } catch (e) {
-    console.log('Erro ao buscar RemoteOK:', e);
-  }
+  } catch (e) { console.log('Erro RemoteOK:', e); }
 
-  // 4. Arbeitnow (Vagas Globais/Europa/Remoto)
+  // 4. Arbeitnow
   try {
     const response = await fetch('https://www.arbeitnow.com/api/job-board-api');
     if (response.ok) {
       const { data } = await response.json();
-      const vagasArbeit = (data || []).map((item: any) => ({
-        id: `arbeit-${item.slug}`,
-        titulo: item.title,
-        empresa: item.company_name,
-        local: item.location || 'Remoto 🌍',
-        link: item.url,
-        fonte: 'Arbeitnow',
-        descricao: item.description || '',
-        tempoPostagem: formatarDataExata(item.created_at ? new Date(item.created_at * 1000) : new Date()),
-        tags: item.tags || ['TI', 'Global'],
-        dataOriginal: item.created_at ? new Date(item.created_at * 1000) : new Date()
-      }));
+      const vagasArbeit = (data || []).map((item: any) => {
+        const dataOriginal = item.created_at ? new Date(item.created_at * 1000) : new Date();
+        return {
+          id: `arbeit-${item.slug}`,
+          titulo: item.title,
+          empresa: item.company_name,
+          local: validarLocal(item.location, 'Global 🌍'),
+          link: item.url,
+          fonte: 'Arbeitnow',
+          descricao: item.description || '',
+          tempoPostagem: calcularTempoRelativo(dataOriginal),
+          tags: item.tags ? item.tags.slice(0, 3) : ['Global'],
+          dataOriginal
+        };
+      });
       todas.push(...vagasArbeit);
     }
-  } catch (e) {
-    console.log('Erro ao buscar Arbeitnow:', e);
+  } catch (e) { console.log('Erro Arbeitnow:', e); }
+
+  // Filtro de termo (caso fornecido)
+  const todasFiltradas = todas.filter(v => {
+    if (!termoBusca) return true;
+    const txt = `${v.titulo} ${v.empresa} ${v.tags.join(' ')}`.toLowerCase();
+    return txt.includes(termoBusca);
+  });
+
+  todasFiltradas.sort((a, b) => b.dataOriginal.getTime() - a.dataOriginal.getTime());
+
+  if (todasFiltradas.length > 0 && !termoBusca) {
+    await salvarCache(todasFiltradas);
   }
 
-  // 5. Jooble (O "Jubly" que você pediu — Agregador gigante)
-  try {
-    const JOOBLE_API_KEY = ''; // Espaço para sua chave Jooble
-    if (JOOBLE_API_KEY) {
-      const response = await fetch(`https://jooble.org/api/v2/jobs/${JOOBLE_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keywords: termo || 'TI', location: 'Brasil' })
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const vagasJooble = (data.jobs || []).map((item: any) => ({
-          id: `jooble-${item.id}`,
-          titulo: item.title,
-          empresa: item.company || 'Empresa Confidencial',
-          local: item.location,
-          link: item.link,
-          fonte: 'Jooble',
-          descricao: item.snippet,
-          tempoPostagem: formatarDataExata(new Date(item.updated)),
-          tags: ['Jooble', 'Web'],
-          dataOriginal: new Date(item.updated)
-        }));
-        todas.push(...vagasJooble);
-      }
-    }
-  } catch (e) {
-    console.log('Erro ao buscar Jooble:', e);
-  }
-
-  // 6. Estrutura para InfoJobs (Pronta para quando você tiver as chaves)
-  const INFOJOBS_TOKEN = ''; // Token Base64 (ClientID:ClientSecret)
-  if (INFOJOBS_TOKEN) {
-    try {
-      const response = await fetch('https://api.infojobs.com.br/v2/job-search?category=it', {
-        headers: { 'Authorization': `Basic ${INFOJOBS_TOKEN}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const vagasInfo = (data.elements || []).map((item: any) => ({
-          id: `infojobs-${item.id}`,
-          titulo: item.title,
-          empresa: item.corporateName,
-          local: item.location,
-          link: item.url,
-          fonte: 'InfoJobs',
-          descricao: item.description,
-          tempoPostagem: formatarDataExata(item.publicationDate ? new Date(item.publicationDate) : new Date()),
-          tags: ['InfoJobs', 'Brasil'],
-          dataOriginal: item.publicationDate ? new Date(item.publicationDate) : new Date()
-        }));
-        todas.push(...vagasInfo);
-      }
-    } catch (e) {
-      console.log('Erro ao buscar InfoJobs:', e);
-    }
-  }
-
-  // Mistura cronológica real: mais recente no topo
-  todas.sort((a, b) => b.dataOriginal.getTime() - a.dataOriginal.getTime());
-
-  // Salva no cache para os próximos 2 horas
-  if (todas.length > 0) salvarCache(todas);
-
-  return todas;
+  return todasFiltradas;
 };
 
-/**
- * Versão com cache — use esta no componente.
- * Só chama as APIs se o cache estiver vazio ou expirado (> 2h).
- */
 export const buscarVagasComCache = async (): Promise<VagaExterna[]> => {
-  const cached = lerCache();
-  if (cached && cached.length > 0) {
-    console.log(`[Cache] ${cached.length} vagas carregadas do cache local (expira em ${tempoRestanteCache()})`);
-    return cached;
-  }
-  console.log('[Cache] Cache vazio ou expirado — buscando nas APIs...');
-  return buscarVagasExternas('');
+  const cached = await lerCache();
+  if (cached && cached.length > 0) return cached;
+  return await buscarVagasExternas('');
 };

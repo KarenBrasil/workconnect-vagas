@@ -119,7 +119,8 @@ export default function PostJob() {
   };
 
   const currentUser = auth.currentUser;
-  if (currentUser?.email !== 'admin@workconnect.com') {
+  const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'admin@workconnect.com';
+  if (currentUser?.email !== adminEmail) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <FontAwesome name="lock" size={48} color="#EFEFEF" style={{ marginBottom: 16 }} />
