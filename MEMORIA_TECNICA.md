@@ -58,3 +58,5 @@ Este arquivo é o registro central de todo o progresso do projeto. **Não apague
 - [ ] Ativar InfoJobs (assim que a chave for fornecida).
 - [ ] Implementar Firebase Security Rules para validar admin no backend.
 - [ ] Cache de vagas para app nativo (AsyncStorage em vez de localStorage).
+
+
