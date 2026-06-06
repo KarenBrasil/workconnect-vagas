@@ -25,6 +25,7 @@ export default function PostJob() {
   const [contrato, setContrato] = useState('');
   const [salario, setSalario] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [contato, setContato] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -50,6 +51,15 @@ export default function PostJob() {
     if (abaAtiva === 'gerenciar') carregarMinhasVagas();
   }, [abaAtiva]);
 
+  const resetForm = () => {
+    setTitulo('');
+    setEmpresa('');
+    setContrato('');
+    setSalario('');
+    setDescricao('');
+    setContato('');
+  };
+
   const handlePublicar = async () => {
     if (!titulo || !descricao) {
       if (Platform.OS === 'web') window.alert('Preencha pelo menos o título e a descrição!');
@@ -65,11 +75,11 @@ export default function PostJob() {
         contrato: contrato || 'Não informado',
         salario: salario || 'A combinar',
         descricao,
-        criadoEm: new Date().toISOString(),
+        contato: contato || '',
         criadoEm: new Date().toISOString(),
       });
       setShowSuccessModal(true);
-      setTitulo(''); setEmpresa(''); setContrato(''); setSalario(''); setDescricao('');
+      resetForm();
     } catch (e: any) {
       Alert.alert('Erro', 'Não foi possível publicar: ' + e.message);
     } finally {
@@ -194,6 +204,17 @@ export default function PostJob() {
                 value={descricao} onChangeText={setDescricao} multiline numberOfLines={4} textAlignVertical="top"
                 placeholder={tipo === 'recrutador' ? 'Descreva as responsabilidades e requisitos...' : 'Descreva suas habilidades e experiência...'}
               />
+
+              {/* Campo de contato — central para candidaturas */}
+              <Text style={styles.label}>📞 Contato para Candidatura</Text>
+              <Text style={styles.labelHint}>E-mail ou número de WhatsApp. Candidatos entrarão em contato diretamente.</Text>
+              <TextInput
+                style={styles.input} placeholderTextColor="#A0A0A0" value={contato} onChangeText={setContato}
+                placeholder="Ex: email@empresa.com ou 85 99999-9999"
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+
               <TouchableOpacity
                 style={[styles.button, tipo === 'freelancer' && styles.buttonRoxo]}
                 onPress={handlePublicar} disabled={loading}
@@ -267,8 +288,8 @@ export default function PostJob() {
             <Text style={styles.modalText}>
               Sua publicação foi postada com sucesso no feed.
             </Text>
-            <TouchableOpacity 
-              style={styles.modalButton} 
+            <TouchableOpacity
+              style={styles.modalButton}
               onPress={() => {
                 setShowSuccessModal(false);
                 router.push('/(tabs)');
@@ -304,6 +325,7 @@ const styles = StyleSheet.create({
   tipoTextAtivo: { color: '#FFFFFF' },
   form: { backgroundColor: '#FFFFFF', padding: 20, borderRadius: 18, borderWidth: 1, borderColor: '#EFEFEF' },
   label: { fontSize: 13, fontWeight: '600', color: '#1A1A2E', marginBottom: 6, marginTop: 14 },
+  labelHint: { fontSize: 12, color: '#83829A', marginBottom: 8, marginTop: -4 },
   input: { backgroundColor: '#F4F5F7', borderWidth: 1, borderColor: '#EFEFEF', borderRadius: 12, padding: 14, fontSize: 15, color: '#1A1A2E' },
   textArea: { height: 120 },
   button: { backgroundColor: '#2E9D4D', paddingVertical: 16, borderRadius: 14, alignItems: 'center', marginTop: 28 },

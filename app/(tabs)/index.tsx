@@ -4,6 +4,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db, auth } from '../../src/services/firebaseConfig';
 import { buscarVagasComCache } from '../../src/services/vagasExternas';
+import { buscarFavoritos } from '../../src/services/favoritos';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { useRouter } from 'expo-router';
 
@@ -42,8 +43,14 @@ export default function Home() {
       const recentes = snapRecentes.docs.map(d => ({ id: d.id, ...d.data() }));
       setVagasRecentes(recentes);
 
-      // TODO: Buscar "Vagas Salvas" reais de uma coleção "favoritos" quando implementada
-      setVagasSalvas(0);
+      // Conta favoritos reais do usuário
+      const userId = auth.currentUser?.uid;
+      if (userId) {
+        const favs = await buscarFavoritos(userId);
+        setVagasSalvas(favs.length);
+      } else {
+        setVagasSalvas(0);
+      }
       setPropostas(0);
     } catch (e) {
       console.log('Erro ao carregar dados da Home', e);

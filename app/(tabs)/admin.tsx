@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, limit, orderBy } from 'firebase/firestore';
 import { db } from '../../src/services/firebaseConfig';
 import { useTheme } from '../../src/theme/ThemeContext';
 
@@ -20,14 +20,13 @@ export default function AdminDashboard() {
   const carregarUsuarios = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(collection(db, 'users'));
+      // Limite de 100 usuários por consulta para evitar sobrecarga no Firestore
+      const q = query(collection(db, 'users'), orderBy('criadoEm', 'desc'), limit(100));
+      const snap = await getDocs(q);
       const lista = snap.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Usuario[];
-      
-      // Ordena por mais recente
-      lista.sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime());
       setUsuarios(lista);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);

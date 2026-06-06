@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Linking, ActivityIndicator } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../src/services/firebaseConfig';
+import { db, auth } from '../../src/services/firebaseConfig';
 import { buscarVagasComCache, limparCacheVagas, VagaExterna } from '../../src/services/vagasExternas';
+import { salvarFavorito, removerFavorito, buscarFavoritos, Favorito } from '../../src/services/favoritos';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { useRouter } from 'expo-router';
 
@@ -49,6 +50,12 @@ export default function SearchScreen() {
   const [vagasInternas, setVagasInternas] = useState<VagaInterna[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Mapa de vagaId -> favoritoId (para saber quais estão favoritados)
+  const [favoritosMap, setFavoritosMap] = useState<Record<string, string>>({});
+  const [salvandoFavId, setSalvandoFavId] = useState<string | null>(null);
+
+  const userId = auth.currentUser?.uid;
+
   useEffect(() => {
     carregarTudo();
   }, []);
@@ -61,15 +68,51 @@ export default function SearchScreen() {
         getDocs(collection(db, 'vagas')),
         buscarVagasComCache()
       ]);
-      
+
       const listaInterna = snap.docs.map(d => ({ id: d.id, ...d.data() } as VagaInterna));
       listaInterna.sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || ''));
       setVagasInternas(listaInterna);
       setVagasExternas(ext);
+
+      // Carrega favoritos do usuário para mostrar corações preenchidos
+      if (userId) {
+        const favs = await buscarFavoritos(userId);
+        const mapa: Record<string, string> = {};
+        favs.forEach(f => { mapa[f.vagaId] = f.id!; });
+        setFavoritosMap(mapa);
+      }
     } catch (error) {
       console.log('Erro na busca', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleFavorito = async (vagaId: string, titulo: string, empresa: string, fonte: string, link?: string) => {
+    if (!userId) return; // silencia se não logado
+    setSalvandoFavId(vagaId);
+    try {
+      if (favoritosMap[vagaId]) {
+        // Já favorito — remove
+        await removerFavorito(favoritosMap[vagaId]);
+        setFavoritosMap(prev => {
+          const novo = { ...prev };
+          delete novo[vagaId];
+          return novo;
+        });
+      } else {
+        // Não favorito — adiciona
+        await salvarFavorito({ userId, vagaId, titulo, empresa, fonte, link });
+        // Recarrega mapa para pegar o ID gerado
+        const favs = await buscarFavoritos(userId);
+        const mapa: Record<string, string> = {};
+        favs.forEach(f => { mapa[f.vagaId] = f.id!; });
+        setFavoritosMap(mapa);
+      }
+    } catch (e) {
+      console.log('Erro ao favoritar:', e);
+    } finally {
+      setSalvandoFavId(null);
     }
   };
 
@@ -96,6 +139,23 @@ export default function SearchScreen() {
     return (v.tags || []).some(t => t.toLowerCase() === filtroTag.toLowerCase());
   });
 
+  const renderCoracao = (vagaId: string, titulo: string, empresa: string, fonte: string, link?: string) => {
+    const isFav = !!favoritosMap[vagaId];
+    const salvando = salvandoFavId === vagaId;
+    return (
+      <TouchableOpacity
+        onPress={() => handleToggleFavorito(vagaId, titulo, empresa, fonte, link)}
+        disabled={salvando || !userId}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        {salvando
+          ? <ActivityIndicator size="small" color="#DC2626" />
+          : <FontAwesome name={isFav ? 'heart' : 'heart-o'} size={20} color={isFav ? '#DC2626' : colors.textSecondary} />
+        }
+      </TouchableOpacity>
+    );
+  };
+
   const renderInterna = (vaga: VagaInterna) => (
     <TouchableOpacity key={vaga.id} style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} onPress={() => router.push(`/job/${vaga.id}` as any)}>
       <View style={styles.cardHeader}>
@@ -110,9 +170,7 @@ export default function SearchScreen() {
             <Text style={[styles.cardRowText, { color: colors.textSecondary }]}>{vaga.contrato}</Text>
           </View>
         </View>
-        <TouchableOpacity>
-          <FontAwesome name="heart-o" size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
+        {renderCoracao(vaga.id, vaga.titulo, vaga.empresa, 'WorkConnect')}
       </View>
       <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
         <Text style={[styles.salario, { color: colors.secondary }]}>{vaga.salario}</Text>
@@ -141,9 +199,7 @@ export default function SearchScreen() {
               <Text style={[styles.cardRowText, { color: colors.textSecondary }]}>{vaga.local}</Text>
             </View>
           </View>
-          <TouchableOpacity>
-            <FontAwesome name="heart-o" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
+          {renderCoracao(vaga.id, vaga.titulo, vaga.empresa, vaga.fonte, vaga.link)}
         </View>
         <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
           <Text style={[styles.salario, { color: cor, fontSize: 12, fontWeight: '700' }]}>{vaga.fonte}</Text>
@@ -162,7 +218,7 @@ export default function SearchScreen() {
       <View style={[styles.header, { backgroundColor: colors.background }]}>
         <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>Buscar</Text>
         <Text style={[styles.pageSubtitle, { color: colors.textSecondary }]}>Encontre vagas ou freelancers</Text>
-        
+
         <View style={styles.searchRow}>
           <View style={[styles.searchInputContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
             <FontAwesome name="search" size={16} color={colors.textSecondary} style={{ marginHorizontal: 12 }} />
@@ -188,7 +244,7 @@ export default function SearchScreen() {
           {FILTROS_TAGS.map(f => (
             <TouchableOpacity
               key={f}
-              style={[styles.tagBtn, { 
+              style={[styles.tagBtn, {
                 backgroundColor: filtroTag === f ? colors.secondary : colors.cardBackground,
                 borderColor: filtroTag === f ? colors.secondary : colors.border
               }]}
@@ -213,6 +269,14 @@ export default function SearchScreen() {
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.listContent}>
+        {/* Aviso para não logados */}
+        {!userId && (
+          <View style={[styles.loginHint, { backgroundColor: colors.primaryLight }]}>
+            <FontAwesome name="info-circle" size={14} color={colors.primary} />
+            <Text style={[styles.loginHintText, { color: colors.primary }]}>  Faça login para salvar vagas nos favoritos</Text>
+          </View>
+        )}
+
         <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
           {abaAtiva === 'internas' ? vagasInternasFiltradas.length : vagasExternasFiltradas.length} vagas encontradas
         </Text>
@@ -220,9 +284,21 @@ export default function SearchScreen() {
         {loading ? (
           <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
         ) : abaAtiva === 'internas' ? (
-          vagasInternasFiltradas.map(renderInterna)
+          vagasInternasFiltradas.length === 0 ? (
+            <View style={styles.emptySearch}>
+              <FontAwesome name="search" size={32} color="#EFEFEF" />
+              <Text style={[styles.emptySearchText, { color: colors.textSecondary }]}>Nenhuma vaga encontrada</Text>
+              <Text style={[styles.emptySearchSub, { color: colors.textSecondary }]}>Tente outro termo ou filtro</Text>
+            </View>
+          ) : vagasInternasFiltradas.map(renderInterna)
         ) : (
-          vagasExternasFiltradas.map(renderExterna)
+          vagasExternasFiltradas.length === 0 ? (
+            <View style={styles.emptySearch}>
+              <FontAwesome name="search" size={32} color="#EFEFEF" />
+              <Text style={[styles.emptySearchText, { color: colors.textSecondary }]}>Nenhuma vaga encontrada</Text>
+              <Text style={[styles.emptySearchSub, { color: colors.textSecondary }]}>Tente outro termo ou remova o filtro</Text>
+            </View>
+          ) : vagasExternasFiltradas.map(renderExterna)
         )}
       </ScrollView>
     </View>
@@ -246,6 +322,8 @@ const styles = StyleSheet.create({
   abaBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
   abaText: { fontSize: 13 },
   listContent: { paddingHorizontal: 20, paddingBottom: 40 },
+  loginHint: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 10, marginBottom: 12 },
+  loginHintText: { fontSize: 13, fontWeight: '500' },
   resultsCount: { fontSize: 13, marginBottom: 16, fontWeight: '500' },
   card: { borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1 },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
@@ -257,5 +335,8 @@ const styles = StyleSheet.create({
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 16, borderTopWidth: 1 },
   salario: { fontSize: 14, fontWeight: '800' },
   tagMatch: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
-  tagMatchText: { fontSize: 11, fontWeight: '700' }
+  tagMatchText: { fontSize: 11, fontWeight: '700' },
+  emptySearch: { alignItems: 'center', paddingVertical: 48, gap: 8 },
+  emptySearchText: { fontSize: 16, fontWeight: '700' },
+  emptySearchSub: { fontSize: 13 },
 });

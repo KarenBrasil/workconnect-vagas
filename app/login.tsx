@@ -33,9 +33,8 @@ export default function Login() {
   const [errorMessage, setErrorMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Configuração do Google Auth com o seu Client ID
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: '189326429321-kntm9qp3db45chg2ricg0ijov7rf8ilf.apps.googleusercontent.com',
+    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
   });
 
   useEffect(() => {
