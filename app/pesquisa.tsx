@@ -148,7 +148,7 @@ const QUESTIONS = [
   {
     id: 10,
     tag: "NPS",
-    title: "Qual a chance de você usar ou recomendar o WorkConnect?",
+    title: "Qual a chance de você usar ou recomendar o TechConnect?",
     subtitle: "De 0 a 10 onde 0 é 'nunca usaria' e 10 é 'recomendaria para todos'.",
     type: "nps",
     open: "Quer deixar um comentário final ou sugestão?",

@@ -5,8 +5,8 @@ export type UserSession = {
   name: string;
 };
 
-const SESSION_KEY = '@workconnect/current-user';
-const USER_PREFIX = '@workconnect/user:';
+const SESSION_KEY = '@techconnect/current-user';
+const USER_PREFIX = '@techconnect/user:';
 
 export function getNameFromEmail(email: string) {
   const localPart = email.trim().split('@')[0] || 'Admin';

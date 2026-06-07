@@ -157,7 +157,7 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
   // 1. GitHub BR
   for (const repo of reposGithub) {
     try {
-      const response = await fetch(repo.url, { headers: { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'WorkConnect' } });
+      const response = await fetch(repo.url, { headers: { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'TechConnect' } });
       if (response.status === 403 || response.status === 429) continue;
       if (!response.ok) continue;
       const items = await response.json();
@@ -228,7 +228,7 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
 
   // 3. RemoteOK
   try {
-    const response = await fetch('https://remoteok.com/api', { headers: { 'User-Agent': 'WorkConnect' } });
+    const response = await fetch('https://remoteok.com/api', { headers: { 'User-Agent': 'TechConnect' } });
     if (response.ok) {
       const json = await response.json();
       const vagasRemoteOK = json.slice(1, 25).filter((i: any) => new Date(i.date) >= tresMesesAtras).map((item: any) => {

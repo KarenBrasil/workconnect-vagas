@@ -1,4 +1,4 @@
-# 🧠 Memória Técnica - WorkConnect
+# 🧠 Memória Técnica - TechConnect
 
 Este arquivo é o registro central de todo o progresso do projeto. **Não apague**, pois ele serve para que eu (sua IA) saiba exatamente em que ponto paramos em cada sessão.
 
@@ -8,7 +8,7 @@ Este arquivo é o registro central de todo o progresso do projeto. **Não apague
 
 ### 🚀 Deploy e Acesso
 - **Link do App:** [https://app-vagas-mu.vercel.app](https://app-vagas-mu.vercel.app)
-- **Repositório GitHub:** [KarenBrasil/workconnect-vagas](https://github.com/KarenBrasil/workconnect-vagas)
+- **Repositório GitHub:** [KarenBrasil/techconnect-vagas](https://github.com/KarenBrasil/workconnect-vagas)
 
 ### 🛠️ Funcionalidades Implementadas
 1. **Feed Híbrido:** Integração de vagas internas (Firebase) e externas (APIs).

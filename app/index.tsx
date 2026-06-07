@@ -23,7 +23,7 @@ export default function Index() {
             <BrandLogo compact={true} />
           </View>
           
-          <Text style={styles.title}>WorkConnect</Text>
+          <Text style={styles.title}>TechConnect</Text>
           <Text style={styles.subtitle}>Sua porta de entrada para as melhores oportunidades de trabalho do mundo.</Text>
 
           <TouchableOpacity 

@@ -119,7 +119,7 @@ export default function PostJob() {
   };
 
   const currentUser = auth.currentUser;
-  const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'admin@workconnect.com';
+  const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'admin@techconnect.com';
   if (currentUser?.email !== adminEmail) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>

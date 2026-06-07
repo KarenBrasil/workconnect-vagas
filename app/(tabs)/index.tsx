@@ -137,9 +137,9 @@ export default function Home() {
           </View>
         )}
 
-        {/* Vagas Internas (WorkConnect) */}
+        {/* Vagas Internas (TechConnect) */}
         <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Adicionadas Recentemente (WorkConnect)</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Adicionadas Recentemente (TechConnect)</Text>
         </View>
 
         {loading ? (

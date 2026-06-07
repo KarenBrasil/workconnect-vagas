@@ -133,7 +133,7 @@ export default function JobDetails() {
           vagaId: vaga.id,
           titulo: vaga.titulo,
           empresa: vaga.empresa || '',
-          fonte: vaga.fonte || 'WorkConnect',
+          fonte: vaga.fonte || 'TechConnect',
           link: vaga.link,
         });
         // Recarrega para pegar o ID gerado

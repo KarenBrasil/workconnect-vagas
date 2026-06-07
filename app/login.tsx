@@ -72,7 +72,7 @@ export default function Login() {
       setLoading(true);
       const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
       
-      const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'admin@workconnect.com';
+      const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'admin@techconnect.com';
       if (!userCredential.user.emailVerified && normalizedEmail !== adminEmail) {
         await signOut(auth);
         Alert.alert(
@@ -98,7 +98,7 @@ export default function Login() {
       // O _layout.tsx com o AuthProvider vai redirecionar automaticamente
     } catch (error: any) {
       // Cria a conta admin se ela ainda não existir e o usuário digitar essas credenciais
-      const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'admin@workconnect.com';
+      const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'admin@techconnect.com';
       if ((error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') && normalizedEmail === adminEmail && password === 'admin123') {
         try {
           await createUserWithEmailAndPassword(auth, normalizedEmail, password);

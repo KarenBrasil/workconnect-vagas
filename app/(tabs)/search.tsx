@@ -161,7 +161,7 @@ export default function SearchScreen() {
             <Text style={[styles.abaText, { color: abaAtiva === 'externas' ? colors.textPrimary : colors.textSecondary, fontWeight: abaAtiva === 'externas' ? '700' : '500' }]}>Vagas Globais</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.abaBtn, abaAtiva === 'internas' && { backgroundColor: colors.cardBackground }]} onPress={() => setAbaAtiva('internas')}>
-            <Text style={[styles.abaText, { color: abaAtiva === 'internas' ? colors.textPrimary : colors.textSecondary, fontWeight: abaAtiva === 'internas' ? '700' : '500' }]}>WorkConnect</Text>
+            <Text style={[styles.abaText, { color: abaAtiva === 'internas' ? colors.textPrimary : colors.textSecondary, fontWeight: abaAtiva === 'internas' ? '700' : '500' }]}>TechConnect</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -198,7 +198,7 @@ export default function SearchScreen() {
               tipoOuIcone={vaga.tipo === 'freelancer' ? 'freelancer' : 'recrutador'}
               tags={[]}
               tempoRelativo={vaga.criadoEm ? calcularTempoRelativo(vaga.criadoEm) : 'recentemente'}
-              onToggleFavorito={() => handleToggleFavorito(vaga.id, vaga.titulo, vaga.empresa, 'WorkConnect')}
+              onToggleFavorito={() => handleToggleFavorito(vaga.id, vaga.titulo, vaga.empresa, 'TechConnect')}
               isFavorito={!!favoritosMap[vaga.id]}
               salvandoFav={salvandoFavId === vaga.id}
               userId={userId}

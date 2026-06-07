@@ -124,7 +124,7 @@ export default function Register() {
             </View>
 
             <Text style={styles.title}>Criar Conta</Text>
-            <Text style={styles.subtitle}>Junte-se ao WorkConnect e encontre sua próxima oportunidade.</Text>
+            <Text style={styles.subtitle}>Junte-se ao TechConnect e encontre sua próxima oportunidade.</Text>
 
             {errorMessage ? (
               <View style={styles.errorContainer}>
