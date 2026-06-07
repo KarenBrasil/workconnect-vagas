@@ -1,475 +1,520 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Linking, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, Platform, KeyboardAvoidingView } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, setDoc, increment } from 'firebase/firestore';
 import { db } from '../src/services/firebaseConfig';
+import { useRouter } from 'expo-router';
 
-const PERGUNTAS = [
+// Tipagem de Resposta Dinâmica
+type RespostaType = any; 
+
+const QUESTIONS = [
   {
-    id: 'q1',
-    titulo: '1. Perfil Profissional e Contexto:',
-    descricao: 'Qual a sua relação atual com a área de Tecnologia ou Recursos Humanos?',
-    opcoes: [
-      'Estudo ou pretendo entrar na área de Tecnologia.',
-      'Já atuo profissionalmente como Desenvolvedor(a), Designer ou em áreas técnicas.',
-      'Trabalho com Recursos Humanos, Recrutamento ou Gestão.',
-      'Sou de outra área, mas acompanho o mercado de tecnologia.',
+    id: 1,
+    tag: "CONTEXTO",
+    title: "Qual é o seu perfil?",
+    subtitle: "Selecione todas as opções que se aplicam a você.",
+    type: "multi",
+    options: [
+      { emoji: "💻", label: "Profissional de TI (dev, dados, infra, produto…)" },
+      { emoji: "🎓", label: "Estudante de tecnologia" },
+      { emoji: "🔍", label: "Profissional de RH ou recrutamento" },
+      { emoji: "📨", label: "Estou ativamente buscando emprego em tech" },
+      { emoji: "👤", label: "Nenhuma das anteriores" },
     ],
   },
   {
-    id: 'q2',
-    titulo: '2. Interface e Design Visual (UI):',
-    descricao: 'O que você achou da organização visual, das cores e da clareza das informações no aplicativo?',
-    opcoes: [
-      'Excelente. É moderno, visualmente agradável e super fácil de ler.',
-      'Muito bom. O design atende bem, mas notei pequenos detalhes que podem melhorar.',
-      'Razoável. O visual cumpre o papel, mas achei o design meio comum.',
-      'Confuso. Tive certa dificuldade para ler ou achar as informações na tela.',
+    id: 2,
+    tag: "DESIGN",
+    title: "Como você avalia o design e a interface visual?",
+    subtitle: "Considere organização, cores, clareza e hierarquia das informações.",
+    type: "scale+reason",
+    scaleLabel: ["Muito ruim", "Ruim", "Regular", "Bom", "Excelente"],
+    reasons: [
+      "Visual limpo e organizado",
+      "Cores agradáveis e coerentes",
+      "Informações confusas ou mal distribuídas",
+      "Falta consistência visual",
+      "Design genérico, sem identidade",
+    ],
+    open: "Algo específico que chamou sua atenção?",
+  },
+  {
+    id: 3,
+    tag: "NAVEGAÇÃO",
+    title: "A navegação entre as seções foi intuitiva?",
+    subtitle: "Avalie a experiência de transitar entre Início, Buscar, Favoritos e Perfil.",
+    type: "scale+reason",
+    scaleLabel: ["Muito confusa", "Confusa", "Neutra", "Intuitiva", "Muito intuitiva"],
+    reasons: [
+      "Fácil de entender onde estou",
+      "Ícones e rótulos claros",
+      "Fiquei perdido em algum momento",
+      "Faltam indicações visuais",
+      "Estrutura pouco lógica",
+    ],
+    open: "Teve algum momento em que não sabia o que fazer?",
+  },
+  {
+    id: 4,
+    tag: "BUSCA & FILTROS",
+    title: "Os filtros ajudaram a encontrar vagas relevantes?",
+    subtitle: "Avalie a eficiência da busca ao usar os filtros disponíveis (Remoto, PJ, CLT…).",
+    type: "scale+reason",
+    scaleLabel: ["Não ajudaram", "Pouco úteis", "Regulares", "Úteis", "Muito úteis"],
+    reasons: [
+      "Resultados alinhados com o meu perfil",
+      "Filtros são suficientes",
+      "Faltam filtros importantes",
+      "Resultados irrelevantes ou desatualizados",
+      "A busca não funcionou como esperado",
+    ],
+    open: "Algum filtro que faria diferença para você?",
+  },
+  {
+    id: 5,
+    tag: "VAGAS & APIS",
+    title: "As vagas exibidas pareceram relevantes e atualizadas?",
+    subtitle: "O app integra vagas de múltiplas plataformas externas.",
+    type: "scale+reason",
+    scaleLabel: ["Muito ruins", "Ruins", "Regulares", "Boas", "Excelentes"],
+    reasons: [
+      "Variedade de fontes é um diferencial",
+      "Vagas parecem atualizadas",
+      "Muitas vagas duplicadas ou desatualizadas",
+      "Poucas opções para o meu perfil",
+      "Centralizar tudo num lugar é prático",
+    ],
+    open: "Alguma observação sobre as vagas exibidas?",
+  },
+  {
+    id: 6,
+    tag: "FAVORITOS",
+    title: "A função de favoritar vagas funcionou corretamente?",
+    subtitle: "Salve uma vaga e verifique se ela aparece na aba Favoritos.",
+    type: "single",
+    options: [
+      { emoji: "✅", label: "Funcionou perfeitamente" },
+      { emoji: "⚠️", label: "Funcionou, mas com lentidão ou comportamento estranho" },
+      { emoji: "❌", label: "Não funcionou como esperado" },
+      { emoji: "⏭️", label: "Não testei essa função" },
     ],
   },
   {
-    id: 'q3',
-    titulo: '3. Arquitetura da Informação e Navegação:',
-    descricao: 'Como foi transitar entre as diferentes partes do app (Início, Buscar, Favoritos, Perfil)?',
-    opcoes: [
-      'Super intuitivo. Entendi a estrutura e naveguei sem precisar pensar.',
-      'Bem fácil na maior parte do tempo, não tive grandes problemas.',
-      'Ok, mas o caminho para chegar ou voltar de algumas telas poderia ser mais óbvio.',
-      'Complicado. Fiquei um pouco perdido(a) nos menus ou durante o uso.',
+    id: 7,
+    tag: "CANDIDATURA",
+    title: "Como você avalia o fluxo de candidatura?",
+    subtitle: "O app direciona para contato direto com o recrutador via WhatsApp ou e-mail.",
+    type: "scale+reason",
+    scaleLabel: ["Péssimo", "Ruim", "Regular", "Bom", "Ótimo"],
+    reasons: [
+      "Contato direto agiliza o processo",
+      "Prefiro um formulário padrão",
+      "Falta rastreamento das candidaturas",
+      "WhatsApp/e-mail é mais acessível",
+      "Não me senti seguro com essa abordagem",
+    ],
+    open: "Preferiria um fluxo diferente? Como seria?",
+  },
+  {
+    id: 8,
+    tag: "VELOCIDADE",
+    title: "Como foi o desempenho e a velocidade do app?",
+    subtitle: "Considere o carregamento das telas e das listas de vagas.",
+    type: "single",
+    options: [
+      { emoji: "⚡", label: "Rápido — sem esperas perceptíveis" },
+      { emoji: "🟡", label: "Aceitável — pequenas esperas, mas não atrapalha" },
+      { emoji: "🐢", label: "Lento — esperas que prejudicam a experiência" },
+      { emoji: "🔴", label: "Muito lento — impede o uso fluido" },
     ],
   },
   {
-    id: 'q4',
-    titulo: '4. Sistema de Busca e Filtros:',
-    descricao: 'Ao usar a aba "Buscar" e aplicar os filtros (Remoto, PJ, CLT), como foram os resultados retornados?',
-    opcoes: [
-      'Precisos. O sistema filtrou rapidamente exatamente o que eu procurava.',
-      'Satisfatórios. A busca funciona, mas a precisão dos resultados pode melhorar um pouco.',
-      'Razoáveis. Entendi o funcionamento, mas os filtros não mudaram muito minha experiência.',
-      'Ineficientes. A pesquisa me trouxe muitas vagas que não tinham a ver com o termo.',
+    id: 9,
+    tag: "PROPOSTA DE VALOR",
+    title: "O app resolve um problema real para quem busca vagas em tech?",
+    subtitle: "Avalie se a ferramenta tem utilidade prática no mercado.",
+    type: "scale+reason",
+    scaleLabel: ["Não resolve", "Pouco", "Parcialmente", "Resolve bem", "Resolve muito bem"],
+    reasons: [
+      "Centralizar vagas economiza tempo",
+      "Já existem ferramentas melhores",
+      "Boa ideia, mas precisa evoluir",
+      "Seria útil para quem está em busca ativa",
+      "O problema é real e relevante",
     ],
+    open: "O que falta para ele ser realmente útil no dia a dia?",
   },
   {
-    id: 'q5',
-    titulo: '5. Integração de Vagas Globais (APIs):',
-    descricao: 'O app puxa vagas de várias plataformas externas (GitHub, Remotive, etc.). O que você achou dessa centralização?',
-    opcoes: [
-      'Incrível. Ter todas as vagas padronizadas no mesmo lugar poupa muito tempo.',
-      'Muito boa. A ideia é ótima, embora a descrição de algumas vagas externas seja muito longa.',
-      'Interessante, mas na prática eu prefiro continuar olhando nas fontes originais.',
-      'Confusa. Ficou difícil diferenciar o que era vaga interna do app e o que era de fora.',
-    ],
-  },
-  {
-    id: 'q6',
-    titulo: '6. Gerenciamento de Favoritos:',
-    descricao: 'Ao salvar as vagas para acessar depois (botão de favoritar), como o sistema se comportou?',
-    opcoes: [
-      'Perfeito e instantâneo. Achei rápido, prático e muito útil.',
-      'Funcional. Consegui salvar as vagas sem problemas técnicos.',
-      'Básico. É um recurso padrão, funciona, mas não teve nada de surpreendente.',
-      'Problemático. Tive alguma lentidão ou dificuldade para achar a lista salva depois.',
-    ],
-  },
-  {
-    id: 'q7',
-    titulo: '7. Mecanismo de Conversão (Candidatura):',
-    descricao: 'Em vez de um formulário longo, o app envia você direto para o WhatsApp ou E-mail do recrutador. O que acha dessa abordagem?',
-    opcoes: [
-      'Ótima e ágil. Evita a burocracia de criar contas e preencher dados de novo.',
-      'Prática. Entendo a agilidade, mas eu gosto quando o currículo é enviado por dentro do app.',
-      'Indiferente. Pra mim, não faz muita diferença na hora de mandar o currículo.',
-      'Inconveniente. Ter que sair do aplicativo para falar com o recrutador quebra o fluxo de navegação.',
-    ],
-  },
-  {
-    id: 'q8',
-    titulo: '8. Desempenho e Velocidade (Performance):',
-    descricao: 'Como você avalia o tempo que o aplicativo demora para carregar as telas e as listas de vagas?',
-    opcoes: [
-      'Excelente. Muito rápido, não senti nenhum tipo de atraso ou travamento (lag).',
-      'Muito bom. Pude notar um carregamento rápido, totalmente dentro do esperado.',
-      'Estável. O tempo de resposta é normal, mas algumas telas poderiam carregar mais rápido.',
-      'Lento. Demorou bastante para renderizar o conteúdo ou transitar entre as vagas.',
-    ],
-  },
-  {
-    id: 'q9',
-    titulo: '9. Viabilidade Prática (Impacto Extensionista):',
-    descricao: 'O foco do WorkConnect é democratizar as oportunidades e acabar com a "caça às vagas". Você acha que a ferramenta resolve esse problema na prática?',
-    opcoes: [
-      'Plenamente. A centralização de dados simplifica muito a vida de quem procura projeto/emprego.',
-      'Significativamente. É uma iniciativa excelente que tem ótimo potencial técnico e de mercado.',
-      'Parcialmente. A ferramenta tem mérito, mas o impacto depende de ter um volume maior de vagas.',
-      'Pouco. No cenário atual, as ferramentas que já existem resolvem o problema de forma similar.',
-    ],
-  },
-  {
-    id: 'q10',
-    titulo: '10. Intenção de Uso e Retenção:',
-    descricao: 'Considerando a sua experiência durante os testes, você adotaria o app na sua rotina ou o recomendaria para sua rede?',
-    opcoes: [
-      'Com certeza! Eu usaria a ferramenta frequentemente e recomendaria para colegas da área.',
-      'Provavelmente. Usaria de forma mais pontual e indicaria caso visse uma vaga interessante.',
-      'Talvez. Manteria o acesso ao app, mas como uma opção secundária de pesquisa.',
-      'Dificilmente. No momento, o aplicativo não se encaixaria nas minhas necessidades reais.',
-    ],
+    id: 10,
+    tag: "NPS",
+    title: "Qual a chance de você usar ou recomendar o WorkConnect?",
+    subtitle: "De 0 a 10 — onde 0 é 'nunca usaria' e 10 é 'recomendaria para todos'.",
+    type: "nps",
+    open: "Quer deixar um comentário final ou sugestão?",
   },
 ];
 
-export default function PesquisaScreen() {
-  const [respostas, setRespostas] = useState<Record<string, number>>({});
+export default function PesquisaWizardScreen() {
+  const router = useRouter();
+  
+  const [iniciado, setIniciado] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [respostas, setRespostas] = useState<Record<number, RespostaType>>({});
   const [enviando, setEnviando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
-  const [erroValidacao, setErroValidacao] = useState(false);
 
-  const handleSelecionar = (perguntaId: string, opcaoIndex: number) => {
-    setRespostas((prev) => ({ ...prev, [perguntaId]: opcaoIndex }));
-    setErroValidacao(false);
+  // Registra Visita Invisível no Banco
+  useEffect(() => {
+    const registrarVisita = async () => {
+      try {
+        await setDoc(doc(db, 'avaliacoes_stats', 'metrics'), { visits: increment(1) }, { merge: true });
+      } catch (e) {
+        console.log('Erro ao registrar visita:', e);
+      }
+    };
+    registrarVisita();
+  }, []);
+
+  const totalSteps = QUESTIONS.length;
+  const progress = ((currentStep + 1) / totalSteps) * 100;
+  const currentQ = QUESTIONS[currentStep];
+
+  // Helper para salvar estado da resposta atual
+  const setAnswer = (val: any) => setRespostas(prev => ({ ...prev, [currentQ.id]: val }));
+  const currentAnswer = respostas[currentQ.id];
+
+  const checkPodeContinuar = () => {
+    if (!currentAnswer) return false;
+    if (currentQ.type === 'multi' && currentAnswer.length === 0) return false;
+    if (currentQ.type === 'scale+reason' && currentAnswer.scale === undefined) return false;
+    if (currentQ.type === 'single' && currentAnswer === undefined) return false;
+    if (currentQ.type === 'nps' && currentAnswer.score === undefined) return false;
+    return true;
   };
 
-  const handleTestarApp = () => {
-    Linking.openURL('/');
-  };
-
-  const handleEnviar = async () => {
-    if (Object.keys(respostas).length < PERGUNTAS.length) {
-      setErroValidacao(true);
-      return;
+  const handleNext = async () => {
+    if (currentStep < totalSteps - 1) {
+      setCurrentStep(curr => curr + 1);
+    } else {
+      await enviarAvaliacao();
     }
+  };
 
+  const enviarAvaliacao = async () => {
     setEnviando(true);
     try {
-      // Formata os dados para salvar legível no banco
-      const dadosParaSalvar: Record<string, string> = {};
-      PERGUNTAS.forEach((p) => {
-        const respostaIndex = respostas[p.id];
-        dadosParaSalvar[p.id] = p.opcoes[respostaIndex];
-      });
-
       await addDoc(collection(db, 'avaliacoes'), {
-        respostas: dadosParaSalvar,
+        respostas,
         plataforma: Platform.OS,
         criadoEm: serverTimestamp(),
       });
-
       setSucesso(true);
     } catch (e) {
-      console.log('Erro ao salvar avaliação:', e);
-      alert('Ocorreu um erro ao enviar sua avaliação. Tente novamente.');
+      console.error('Erro ao salvar avaliação:', e);
+      alert('Erro ao enviar avaliação. Tente novamente.');
     } finally {
       setEnviando(false);
     }
   };
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // RENDERIZADORES DE INPUTS
+  // ──────────────────────────────────────────────────────────────────────────
+
+  const renderMulti = () => {
+    const selecoes = currentAnswer || [];
+    return (
+      <View style={styles.optionsContainer}>
+        {currentQ.options?.map((opt, i) => {
+          const isSelected = selecoes.includes(i);
+          return (
+            <TouchableOpacity 
+              key={i} 
+              style={[styles.boxOption, isSelected && styles.boxOptionSelected]}
+              onPress={() => {
+                if (isSelected) setAnswer(selecoes.filter((s: number) => s !== i));
+                else setAnswer([...selecoes, i]);
+              }}
+            >
+              <Text style={styles.emojiText}>{opt.emoji}</Text>
+              <Text style={[styles.boxOptionLabel, isSelected && styles.boxOptionLabelSelected]}>{opt.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  const renderSingle = () => {
+    return (
+      <View style={styles.optionsContainer}>
+        {currentQ.options?.map((opt, i) => {
+          const isSelected = currentAnswer === i;
+          return (
+            <TouchableOpacity 
+              key={i} 
+              style={[styles.boxOption, isSelected && styles.boxOptionSelected]}
+              onPress={() => setAnswer(i)}
+            >
+              <Text style={styles.emojiText}>{opt.emoji}</Text>
+              <Text style={[styles.boxOptionLabel, isSelected && styles.boxOptionLabelSelected]}>{opt.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  const renderScaleReason = () => {
+    const ans = currentAnswer || { scale: undefined, reasons: [], openText: '' };
+    return (
+      <View>
+        <Text style={styles.inputSectionLabel}>Nota (1 a 5)</Text>
+        <View style={styles.scaleRow}>
+          {[0, 1, 2, 3, 4].map(idx => {
+            const isSelected = ans.scale === idx;
+            return (
+              <TouchableOpacity
+                key={idx}
+                style={[styles.scaleBox, isSelected && styles.scaleBoxSelected]}
+                onPress={() => setAnswer({ ...ans, scale: idx })}
+              >
+                <Text style={[styles.scaleText, isSelected && styles.scaleTextSelected]}>{idx + 1}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <View style={styles.scaleLabelsRow}>
+          <Text style={styles.scaleLabelLimit}>{currentQ.scaleLabel![0]}</Text>
+          <Text style={styles.scaleLabelLimit}>{currentQ.scaleLabel![4]}</Text>
+        </View>
+
+        {ans.scale !== undefined && (
+          <View style={styles.reasonsFadeIn}>
+            <Text style={styles.inputSectionLabel}>O que influenciou sua nota? (Opcional)</Text>
+            <View style={styles.chipsContainer}>
+              {currentQ.reasons?.map((reason, i) => {
+                const isSelected = ans.reasons.includes(i);
+                return (
+                  <TouchableOpacity
+                    key={i}
+                    style={[styles.chip, isSelected && styles.chipSelected]}
+                    onPress={() => {
+                      if (isSelected) setAnswer({ ...ans, reasons: ans.reasons.filter((r: number) => r !== i) });
+                      else setAnswer({ ...ans, reasons: [...ans.reasons, i] });
+                    }}
+                  >
+                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{reason}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TextInput
+              style={styles.textInputArea}
+              placeholder={currentQ.open}
+              placeholderTextColor="#9CA3AF"
+              multiline
+              value={ans.openText}
+              onChangeText={(t) => setAnswer({ ...ans, openText: t })}
+            />
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderNps = () => {
+    const ans = currentAnswer || { score: undefined, openText: '' };
+    return (
+      <View>
+        <View style={styles.npsRow}>
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => {
+            const isSelected = ans.score === val;
+            let bgColor = '#F3F4F6';
+            if (isSelected) {
+              if (val <= 6) bgColor = '#EF4444'; // Detratores
+              else if (val <= 8) bgColor = '#F59E0B'; // Passivos
+              else bgColor = '#10B981'; // Promotores
+            }
+            return (
+              <TouchableOpacity
+                key={val}
+                style={[styles.npsBox, { backgroundColor: bgColor }, isSelected && styles.npsBoxSelected]}
+                onPress={() => setAnswer({ ...ans, score: val })}
+              >
+                <Text style={[styles.npsText, isSelected && { color: '#FFF' }]}>{val}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <View style={styles.scaleLabelsRow}>
+          <Text style={styles.scaleLabelLimit}>0 - Nunca recomendaria</Text>
+          <Text style={styles.scaleLabelLimit}>10 - Recomendaria muito</Text>
+        </View>
+
+        {ans.score !== undefined && (
+          <View style={styles.reasonsFadeIn}>
+            <TextInput
+              style={styles.textInputArea}
+              placeholder={currentQ.open}
+              placeholderTextColor="#9CA3AF"
+              multiline
+              value={ans.openText}
+              onChangeText={(t) => setAnswer({ ...ans, openText: t })}
+            />
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // TELAS PRINCIPAIS
+  // ──────────────────────────────────────────────────────────────────────────
+
   if (sucesso) {
     return (
       <View style={styles.successContainer}>
-        <FontAwesome name="check-circle" size={80} color="#2E9D4D" style={{ marginBottom: 20 }} />
+        <FontAwesome name="check-circle" size={80} color="#CDFE00" style={{ marginBottom: 20 }} />
         <Text style={styles.successTitle}>Muito Obrigado!</Text>
         <Text style={styles.successText}>
-          Sua avaliação foi enviada com sucesso e será fundamental para o nosso projeto de extensão.
+          Seus feedbacks foram enviados com sucesso e nos ajudarão a criar uma plataforma incrível.
         </Text>
-        <TouchableOpacity style={styles.buttonPrimary} onPress={handleTestarApp}>
-          <Text style={styles.buttonText}>Acessar o WorkConnect</Text>
+        <TouchableOpacity style={styles.buttonContinue} onPress={() => router.replace('/')}>
+          <Text style={styles.buttonTextBlack}>Voltar ao App</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      
-      {/* Header Info */}
-      <View style={styles.headerBox}>
+  if (!iniciado) {
+    return (
+      <ScrollView contentContainerStyle={styles.introContainer}>
         <View style={styles.iconBox}>
-          <FontAwesome name="clipboard" size={28} color="#FFF" />
+          <FontAwesome name="flask" size={32} color="#111827" />
         </View>
-        <Text style={styles.title}>Avaliação Técnica de Usabilidade</Text>
-        <Text style={styles.subtitle}>WorkConnect App</Text>
-      </View>
-
-      {/* Instruções */}
-      <View style={styles.instructionsBox}>
-        <Text style={styles.instructionsText}>
-          Olá! Este formulário faz parte da validação técnica do meu projeto de extensão universitária: o aplicativo <Text style={{ fontWeight: 'bold' }}>WorkConnect</Text>.
+        <Text style={styles.introTitle}>Avaliação de Experiência do Usuário</Text>
+        <Text style={styles.introDesc}>
+          Você foi convidado a testar um aplicativo em fase de validação. Responda com base na sua experiência real de uso — sem certo ou errado.
         </Text>
-        <Text style={styles.instructionsText}>
-          O app foi desenvolvido para centralizar e facilitar o acesso a vagas do setor de Tecnologia, puxando oportunidades de diversas plataformas para um único lugar.
-        </Text>
-        
-        <View style={styles.stepBox}>
-          <FontAwesome name="hand-pointer-o" size={20} color="#2E9D4D" style={{ width: 30 }} />
-          <Text style={styles.stepText}>Explore o aplicativo (crie uma conta, use filtros, salve favoritos).</Text>
+        <View style={styles.infoBox}>
+          <FontAwesome name="clock-o" size={16} color="#6B7280" />
+          <Text style={styles.infoText}>Leva cerca de 3 minutos</Text>
         </View>
-        <View style={styles.stepBox}>
-          <FontAwesome name="check-square-o" size={20} color="#2E9D4D" style={{ width: 30 }} />
-          <Text style={styles.stepText}>Volte aqui e responda a estas 10 perguntas rápidas.</Text>
-        </View>
-
-        <TouchableOpacity style={styles.testAppBtn} onPress={handleTestarApp}>
-          <Text style={styles.testAppBtnText}>Abrir Aplicativo para Testar</Text>
-          <FontAwesome name="external-link" size={16} color="#FFF" />
+        <TouchableOpacity style={styles.buttonContinue} onPress={() => setIniciado(true)}>
+          <Text style={styles.buttonTextBlack}>Começar Pesquisa</Text>
+          <FontAwesome name="arrow-right" size={16} color="#111827" />
         </TouchableOpacity>
-      </View>
+      </ScrollView>
+    );
+  }
 
-      {/* Formulário */}
-      <View style={styles.formContainer}>
-        {PERGUNTAS.map((pergunta, index) => (
-          <View key={pergunta.id} style={styles.questionBox}>
-            <Text style={styles.questionTitle}>{pergunta.titulo}</Text>
-            <Text style={styles.questionDesc}>{pergunta.descricao}</Text>
-            
-            <View style={styles.optionsContainer}>
-              {pergunta.opcoes.map((opcao, opIndex) => {
-                const isSelected = respostas[pergunta.id] === opIndex;
-                return (
-                  <TouchableOpacity
-                    key={opIndex}
-                    style={[styles.optionBtn, isSelected && styles.optionBtnSelected]}
-                    onPress={() => handleSelecionar(pergunta.id, opIndex)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
-                      {isSelected && <View style={styles.radioDot} />}
-                    </View>
-                    <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>{opcao}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+  return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <View style={styles.wizardContainer}>
+        {/* Topbar */}
+        <View style={styles.topbar}>
+          <TouchableOpacity onPress={() => currentStep > 0 ? setCurrentStep(c => c - 1) : setIniciado(false)}>
+            <FontAwesome name="arrow-left" size={20} color="#111827" />
+          </TouchableOpacity>
+          <View style={styles.progressBarBg}>
+            <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
           </View>
-        ))}
+          <Text style={styles.stepCounter}>{currentStep + 1}/{totalSteps}</Text>
+        </View>
 
-        {erroValidacao && (
-          <Text style={styles.errorText}>Por favor, responda a todas as 10 perguntas antes de enviar.</Text>
-        )}
+        <ScrollView contentContainerStyle={styles.questionScroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.tagWrapper}>
+            <Text style={styles.tagText}>{currentQ.tag}</Text>
+          </View>
+          <Text style={styles.qTitle}>{currentQ.title}</Text>
+          <Text style={styles.qSubtitle}>{currentQ.subtitle}</Text>
 
-        <TouchableOpacity 
-          style={[styles.buttonPrimary, enviando && { opacity: 0.7 }]} 
-          onPress={handleEnviar}
-          disabled={enviando}
-        >
-          {enviando ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <>
-              <Text style={styles.buttonText}>Enviar Avaliação</Text>
-              <FontAwesome name="paper-plane" size={16} color="#FFF" />
-            </>
-          )}
-        </TouchableOpacity>
+          {/* Renderiza o input dinâmico */}
+          <View style={{ marginTop: 24 }}>
+            {currentQ.type === 'multi' && renderMulti()}
+            {currentQ.type === 'single' && renderSingle()}
+            {currentQ.type === 'scale+reason' && renderScaleReason()}
+            {currentQ.type === 'nps' && renderNps()}
+          </View>
+        </ScrollView>
+
+        {/* Footer Area com o botão Continuar */}
+        <View style={styles.footer}>
+          <TouchableOpacity 
+            style={[styles.buttonContinue, !checkPodeContinuar() && styles.buttonDisabled]} 
+            onPress={handleNext}
+            disabled={!checkPodeContinuar() || enviando}
+          >
+            {enviando ? (
+              <ActivityIndicator color="#111827" />
+            ) : (
+              <Text style={styles.buttonTextBlack}>{currentStep === totalSteps - 1 ? 'Finalizar e Enviar' : 'Continuar'}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
-
-    </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FAFAFC',
-  },
-  scrollContent: {
-    padding: 24,
-    paddingBottom: 60,
-    maxWidth: 600,
-    marginHorizontal: 'auto',
-    width: '100%',
-  },
-  headerBox: {
-    alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 20,
-  },
-  iconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: '#2E9D4D',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#2E9D4D',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#111827',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  instructionsBox: {
-    backgroundColor: '#FFFFFF',
-    padding: 24,
-    borderRadius: 20,
-    marginBottom: 32,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  instructionsText: {
-    fontSize: 15,
-    color: '#4B5563',
-    lineHeight: 24,
-    marginBottom: 16,
-  },
-  stepBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  stepText: {
-    fontSize: 14,
-    color: '#111827',
-    flex: 1,
-    fontWeight: '500',
-  },
-  testAppBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#111827',
-    padding: 16,
-    borderRadius: 14,
-    marginTop: 16,
-    gap: 10,
-  },
-  testAppBtnText: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  formContainer: {
-    gap: 32,
-  },
-  questionBox: {
-    backgroundColor: '#FFFFFF',
-    padding: 24,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  questionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  questionDesc: {
-    fontSize: 15,
-    color: '#4B5563',
-    marginBottom: 20,
-    lineHeight: 22,
-  },
-  optionsContainer: {
-    gap: 12,
-  },
-  optionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FAFAFC',
-  },
-  optionBtnSelected: {
-    borderColor: '#2E9D4D',
-    backgroundColor: '#F0FDF4',
-  },
-  radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  radioCircleSelected: {
-    borderColor: '#2E9D4D',
-  },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#2E9D4D',
-  },
-  optionText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#4B5563',
-    lineHeight: 20,
-  },
-  optionTextSelected: {
-    color: '#111827',
-    fontWeight: '600',
-  },
-  buttonPrimary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2E9D4D',
-    padding: 18,
-    borderRadius: 16,
-    marginTop: 16,
-    gap: 10,
-    shadowColor: '#2E9D4D',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  errorText: {
-    color: '#DC2626',
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: -10,
-  },
-  successContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#FAFAFC',
-  },
-  successTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  successText: {
-    fontSize: 16,
-    color: '#4B5563',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 40,
-    maxWidth: 400,
-  },
+  introContainer: { flexGrow: 1, backgroundColor: '#FAFAFC', padding: 24, justifyContent: 'center', alignItems: 'center' },
+  iconBox: { width: 80, height: 80, borderRadius: 24, backgroundColor: '#CDFE00', justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
+  introTitle: { fontSize: 32, fontWeight: '800', color: '#111827', textAlign: 'center', marginBottom: 16 },
+  introDesc: { fontSize: 16, color: '#4B5563', textAlign: 'center', lineHeight: 26, marginBottom: 24, maxWidth: 500 },
+  infoBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginBottom: 40, gap: 8 },
+  infoText: { color: '#6B7280', fontSize: 14, fontWeight: '500' },
+  buttonContinue: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#CDFE00', paddingVertical: 18, paddingHorizontal: 32, borderRadius: 16, width: '100%', maxWidth: 400, gap: 12 },
+  buttonTextBlack: { color: '#111827', fontSize: 18, fontWeight: '800' },
+  buttonDisabled: { opacity: 0.4 },
+
+  wizardContainer: { flex: 1, backgroundColor: '#FAFAFC' },
+  topbar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: Platform.OS === 'web' ? 24 : 60, paddingBottom: 16, gap: 16 },
+  progressBarBg: { flex: 1, height: 6, backgroundColor: '#E5E7EB', borderRadius: 3 },
+  progressBarFill: { height: '100%', backgroundColor: '#CDFE00', borderRadius: 3 },
+  stepCounter: { fontSize: 14, color: '#6B7280', fontWeight: '600', width: 36, textAlign: 'right' },
+
+  questionScroll: { padding: 24, paddingBottom: 120, maxWidth: 600, marginHorizontal: 'auto', width: '100%' },
+  tagWrapper: { backgroundColor: '#111827', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 16 },
+  tagText: { color: '#CDFE00', fontSize: 12, fontWeight: '800', letterSpacing: 1 },
+  qTitle: { fontSize: 26, fontWeight: '800', color: '#111827', marginBottom: 8, lineHeight: 34 },
+  qSubtitle: { fontSize: 15, color: '#6B7280', lineHeight: 22 },
+
+  optionsContainer: { gap: 12 },
+  boxOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: 18, borderRadius: 16, borderWidth: 2, borderColor: '#F3F4F6' },
+  boxOptionSelected: { borderColor: '#CDFE00', backgroundColor: '#F9FFE5' },
+  emojiText: { fontSize: 24, marginRight: 16 },
+  boxOptionLabel: { flex: 1, fontSize: 16, color: '#4B5563', fontWeight: '500' },
+  boxOptionLabelSelected: { color: '#111827', fontWeight: '700' },
+
+  inputSectionLabel: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 12, marginTop: 24 },
+  scaleRow: { flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
+  scaleBox: { flex: 1, aspectRatio: 1, backgroundColor: '#F3F4F6', borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
+  scaleBoxSelected: { backgroundColor: '#111827', borderColor: '#CDFE00' },
+  scaleText: { fontSize: 18, fontWeight: '700', color: '#4B5563' },
+  scaleTextSelected: { color: '#CDFE00' },
+  scaleLabelsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  scaleLabelLimit: { fontSize: 12, color: '#9CA3AF', fontWeight: '500' },
+
+  reasonsFadeIn: { marginTop: 16 },
+  chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  chipSelected: { backgroundColor: '#F9FFE5', borderColor: '#CDFE00' },
+  chipText: { fontSize: 14, color: '#4B5563', fontWeight: '500' },
+  chipTextSelected: { color: '#111827', fontWeight: '700' },
+
+  textInputArea: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 16, padding: 16, paddingTop: 16, marginTop: 24, minHeight: 120, fontSize: 16, color: '#111827', textAlignVertical: 'top' },
+
+  npsRow: { flexDirection: 'row', gap: 4, justifyContent: 'space-between', flexWrap: 'wrap' },
+  npsBox: { width: '8%', minWidth: 30, aspectRatio: 1, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  npsBoxSelected: { borderWidth: 3, borderColor: '#111827' },
+  npsText: { fontSize: 14, fontWeight: '700', color: '#4B5563' },
+
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, backgroundColor: '#FAFAFC', borderTopWidth: 1, borderTopColor: '#F3F4F6', alignItems: 'center' },
+
+  successContainer: { flex: 1, backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  successTitle: { fontSize: 32, fontWeight: '800', color: '#FFFFFF', marginBottom: 12 },
+  successText: { fontSize: 16, color: '#9CA3AF', textAlign: 'center', lineHeight: 24, marginBottom: 40, maxWidth: 400 },
 });
