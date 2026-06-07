@@ -3,5 +3,23 @@
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
+  ],
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        { "type": "host", "value": "app-vagas-mu.vercel.app" }
+      ],
+      "destination": "https://techconnect-br.vercel.app/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        { "type": "host", "value": "workconnect-vagas.vercel.app" }
+      ],
+      "destination": "https://techconnect-br.vercel.app/$1",
+      "permanent": true
+    }
   ]
 }
