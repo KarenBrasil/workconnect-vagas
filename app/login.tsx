@@ -33,31 +33,31 @@ export default function Login() {
   const [errorMessage, setErrorMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleGoogleLogin = async () => {
-    try {
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      const credential = GoogleAuthProvider.credential(id_token);
       setLoading(true);
-      const provider = new GoogleAuthProvider();
-      // O Firebase cuidará do redirecionamento através do seu próprio servidor seguro,
-      // ignorando a necessidade de configurar a URI no Google Cloud.
-      import('firebase/auth').then(async ({ signInWithPopup }) => {
-        const userCred = await signInWithPopup(auth, provider);
-        await setDoc(doc(db, 'users', userCred.user.uid), {
-          nome: userCred.user.displayName || 'Usuário Google',
-          email: userCred.user.email,
-          uid: userCred.user.uid,
-          criadoEm: new Date().toISOString()
-        }, { merge: true });
-        // Sucesso, o layout redireciona
-      }).catch((error) => {
-        setErrorMessage('Erro ao autenticar com o Google.');
-        console.error('Google Auth Error:', error);
-      }).finally(() => {
-        setLoading(false);
-      });
-    } catch (e) {
-      setLoading(false);
+      signInWithCredential(auth, credential)
+        .then(async (userCred) => {
+          await setDoc(doc(db, 'users', userCred.user.uid), {
+            nome: userCred.user.displayName || 'Usuário Google',
+            email: userCred.user.email,
+            uid: userCred.user.uid,
+            criadoEm: new Date().toISOString()
+          }, { merge: true });
+        })
+        .catch(error => {
+          setErrorMessage('Erro ao autenticar com o Google.');
+          console.error(error);
+        })
+        .finally(() => setLoading(false));
     }
-  };
+  }, [response]);
 
   const handleLogin = async () => {
     setErrorMessage('');
@@ -209,8 +209,8 @@ export default function Login() {
 
             <TouchableOpacity 
               style={styles.googleButton} 
-              onPress={handleGoogleLogin}
-              disabled={loading}
+              onPress={() => promptAsync()}
+              disabled={!request || loading}
             >
               <Image 
                 source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png' }} 
