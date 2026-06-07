@@ -108,14 +108,10 @@ export default function Login() {
           console.error(createError);
         }
       } else {
-        console.error("Login Error:", error);
-        let customError = 'Ocorreu um erro ao fazer login.';
-        if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-          customError = 'E-mail ou senha incorretos.';
-        } else if (error.code === 'auth/invalid-email') {
-          customError = 'E-mail inválido.';
-        } else if (error.code === 'auth/too-many-requests') {
-          customError = 'Muitas tentativas. Tente novamente mais tarde.';
+        console.error(error);
+        let customError = error.message || 'Ocorreu um erro ao fazer login.';
+        if (error.code) {
+          customError += ` (Código: ${error.code})`;
         }
         setErrorMessage(customError);
         Alert.alert('Falha no Login', customError);
