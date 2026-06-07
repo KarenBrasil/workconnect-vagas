@@ -15,11 +15,11 @@ const QUESTIONS = [
     subtitle: "Selecione a opção que melhor te descreve.",
     type: "single",
     options: [
-      { emoji: "💻", label: "Profissional de TI (dev, dados, infra, produto…)" },
-      { emoji: "🎓", label: "Estudante de tecnologia" },
-      { emoji: "🔍", label: "Profissional de RH ou recrutamento" },
-      { emoji: "📨", label: "Estou buscando emprego ativamente" },
-      { emoji: "👤", label: "Nenhuma das anteriores" },
+      { label: "Profissional de TI (dev, dados, infra, produto…)" },
+      { label: "Estudante de tecnologia" },
+      { label: "Profissional de RH ou recrutamento" },
+      { label: "Estou buscando emprego ativamente" },
+      { label: "Nenhuma das anteriores" },
     ],
   },
   {
@@ -93,10 +93,10 @@ const QUESTIONS = [
     subtitle: "Salve uma vaga e verifique se ela aparece na aba Favoritos.",
     type: "single",
     options: [
-      { emoji: "✅", label: "Funcionou perfeitamente" },
-      { emoji: "⚠️", label: "Funcionou, mas com lentidão ou comportamento estranho" },
-      { emoji: "❌", label: "Não funcionou como esperado" },
-      { emoji: "⏭️", label: "Não testei essa função" },
+      { label: "Funcionou perfeitamente" },
+      { label: "Funcionou, mas com lentidão ou comportamento estranho" },
+      { label: "Não funcionou como esperado" },
+      { label: "Não testei essa função" },
     ],
   },
   {
@@ -122,10 +122,10 @@ const QUESTIONS = [
     subtitle: "Considere o carregamento das telas e das listas de vagas.",
     type: "single",
     options: [
-      { emoji: "⚡", label: "Rápido sem esperas perceptíveis" },
-      { emoji: "🟡", label: "Aceitável pequenas esperas, mas não atrapalha" },
-      { emoji: "🐢", label: "Lento esperas que prejudicam a experiência" },
-      { emoji: "🔴", label: "Muito lento impede o uso fluido" },
+      { label: "Rápido sem esperas perceptíveis" },
+      { label: "Aceitável pequenas esperas, mas não atrapalha" },
+      { label: "Lento esperas que prejudicam a experiência" },
+      { label: "Muito lento impede o uso fluido" },
     ],
   },
   {
@@ -267,7 +267,6 @@ export default function PesquisaWizardScreen() {
                 else setAnswer([...selecoes, i]);
               }}
             >
-              <Text style={styles.emojiText}>{opt.emoji}</Text>
               <Text style={[styles.boxOptionLabel, isSelected && styles.boxOptionLabelSelected]}>{opt.label}</Text>
             </TouchableOpacity>
           );
@@ -290,7 +289,6 @@ export default function PesquisaWizardScreen() {
               <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
                 {isSelected && <View style={styles.radioDot} />}
               </View>
-              <Text style={styles.emojiText}>{opt.emoji}</Text>
               <Text style={[styles.boxOptionLabel, isSelected && styles.boxOptionLabelSelected]}>{opt.label}</Text>
             </TouchableOpacity>
           );
@@ -453,23 +451,23 @@ export default function PesquisaWizardScreen() {
                 
                 <View style={styles.stepRow}>
                   <View style={styles.stepIconBox}><FontAwesome name="search" size={14} color="#CDFE00" /></View>
-                  <Text style={styles.stepText}><Text style={styles.stepNum}>01 </Text>Acesse o app pelo link abaixo</Text>
+                  <Text style={styles.stepText}>Acesse o app pelo link abaixo</Text>
                 </View>
                 <View style={styles.stepRow}>
                    <View style={styles.stepIconBox}><FontAwesome name="user-plus" size={14} color="#CDFE00" /></View>
-                   <Text style={styles.stepText}><Text style={styles.stepNum}>02 </Text>Crie uma conta gratuita</Text>
+                   <Text style={styles.stepText}>Crie uma conta gratuita</Text>
                 </View>
                 <View style={styles.stepRow}>
                    <View style={styles.stepIconBox}><FontAwesome name="filter" size={14} color="#CDFE00" /></View>
-                   <Text style={styles.stepText}><Text style={styles.stepNum}>03 </Text>Use a busca e aplique os filtros disponíveis</Text>
+                   <Text style={styles.stepText}>Use a busca e aplique os filtros disponíveis</Text>
                 </View>
                 <View style={styles.stepRow}>
                    <View style={styles.stepIconBox}><FontAwesome name="heart-o" size={14} color="#CDFE00" /></View>
-                   <Text style={styles.stepText}><Text style={styles.stepNum}>04 </Text>Salve ao menos uma vaga como favorita</Text>
+                   <Text style={styles.stepText}>Salve ao menos uma vaga como favorita</Text>
                 </View>
                 <View style={styles.stepRow}>
                    <View style={styles.stepIconBox}><FontAwesome name="check-square-o" size={14} color="#CDFE00" /></View>
-                   <Text style={styles.stepText}><Text style={styles.stepNum}>05 </Text>Volte aqui e responda as perguntas</Text>
+                   <Text style={styles.stepText}>Volte aqui e responda as perguntas</Text>
                 </View>
               </View>
 
