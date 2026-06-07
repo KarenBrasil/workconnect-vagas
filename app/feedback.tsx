@@ -5,7 +5,6 @@ import { collection, addDoc, serverTimestamp, doc, setDoc, increment } from 'fir
 import { db } from '../src/services/firebaseConfig';
 import { useRouter } from 'expo-router';
 
-// Tipagem de Resposta Dinâmica
 type RespostaType = any; 
 
 const QUESTIONS = [
@@ -164,10 +163,8 @@ export default function PesquisaWizardScreen() {
   const [enviando, setEnviando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
 
-  // Animação de transição suave
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  // Registra Visita Invisível no Banco
   useEffect(() => {
     const registrarVisita = async () => {
       try {
@@ -183,7 +180,6 @@ export default function PesquisaWizardScreen() {
   const progress = ((currentStep + 1) / totalSteps) * 100;
   const currentQ = QUESTIONS[currentStep];
 
-  // Helper para salvar estado da resposta atual
   const setAnswer = (val: any) => setRespostas(prev => ({ ...prev, [currentQ.id]: val }));
   const currentAnswer = respostas[currentQ.id];
 
@@ -249,7 +245,7 @@ export default function PesquisaWizardScreen() {
   };
 
   // ──────────────────────────────────────────────────────────────────────────
-  // RENDERIZADORES DE INPUTS
+  // RENDERIZADORES DE INPUTS (DARK THEME)
   // ──────────────────────────────────────────────────────────────────────────
 
   const renderMulti = () => {
@@ -346,7 +342,7 @@ export default function PesquisaWizardScreen() {
             <TextInput
               style={styles.textInputArea}
               placeholder={currentQ.open}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#475569"
               multiline
               value={ans.openText}
               onChangeText={(t) => setAnswer({ ...ans, openText: t })}
@@ -364,11 +360,11 @@ export default function PesquisaWizardScreen() {
         <View style={styles.npsRow}>
           {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => {
             const isSelected = ans.score === val;
-            let bgColor = '#F3F4F6';
+            let bgColor = '#060f1f';
             if (isSelected) {
-              if (val <= 6) bgColor = '#EF4444'; // Detratores
-              else if (val <= 8) bgColor = '#F59E0B'; // Passivos
-              else bgColor = '#10B981'; // Promotores
+              if (val <= 6) bgColor = '#EF4444'; 
+              else if (val <= 8) bgColor = '#F59E0B'; 
+              else bgColor = '#10B981'; 
             }
             return (
               <TouchableOpacity
@@ -391,7 +387,7 @@ export default function PesquisaWizardScreen() {
             <TextInput
               style={styles.textInputArea}
               placeholder={currentQ.open}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#475569"
               multiline
               value={ans.openText}
               onChangeText={(t) => setAnswer({ ...ans, openText: t })}
@@ -403,179 +399,211 @@ export default function PesquisaWizardScreen() {
   };
 
   // ──────────────────────────────────────────────────────────────────────────
-  // TELAS PRINCIPAIS
+  // TELAS (DARK THEME)
   // ──────────────────────────────────────────────────────────────────────────
 
   if (sucesso) {
     return (
       <View style={styles.successContainer}>
-        <FontAwesome name="check-circle" size={80} color="#CDFE00" style={{ marginBottom: 20 }} />
+        <FontAwesome name="check-circle" size={80} color="#6366f1" style={{ marginBottom: 20 }} />
         <Text style={styles.successTitle}>Muito Obrigado!</Text>
         <Text style={styles.successText}>
           Seus feedbacks foram enviados com sucesso e nos ajudarão a criar uma plataforma incrível.
         </Text>
-        <TouchableOpacity style={styles.buttonContinue} onPress={() => router.replace('/')}>
-          <Text style={styles.buttonTextBlack}>Voltar ao App</Text>
+        <TouchableOpacity style={styles.buttonContinueDark} onPress={() => router.replace('/')}>
+          <Text style={styles.buttonTextWhite}>Voltar ao App</Text>
         </TouchableOpacity>
       </View>
-    );
-  }
-
-  if (!iniciado) {
-    return (
-      <ScrollView contentContainerStyle={styles.introContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.iconBox}>
-          <FontAwesome name="flask" size={32} color="#111827" />
-        </View>
-        <Text style={styles.introTitle}>Avaliação de Experiência do Usuário</Text>
-        <Text style={styles.introDesc}>
-          Você foi convidado a testar um aplicativo em fase de validação. Responda com base na sua experiência real de uso — sem certo ou errado.
-        </Text>
-        
-        {/* Orientações e Link do App */}
-        <View style={styles.instructionsBox}>
-          <View style={styles.stepBox}>
-            <FontAwesome name="hand-pointer-o" size={20} color="#2E9D4D" style={{ width: 30 }} />
-            <Text style={styles.stepText}>Explore o aplicativo: teste as buscas, veja vagas e use os favoritos.</Text>
-          </View>
-          <TouchableOpacity style={styles.testAppBtn} onPress={handleTestarApp}>
-            <Text style={styles.testAppBtnText}>Abrir Aplicativo para Testar</Text>
-            <FontAwesome name="external-link" size={16} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.infoBox}>
-          <FontAwesome name="clock-o" size={16} color="#6B7280" />
-          <Text style={styles.infoText}>Leva cerca de 3 minutos</Text>
-        </View>
-
-        <TouchableOpacity style={styles.buttonContinue} onPress={() => setIniciado(true)}>
-          <Text style={styles.buttonTextBlack}>Começar Pesquisa</Text>
-          <FontAwesome name="arrow-right" size={16} color="#111827" />
-        </TouchableOpacity>
-      </ScrollView>
     );
   }
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.wizardContainer}>
-        {/* Topbar */}
-        <View style={styles.topbar}>
-          <TouchableOpacity onPress={handleBack}>
-            <FontAwesome name="arrow-left" size={20} color="#111827" />
-          </TouchableOpacity>
-          <View style={styles.progressBarBg}>
-            <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
+      <ScrollView contentContainerStyle={styles.mainContainer} showsVerticalScrollIndicator={false}>
+        
+        {/* Glow effect simulação */}
+        <View style={styles.glowBg} />
+
+        <View style={styles.cardContainer}>
+          <View style={styles.headerLogoRow}>
+            <View style={styles.logoBox}><Text style={styles.logoLetter}>T</Text></View>
+            <Text style={styles.logoText}>TECHCONNECT</Text>
           </View>
-          <Text style={styles.stepCounter}>{currentStep + 1}/{totalSteps}</Text>
+
+          {!iniciado ? (
+            <View>
+              <Text style={styles.introTitle}>Avaliação de Experiência do Usuário</Text>
+              <Text style={styles.introDesc}>
+                Você foi convidado a testar um aplicativo em fase de validação. Responda com base na sua experiência real de uso, sem certo ou errado.
+              </Text>
+
+              <View style={styles.tagsRow}>
+                {["10 perguntas", "4 minutos", "Anônimo"].map(tag => (
+                  <View key={tag} style={styles.tagBadge}>
+                    <Text style={styles.tagBadgeText}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <View style={styles.instructionsBoxDark}>
+                <Text style={styles.instLabel}>ANTES DE RESPONDER</Text>
+                
+                <View style={styles.stepRow}>
+                  <View style={styles.stepIconBox}><FontAwesome name="search" size={14} color="#a5b4fc" /></View>
+                  <Text style={styles.stepText}><Text style={styles.stepNum}>01 </Text>Explore o aplicativo</Text>
+                </View>
+                <View style={styles.stepRow}>
+                   <View style={styles.stepIconBox}><FontAwesome name="check-square-o" size={14} color="#a5b4fc" /></View>
+                   <Text style={styles.stepText}><Text style={styles.stepNum}>02 </Text>Teste buscas e filtros</Text>
+                </View>
+                <View style={styles.stepRow}>
+                   <View style={styles.stepIconBox}><FontAwesome name="heart-o" size={14} color="#a5b4fc" /></View>
+                   <Text style={styles.stepText}><Text style={styles.stepNum}>03 </Text>Use os favoritos</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity style={styles.testAppBtnDark} onPress={handleTestarApp}>
+                 <View>
+                   <Text style={styles.testAppLabel}>ACESSAR O APP</Text>
+                   <Text style={styles.testAppUrl}>techconnect-br.vercel.app</Text>
+                 </View>
+                 <FontAwesome name="external-link" size={20} color="#a5b4fc" />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.buttonContinueDark} onPress={() => setIniciado(true)}>
+                <Text style={styles.buttonTextWhite}>Já explorei o app, quero responder →</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View>
+              <View style={styles.progressBarWrapper}>
+                <View style={[styles.progressBarFillDark, { width: `${progress}%` }]} />
+              </View>
+              
+              <Animated.View style={{ opacity: fadeAnim }}>
+                <View style={styles.tagWrapperDark}>
+                  <Text style={styles.tagTextDark}>{currentQ.tag}</Text>
+                </View>
+                <Text style={styles.qTitleDark}>{currentQ.title}</Text>
+                <Text style={styles.qSubtitleDark}>{currentQ.subtitle}</Text>
+
+                <View style={{ marginTop: 24, marginBottom: 32 }}>
+                  {currentQ.type === 'multi' && renderMulti()}
+                  {currentQ.type === 'single' && renderSingle()}
+                  {currentQ.type === 'scale+reason' && renderScaleReason()}
+                  {currentQ.type === 'nps' && renderNps()}
+                </View>
+              </Animated.View>
+
+              <View style={styles.footerRow}>
+                <TouchableOpacity style={styles.buttonBackDark} onPress={handleBack}>
+                  <Text style={styles.buttonTextGray}>← Voltar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.buttonContinueDark, { flex: 2 }, !checkPodeContinuar() && styles.buttonDisabledDark]} 
+                  onPress={handleNext}
+                  disabled={!checkPodeContinuar() || enviando}
+                >
+                  {enviando ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={[styles.buttonTextWhite, !checkPodeContinuar() && { color: '#64748b' }]}>
+                      {currentStep === totalSteps - 1 ? 'Enviar avaliação ✓' : 'Próxima →'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
         </View>
-
-        <Animated.ScrollView 
-          contentContainerStyle={styles.questionScroll} 
-          showsVerticalScrollIndicator={false}
-          style={{ opacity: fadeAnim }}
-        >
-          <View style={styles.tagWrapper}>
-            <Text style={styles.tagText}>{currentQ.tag}</Text>
-          </View>
-          <Text style={styles.qTitle}>{currentQ.title}</Text>
-          <Text style={styles.qSubtitle}>{currentQ.subtitle}</Text>
-
-          {/* Renderiza o input dinâmico */}
-          <View style={{ marginTop: 24 }}>
-            {currentQ.type === 'multi' && renderMulti()}
-            {currentQ.type === 'single' && renderSingle()}
-            {currentQ.type === 'scale+reason' && renderScaleReason()}
-            {currentQ.type === 'nps' && renderNps()}
-          </View>
-        </Animated.ScrollView>
-
-        {/* Footer Area com o botão Continuar */}
-        <View style={styles.footer}>
-          <TouchableOpacity 
-            style={[styles.buttonContinue, !checkPodeContinuar() && styles.buttonDisabled]} 
-            onPress={handleNext}
-            disabled={!checkPodeContinuar() || enviando}
-          >
-            {enviando ? (
-              <ActivityIndicator color="#111827" />
-            ) : (
-              <Text style={styles.buttonTextBlack}>{currentStep === totalSteps - 1 ? 'Finalizar e Enviar' : 'Continuar'}</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
+        <Text style={styles.footerInfo}>PROJETO DE EXTENSÃO UNIVERSITÁRIA · 2025</Text>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  introContainer: { flexGrow: 1, backgroundColor: '#FAFAFC', padding: 24, justifyContent: 'center', alignItems: 'center' },
-  iconBox: { width: 80, height: 80, borderRadius: 24, backgroundColor: '#CDFE00', justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
-  introTitle: { fontSize: 32, fontWeight: '800', color: '#111827', textAlign: 'center', marginBottom: 16 },
-  introDesc: { fontSize: 16, color: '#4B5563', textAlign: 'center', lineHeight: 26, marginBottom: 24, maxWidth: 500 },
+  mainContainer: { flexGrow: 1, backgroundColor: '#020818', padding: 20, paddingTop: 40, paddingBottom: 60, alignItems: 'center' },
+  glowBg: { position: 'absolute', top: 0, width: 600, height: 300, borderRadius: 300, backgroundColor: 'rgba(99,102,241,0.08)' },
+  cardContainer: { width: '100%', maxWidth: 560, backgroundColor: '#0a1628', borderRadius: 20, borderWidth: 1.5, borderColor: '#1e293b', padding: 32, zIndex: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 10 },
   
-  instructionsBox: { backgroundColor: '#FFFFFF', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 24, width: '100%', maxWidth: 500 },
-  stepBox: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  stepText: { fontSize: 14, color: '#111827', flex: 1, fontWeight: '500', lineHeight: 20 },
-  testAppBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#111827', padding: 14, borderRadius: 12, marginTop: 8, gap: 10 },
-  testAppBtnText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
+  headerLogoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 32 },
+  logoBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#6366f1', justifyContent: 'center', alignItems: 'center' },
+  logoLetter: { color: '#FFF', fontSize: 16, fontWeight: '900' },
+  logoText: { color: '#475569', fontSize: 13, letterSpacing: 1.5, fontWeight: '700' },
 
-  infoBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginBottom: 40, gap: 8 },
-  infoText: { color: '#6B7280', fontSize: 14, fontWeight: '500' },
-  buttonContinue: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#CDFE00', paddingVertical: 18, paddingHorizontal: 32, borderRadius: 16, width: '100%', maxWidth: 500, gap: 12 },
-  buttonTextBlack: { color: '#111827', fontSize: 18, fontWeight: '800' },
-  buttonDisabled: { opacity: 0.4 },
+  introTitle: { fontSize: 26, fontWeight: '700', color: '#f1f5f9', marginBottom: 10, lineHeight: 34 },
+  introDesc: { fontSize: 14, color: '#64748b', lineHeight: 24, marginBottom: 28 },
+  
+  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 32 },
+  tagBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 99, borderWidth: 1, borderColor: '#1e293b' },
+  tagBadgeText: { fontSize: 11, color: '#475569', letterSpacing: 0.8, fontWeight: '700' },
 
-  wizardContainer: { flex: 1, backgroundColor: '#FAFAFC' },
-  topbar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: Platform.OS === 'web' ? 24 : 60, paddingBottom: 16, gap: 16 },
-  progressBarBg: { flex: 1, height: 6, backgroundColor: '#E5E7EB', borderRadius: 3 },
-  progressBarFill: { height: '100%', backgroundColor: '#CDFE00', borderRadius: 3 },
-  stepCounter: { fontSize: 14, color: '#6B7280', fontWeight: '600', width: 36, textAlign: 'right' },
+  instructionsBoxDark: { backgroundColor: '#060f1f', borderWidth: 1.5, borderColor: '#1e293b', borderRadius: 16, padding: 24, marginBottom: 28 },
+  instLabel: { fontSize: 11, color: '#6366f1', letterSpacing: 1, fontWeight: '700', marginBottom: 16 },
+  stepRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
+  stepIconBox: { width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(99,102,241,0.1)', borderWidth: 1, borderColor: 'rgba(99,102,241,0.2)', justifyContent: 'center', alignItems: 'center' },
+  stepText: { fontSize: 13, color: '#94a3b8', lineHeight: 20, flex: 1 },
+  stepNum: { color: '#475569', fontWeight: '700', fontSize: 11 },
 
-  questionScroll: { padding: 24, paddingBottom: 120, maxWidth: 600, marginHorizontal: 'auto', width: '100%' },
-  tagWrapper: { backgroundColor: '#111827', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 16 },
-  tagText: { color: '#CDFE00', fontSize: 12, fontWeight: '800', letterSpacing: 1 },
-  qTitle: { fontSize: 26, fontWeight: '800', color: '#111827', marginBottom: 8, lineHeight: 34 },
-  qSubtitle: { fontSize: 15, color: '#6B7280', lineHeight: 22 },
+  testAppBtnDark: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderRadius: 14, backgroundColor: 'rgba(99,102,241,0.08)', borderWidth: 1.5, borderColor: 'rgba(99,102,241,0.3)', marginBottom: 24 },
+  testAppLabel: { fontSize: 11, color: '#6366f1', letterSpacing: 0.8, fontWeight: '700', marginBottom: 4 },
+  testAppUrl: { fontSize: 13, color: '#a5b4fc' },
+
+  buttonContinueDark: { width: '100%', padding: 16, borderRadius: 12, backgroundColor: '#6366f1', alignItems: 'center', justifyContent: 'center' },
+  buttonTextWhite: { color: '#FFF', fontSize: 15, fontWeight: '700', letterSpacing: 0.5 },
+  
+  footerInfo: { textAlign: 'center', fontSize: 11, color: '#1e293b', marginTop: 24, fontWeight: '700', letterSpacing: 0.5 },
+
+  /* WIZARD STYLES (DARK) */
+  progressBarWrapper: { height: 4, backgroundColor: '#1e293b', borderRadius: 2, marginBottom: 32 },
+  progressBarFillDark: { height: '100%', backgroundColor: '#6366f1', borderRadius: 2 },
+  
+  tagWrapperDark: { backgroundColor: 'rgba(99,102,241,0.1)', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 16 },
+  tagTextDark: { color: '#a5b4fc', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  qTitleDark: { fontSize: 22, fontWeight: '700', color: '#f1f5f9', marginBottom: 8, lineHeight: 30 },
+  qSubtitleDark: { fontSize: 14, color: '#64748b', lineHeight: 22 },
 
   optionsContainer: { gap: 12 },
-  boxOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: 18, borderRadius: 16, borderWidth: 2, borderColor: '#F3F4F6' },
-  boxOptionSelected: { borderColor: '#CDFE00', backgroundColor: '#F9FFE5' },
-  radioCircle: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#D1D5DB', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  radioCircleSelected: { borderColor: '#2E9D4D' },
-  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#2E9D4D' },
-  emojiText: { fontSize: 24, marginRight: 16 },
-  boxOptionLabel: { flex: 1, fontSize: 16, color: '#4B5563', fontWeight: '500' },
-  boxOptionLabelSelected: { color: '#111827', fontWeight: '700' },
+  boxOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#060f1f', padding: 16, borderRadius: 14, borderWidth: 1.5, borderColor: '#1e293b' },
+  boxOptionSelected: { borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.08)' },
+  radioCircle: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#334155', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  radioCircleSelected: { borderColor: '#6366f1' },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#6366f1' },
+  emojiText: { fontSize: 20, marginRight: 12 },
+  boxOptionLabel: { flex: 1, fontSize: 15, color: '#94a3b8', fontWeight: '500' },
+  boxOptionLabelSelected: { color: '#f1f5f9', fontWeight: '700' },
 
-  inputSectionLabel: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 12, marginTop: 24 },
+  inputSectionLabel: { fontSize: 13, fontWeight: '700', color: '#94a3b8', marginBottom: 12, marginTop: 24 },
   scaleRow: { flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
-  scaleBox: { flex: 1, aspectRatio: 1, backgroundColor: '#F3F4F6', borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
-  scaleBoxSelected: { backgroundColor: '#111827', borderColor: '#CDFE00' },
-  scaleText: { fontSize: 18, fontWeight: '700', color: '#4B5563' },
-  scaleTextSelected: { color: '#CDFE00' },
+  scaleBox: { flex: 1, aspectRatio: 1, backgroundColor: '#060f1f', borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#1e293b' },
+  scaleBoxSelected: { backgroundColor: '#6366f1', borderColor: '#8b5cf6' },
+  scaleText: { fontSize: 16, fontWeight: '700', color: '#64748b' },
+  scaleTextSelected: { color: '#FFF' },
   scaleLabelsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  scaleLabelLimit: { fontSize: 12, color: '#9CA3AF', fontWeight: '500' },
+  scaleLabelLimit: { fontSize: 11, color: '#475569', fontWeight: '500' },
 
   reasonsFadeIn: { marginTop: 16 },
   chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
-  chipSelected: { backgroundColor: '#F9FFE5', borderColor: '#CDFE00' },
-  chipText: { fontSize: 14, color: '#4B5563', fontWeight: '500' },
-  chipTextSelected: { color: '#111827', fontWeight: '700' },
+  chip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, backgroundColor: '#060f1f', borderWidth: 1, borderColor: '#1e293b' },
+  chipSelected: { backgroundColor: 'rgba(99,102,241,0.15)', borderColor: '#6366f1' },
+  chipText: { fontSize: 13, color: '#64748b', fontWeight: '500' },
+  chipTextSelected: { color: '#a5b4fc', fontWeight: '700' },
 
-  textInputArea: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 16, padding: 16, paddingTop: 16, marginTop: 24, minHeight: 120, fontSize: 16, color: '#111827', textAlignVertical: 'top' },
+  textInputArea: { backgroundColor: '#060f1f', borderWidth: 1.5, borderColor: '#1e293b', borderRadius: 14, padding: 16, paddingTop: 16, marginTop: 20, minHeight: 100, fontSize: 15, color: '#f1f5f9', textAlignVertical: 'top' },
 
   npsRow: { flexDirection: 'row', gap: 4, justifyContent: 'space-between', flexWrap: 'wrap' },
-  npsBox: { width: '8%', minWidth: 30, aspectRatio: 1, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  npsBoxSelected: { borderWidth: 3, borderColor: '#111827' },
-  npsText: { fontSize: 14, fontWeight: '700', color: '#4B5563' },
+  npsBox: { width: '8%', minWidth: 30, aspectRatio: 1, borderRadius: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#1e293b' },
+  npsBoxSelected: { borderWidth: 2, borderColor: '#f1f5f9' },
+  npsText: { fontSize: 13, fontWeight: '700', color: '#64748b' },
 
-  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, backgroundColor: '#FAFAFC', borderTopWidth: 1, borderTopColor: '#F3F4F6', alignItems: 'center' },
+  footerRow: { flexDirection: 'row', gap: 12 },
+  buttonBackDark: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1.5, borderColor: '#1e293b', alignItems: 'center', justifyContent: 'center' },
+  buttonTextGray: { color: '#64748b', fontSize: 14, fontWeight: '600' },
+  buttonDisabledDark: { backgroundColor: '#1e293b' },
 
-  successContainer: { flex: 1, backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  successTitle: { fontSize: 32, fontWeight: '800', color: '#FFFFFF', marginBottom: 12 },
-  successText: { fontSize: 16, color: '#9CA3AF', textAlign: 'center', lineHeight: 24, marginBottom: 40, maxWidth: 400 },
+  successContainer: { flex: 1, backgroundColor: '#020818', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  successTitle: { fontSize: 32, fontWeight: '800', color: '#f1f5f9', marginBottom: 12 },
+  successText: { fontSize: 15, color: '#94a3b8', textAlign: 'center', lineHeight: 24, marginBottom: 40, maxWidth: 400 },
 });
