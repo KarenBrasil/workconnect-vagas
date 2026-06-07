@@ -46,21 +46,31 @@ export default function SearchScreen() {
     setLoading(true);
     try {
       if (forcar) await limparCacheVagas();
-      const [snap, ext] = await Promise.all([
-        getDocs(collection(db, 'vagas')),
-        buscarVagasComCache()
-      ]);
+      
+      let listaInterna: VagaInterna[] = [];
+      try {
+        const snap = await getDocs(collection(db, 'vagas'));
+        listaInterna = snap.docs.map(d => ({ id: d.id, ...d.data() } as VagaInterna));
+        listaInterna.sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || ''));
+        setVagasInternas(listaInterna);
+      } catch (e) {
+        console.log('Erro vagas internas:', e);
+      }
 
-      const listaInterna = snap.docs.map(d => ({ id: d.id, ...d.data() } as VagaInterna));
-      listaInterna.sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || ''));
-      setVagasInternas(listaInterna);
-      setVagasExternas(ext);
+      try {
+        const ext = await buscarVagasComCache();
+        setVagasExternas(ext);
+      } catch (e) {
+        console.log('Erro vagas globais:', e);
+      }
 
       if (userId) {
-        const favs = await buscarFavoritos(userId);
-        const mapa: Record<string, string> = {};
-        favs.forEach(f => { mapa[f.vagaId] = f.id!; });
-        setFavoritosMap(mapa);
+        try {
+          const favs = await buscarFavoritos(userId);
+          const mapa: Record<string, string> = {};
+          favs.forEach(f => { mapa[f.vagaId] = f.id!; });
+          setFavoritosMap(mapa);
+        } catch (e) {}
       }
     } catch (error) {
       console.log('Erro na busca', error);

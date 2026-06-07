@@ -33,17 +33,27 @@ export default function Home() {
   const carregarDados = async () => {
     setLoading(true);
     try {
-      // Busca Internas
-      const q = query(collection(db, 'vagas'), orderBy('criadoEm', 'desc'), limit(5));
-      const snapInternas = await getDocs(q);
-      const internas = snapInternas.docs.map(d => ({ id: d.id, ...d.data() }));
-      setVagasInternasRecentes(internas);
+      // Busca Internas separada para não bloquear as externas em caso de erro de permissão
+      try {
+        const q = query(collection(db, 'vagas'), orderBy('criadoEm', 'desc'), limit(5));
+        const snapInternas = await getDocs(q);
+        const internas = snapInternas.docs.map(d => ({ id: d.id, ...d.data() }));
+        setVagasInternasRecentes(internas);
+      } catch (e) {
+        console.log('Erro ao buscar vagas internas (possível erro de permissão no Firebase):', e);
+      }
 
-      // Busca Externas
-      const externas = await buscarVagasComCache();
-      setVagasExternasPopulares(externas.slice(0, 5));
+      // Busca Externas independentemente
+      let countExternas = 0;
+      try {
+        const externas = await buscarVagasComCache();
+        setVagasExternasPopulares(externas.slice(0, 5));
+        countExternas = externas.length;
+      } catch (e) {
+        console.log('Erro ao buscar vagas externas:', e);
+      }
 
-      setTotalVagas(internas.length + externas.length); // Um número base para UX
+      setTotalVagas(vagasInternasRecentes.length + countExternas);
 
       // Conta favoritos reais do usuário
       const userId = auth.currentUser?.uid;
@@ -54,7 +64,7 @@ export default function Home() {
         setVagasSalvas(0);
       }
     } catch (e) {
-      console.log('Erro ao carregar dados da Home', e);
+      console.log('Erro geral ao carregar dados da Home', e);
     } finally {
       setLoading(false);
     }
