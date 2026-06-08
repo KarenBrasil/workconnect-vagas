@@ -21,8 +21,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { FontAwesome } from '@expo/vector-icons';
 import { useLanguage } from '../src/theme/LanguageContext';
-
-WebBrowser.maybeCompleteAuthSession();
+import { CustomAlert } from '../components/CustomAlert';
 
 export default function Login() {
   const router = useRouter();
@@ -32,6 +31,28 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  // Custom Alert State
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    showCancel?: boolean;
+    onConfirm?: () => void;
+    confirmText?: string;
+  }>({ visible: false, title: '', message: '', type: 'info' });
+
+  const showAlert = (
+    title: string, 
+    message: string, 
+    type: 'success' | 'error' | 'warning' | 'info' = 'info',
+    showCancel = false,
+    onConfirm?: () => void,
+    confirmText = 'OK'
+  ) => {
+    setAlertConfig({ visible: true, title, message, type, showCancel, onConfirm, confirmText });
+  };
 
   // Auth Session do Google
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -79,10 +100,10 @@ export default function Login() {
         setLoading(false);
       }
     } else {
-      Alert.alert(
+      showAlert(
         'Ambiente de Desenvolvimento',
-        'No aplicativo de testes (Expo Go), utilize o acesso por E-mail e Senha.\n\nO login nativo com Google estará totalmente funcional na versão de produção do aplicativo.',
-        [{ text: 'Entendi' }]
+        'No aplicativo de testes (Expo Go), utilize o acesso por E-mail e Senha.\n\nO login nativo com Google estará totalmente funcional na versão final do aplicativo.',
+        'info'
       );
     }
   };
@@ -103,19 +124,20 @@ export default function Login() {
       const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'ass.karenm@gmail.com';
       if (!userCredential.user.emailVerified && normalizedEmail !== adminEmail) {
         await signOut(auth);
-        Alert.alert(
+        showAlert(
           'E-mail não verificado',
-          'Você precisa confirmar o seu e-mail antes de acessar.',
-          [
-            { text: 'Cancelar', style: 'cancel' },
-            { 
-              text: 'Reenviar E-mail', 
-              onPress: async () => {
-                await sendEmailVerification(userCredential.user);
-                Alert.alert('Sucesso', 'E-mail reenviado! Verifique sua caixa de entrada.');
-              }
+          'Você precisa confirmar o seu e-mail antes de acessar. Clique em Reenviar para receber o link novamente.',
+          'warning',
+          true,
+          async () => {
+            try {
+              await sendEmailVerification(userCredential.user);
+              showAlert('Sucesso', 'E-mail reenviado! Verifique sua caixa de entrada.', 'success');
+            } catch (e) {
+              showAlert('Erro', 'Não foi possível reenviar o e-mail.', 'error');
             }
-          ]
+          },
+          'Reenviar'
         );
         return;
       }
@@ -141,6 +163,17 @@ export default function Login() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F5F6FA" />
+
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        showCancel={alertConfig.showCancel}
+        confirmText={alertConfig.confirmText}
+        onConfirm={alertConfig.onConfirm}
+        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+      />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}

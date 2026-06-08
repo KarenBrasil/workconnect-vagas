@@ -18,6 +18,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../src/services/firebaseConfig';
 import { FontAwesome } from '@expo/vector-icons';
 import { useLanguage } from '../src/theme/LanguageContext';
+import { CustomAlert } from '../components/CustomAlert';
 
 export default function Register() {
   const router = useRouter();
@@ -28,6 +29,18 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    onConfirm?: () => void;
+  }>({ visible: false, title: '', message: '', type: 'info' });
+
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', onConfirm?: () => void) => {
+    setAlertConfig({ visible: true, title, message, type, onConfirm });
+  };
 
   const handleRegister = async () => {
     setErrorMessage('');
@@ -57,10 +70,11 @@ export default function Register() {
 
       await sendEmailVerification(user);
 
-      Alert.alert(
+      showAlert(
         'Conta criada com sucesso!',
         'Um e-mail de confirmação foi enviado. Por favor, verifique sua caixa de entrada para ativar a conta antes de fazer o login.',
-        [{ text: 'OK', onPress: () => router.replace('/login') }]
+        'success',
+        () => router.replace('/login')
       );
     } catch (error: any) {
       let customError = error.message || 'Ocorreu um erro ao criar a conta.';
@@ -77,6 +91,15 @@ export default function Register() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F5F6FA" />
+
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onConfirm={alertConfig.onConfirm}
+        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+      />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}

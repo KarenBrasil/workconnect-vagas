@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Modal
+  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Modal
 } from 'react-native';
 import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../../src/services/firebaseConfig';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import { CustomAlert } from '../../components/CustomAlert';
 
 interface VagaPublicada {
   id: string;
@@ -28,6 +29,24 @@ export default function PostJob() {
   const [contato, setContato] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Custom Alert State
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    showCancel?: boolean;
+    onConfirm?: () => void;
+  }>({ visible: false, title: '', message: '', type: 'info' });
+
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    setAlertConfig({ visible: true, title, message, type });
+  };
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setAlertConfig({ visible: true, title, message, type: 'warning', showCancel: true, onConfirm });
+  };
 
   const [abaAtiva, setAbaAtiva] = useState<'nova' | 'gerenciar'>('nova');
   const [minhasVagas, setMinhasVagas] = useState<VagaPublicada[]>([]);
@@ -62,8 +81,7 @@ export default function PostJob() {
 
   const handlePublicar = async () => {
     if (!titulo || !descricao) {
-      if (Platform.OS === 'web') window.alert('Preencha pelo menos o título e a descrição!');
-      else Alert.alert('Atenção', 'Preencha pelo menos o título e a descrição!');
+      showAlert('Atenção', 'Preencha pelo menos o título e a descrição da vaga.', 'warning');
       return;
     }
     setLoading(true);
@@ -81,22 +99,18 @@ export default function PostJob() {
       setShowSuccessModal(true);
       resetForm();
     } catch (e: any) {
-      Alert.alert('Erro', 'Não foi possível publicar: ' + e.message);
+      showAlert('Erro', 'Não foi possível publicar: ' + e.message, 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeletar = (vagaId: string, vagaTitulo: string) => {
-    const confirmar = () => deletarVaga(vagaId);
-    if (Platform.OS === 'web') {
-      if (window.confirm(`Excluir a vaga "${vagaTitulo}"? Esta ação não pode ser desfeita.`)) confirmar();
-    } else {
-      Alert.alert('Excluir Vaga', `Deseja excluir "${vagaTitulo}"?\n\nEsta ação não pode ser desfeita.`, [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Excluir', style: 'destructive', onPress: confirmar }
-      ]);
-    }
+    showConfirm(
+      'Excluir Vaga',
+      `Deseja realmente excluir "${vagaTitulo}"? Esta ação não pode ser desfeita.`,
+      () => deletarVaga(vagaId)
+    );
   };
 
   const deletarVaga = async (vagaId: string) => {
@@ -104,8 +118,9 @@ export default function PostJob() {
     try {
       await deleteDoc(doc(db, 'vagas', vagaId));
       setMinhasVagas(prev => prev.filter(v => v.id !== vagaId));
+      showAlert('Sucesso', 'Vaga excluída com sucesso.', 'success');
     } catch (e: any) {
-      Alert.alert('Erro', 'Não foi possível excluir a vaga: ' + e.message);
+      showAlert('Erro', 'Não foi possível excluir a vaga: ' + e.message, 'error');
     } finally {
       setDeletandoId(null);
     }
@@ -117,9 +132,6 @@ export default function PostJob() {
       return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
     } catch { return '—'; }
   };
-
-  const currentUser = auth.currentUser;
-  
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -151,7 +163,6 @@ export default function PostJob() {
         {/* ABA: Nova Vaga */}
         {abaAtiva === 'nova' && (
           <View>
-            {/* Tipo de publicação */}
             <View style={styles.tipoContainer}>
               <TouchableOpacity
                 style={[styles.tipoBtn, tipo === 'recrutador' && styles.tipoBtnAtivo]}
@@ -197,7 +208,6 @@ export default function PostJob() {
                 placeholder={tipo === 'recrutador' ? 'Descreva as responsabilidades e requisitos...' : 'Descreva suas habilidades e experiência...'}
               />
 
-              {/* Campo de contato — central para candidaturas */}
               <Text style={styles.label}>📞 Contato para Candidatura</Text>
               <Text style={styles.labelHint}>E-mail ou número de WhatsApp. Candidatos entrarão em contato diretamente.</Text>
               <TextInput
@@ -269,7 +279,17 @@ export default function PostJob() {
         )}
       </ScrollView>
 
-      {/* Modal de Sucesso */}
+      {/* Modais de Alerta e Sucesso dentro do app (nunca no navegador) */}
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        showCancel={alertConfig.showCancel}
+        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+        onConfirm={alertConfig.onConfirm}
+      />
+
       <Modal visible={showSuccessModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -341,58 +361,11 @@ const styles = StyleSheet.create({
   emptyCard: { backgroundColor: '#FFFFFF', borderRadius: 18, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: '#EFEFEF', gap: 8 },
   emptyText: { fontSize: 16, color: '#312651', fontWeight: 'bold', marginTop: 8 },
   emptySubText: { fontSize: 14, color: '#83829A', textAlign: 'center' },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 32,
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 340,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  modalIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#2E9D4D',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#1A1A2E',
-    marginBottom: 8,
-  },
-  modalText: {
-    fontSize: 15,
-    color: '#83829A',
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 22,
-  },
-  modalButton: {
-    backgroundColor: '#1A1A2E',
-    width: '100%',
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  modalButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 32, alignItems: 'center', width: '100%', maxWidth: 340, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
+  modalIconContainer: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#2E9D4D', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 22, fontWeight: '800', color: '#1A1A2E', marginBottom: 8 },
+  modalText: { fontSize: 15, color: '#83829A', textAlign: 'center', marginBottom: 32, lineHeight: 22 },
+  modalButton: { backgroundColor: '#1A1A2E', width: '100%', paddingVertical: 16, borderRadius: 16, alignItems: 'center' },
+  modalButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
 });
