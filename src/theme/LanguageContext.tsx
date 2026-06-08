@@ -72,7 +72,7 @@ const translations = {
     'auth.password': 'Password',
     'auth.login': 'Sign In',
     'auth.google': 'Sign in with Google',
-    'auth.noAccount': 'Don\\'t have an account?',
+    'auth.noAccount': "Don't have an account?",
     'auth.registerHere': 'Register here',
     'auth.createAccount': 'Create Account',
     'auth.name': 'Full Name',
