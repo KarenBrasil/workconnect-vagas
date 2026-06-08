@@ -44,7 +44,6 @@ export default function TabLayout() {
         options={{
           title: 'Postar',
           tabBarIcon: ({ color }) => <FontAwesome name="plus-circle" size={24} color={color} />,
-          href: isAdmin ? '/post-job' : null,
         }}
       />
       <Tabs.Screen

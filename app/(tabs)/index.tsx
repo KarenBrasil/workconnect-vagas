@@ -1,25 +1,20 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db, auth } from '../../src/services/firebaseConfig';
 import { buscarVagasComCache, calcularTempoRelativo, VagaExterna } from '../../src/services/vagasExternas';
-import { buscarFavoritos } from '../../src/services/favoritos';
 import { useTheme } from '../../src/theme/ThemeContext';
+import { useLanguage } from '../../src/theme/LanguageContext';
 import { useRouter } from 'expo-router';
-import { VagaCard } from '../../components/VagaCard';
-import { LinearGradient } from 'expo-linear-gradient';
 
 export default function Home() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   
   const [userName, setUserName] = useState('');
-  const [totalVagas, setTotalVagas] = useState(0);
-  const [vagasSalvas, setVagasSalvas] = useState(0);
-  
-  const [vagasExternasPopulares, setVagasExternasPopulares] = useState<VagaExterna[]>([]);
-  const [vagasInternasRecentes, setVagasInternasRecentes] = useState<any[]>([]);
+  const [vagasAtivas, setVagasAtivas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,35 +28,35 @@ export default function Home() {
   const carregarDados = async () => {
     setLoading(true);
     try {
-      try {
-        const q = query(collection(db, 'vagas'), orderBy('criadoEm', 'desc'), limit(5));
-        const snapInternas = await getDocs(q);
-        const internas = snapInternas.docs.map(d => ({ id: d.id, ...d.data() }));
-        setVagasInternasRecentes(internas);
-      } catch (e) {
-        console.log('Erro ao buscar vagas internas:', e);
-      }
+      // Busca 2 vagas globais
+      const externas = await buscarVagasComCache();
+      const globais = externas.slice(0, 2).map(v => ({
+        id: v.id,
+        titulo: v.titulo,
+        empresa: v.empresa,
+        data: v.tempoPostagem,
+        tipo: 'global',
+        progress: 75,
+      }));
 
-      let countExternas = 0;
-      try {
-        const externas = await buscarVagasComCache();
-        setVagasExternasPopulares(externas.slice(0, 5));
-        countExternas = externas.length;
-      } catch (e) {
-        console.log('Erro ao buscar vagas externas:', e);
-      }
+      // Busca 2 vagas locais
+      const q = query(collection(db, 'vagas'), orderBy('criadoEm', 'desc'), limit(2));
+      const snapInternas = await getDocs(q);
+      const locais = snapInternas.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          titulo: data.titulo,
+          empresa: data.empresa,
+          data: data.criadoEm ? calcularTempoRelativo(data.criadoEm) : 'Hoje',
+          tipo: 'local',
+          progress: 40,
+        };
+      });
 
-      setTotalVagas(vagasInternasRecentes.length + countExternas);
-
-      const userId = auth.currentUser?.uid;
-      if (userId) {
-        const favs = await buscarFavoritos(userId);
-        setVagasSalvas(favs.length);
-      } else {
-        setVagasSalvas(0);
-      }
+      setVagasAtivas([...globais, ...locais]);
     } catch (e) {
-      console.log('Erro geral ao carregar dados da Home', e);
+      console.log('Erro ao carregar dados da Home', e);
     } finally {
       setLoading(false);
     }
@@ -71,127 +66,81 @@ export default function Home() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* Header & Hero Banner */}
-        <View style={styles.headerContainer}>
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={[styles.greeting, { color: colors.textPrimary }]}>Olá, {userName || 'Visitante'} 👋</Text>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Pronto para o próximo nível?</Text>
-            </View>
-            <TouchableOpacity style={[styles.profileBtn, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} onPress={() => router.push('/profile')}>
-              <FontAwesome name="user-o" size={20} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
-
-          <LinearGradient 
-            colors={isDark ? ['#16A34A', '#22C55E'] : ['#22C55E', '#4ADE80']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.heroBanner}
-          >
-            <View style={styles.heroContent}>
-              <Text style={styles.heroTitle}>Mais de {loading ? '...' : totalVagas} vagas de tecnologia ativas hoje.</Text>
-              <Text style={styles.heroSubtitle}>Encontre projetos globais, remotos e presenciais.</Text>
-            </View>
-            <View style={styles.heroOverlay}>
-              <FontAwesome name="code" size={100} color="rgba(255,255,255,0.1)" style={styles.heroIconBackground} />
-            </View>
-          </LinearGradient>
+        {/* Top Navbar */}
+        <View style={styles.topNav}>
+          <TouchableOpacity style={styles.navIcon}>
+            <FontAwesome name="th-large" size={20} color={colors.primary} />
+          </TouchableOpacity>
+          <Text style={[styles.navTitle, { color: colors.textPrimary }]}>Home</Text>
+          <TouchableOpacity style={styles.navIcon}>
+            <FontAwesome name="bell" size={20} color={colors.primary} />
+            <View style={styles.notificationDot} />
+          </TouchableOpacity>
         </View>
 
-        {/* Busca */}
-        <TouchableOpacity style={styles.searchRow} onPress={() => router.push('/search')} activeOpacity={0.8}>
-          <View style={[styles.searchInputContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-            <FontAwesome name="search" size={18} color={colors.primary} style={{ marginHorizontal: 16 }} />
-            <Text style={{ color: colors.textSecondary, fontSize: 16, flex: 1, fontWeight: '500' }}>Qual stack você domina?</Text>
-          </View>
-          <LinearGradient colors={colors.primaryGradient || ['#22C55E', '#16A34A']} style={styles.filterBtn}>
-            <FontAwesome name="sliders" size={22} color="#FFF" />
-          </LinearGradient>
+        {/* Greeting */}
+        <View style={styles.greetingContainer}>
+          <Text style={[styles.greetingTitle, { color: colors.primary }]}>{t('home.greeting')} {userName || 'Visitante'}!</Text>
+          <Text style={[styles.greetingSub, { color: colors.textSecondary }]}>Bom dia</Text>
+        </View>
+
+        {/* Search */}
+        <TouchableOpacity style={[styles.searchBar, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} onPress={() => router.push('/search')} activeOpacity={0.8}>
+          <FontAwesome name="search" size={16} color={colors.textSecondary} style={{ marginRight: 12 }} />
+          <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '500' }}>{t('home.searchPlaceholder')}</Text>
         </TouchableOpacity>
 
-        {/* Estatísticas */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsContainer}>
-          <View style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-            <View style={[styles.statIconBox, { backgroundColor: colors.primaryLight }]}>
-              <FontAwesome name="globe" size={20} color={colors.primary} />
-            </View>
-            <View>
-              <Text style={[styles.statValue, { color: colors.textPrimary }]}>{loading ? '...' : `+${totalVagas}`}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Oportunidades</Text>
-            </View>
+        {/* Welcome Card */}
+        <View style={[styles.welcomeCard, { borderColor: colors.primary }]}>
+          <View style={styles.welcomeTextContainer}>
+            <Text style={[styles.welcomeTitle, { color: colors.primary }]}>{t('home.welcomeCard.title')}</Text>
+            <Text style={[styles.welcomeSub, { color: colors.textSecondary }]}>{t('home.welcomeCard.subtitle')}</Text>
           </View>
+          <Image source={require('../../assets/images/icon.png')} style={styles.welcomeIllustration} />
+        </View>
 
-          <View style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-            <View style={[styles.statIconBox, { backgroundColor: colors.secondaryLight }]}>
-              <FontAwesome name="heart" size={20} color={colors.secondary} />
-            </View>
-            <View>
-              <Text style={[styles.statValue, { color: colors.textPrimary }]}>{loading ? '...' : vagasSalvas}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Vagas Salvas</Text>
-            </View>
-          </View>
-        </ScrollView>
-
-        {/* Vagas Externas (Populares) */}
+        {/* Ongoing Projects Section */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Vagas Globais ✨</Text>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>{t('home.ongoingProjects')}</Text>
           <TouchableOpacity onPress={() => router.push('/search')}>
-            <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '700' }}>Ver tudo</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '500' }}>{t('home.viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
         {loading ? (
-          <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 32 }} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
         ) : (
-          <View>
-            {vagasExternasPopulares.map(vaga => {
-              let icone = 'globe';
-              if (vaga.fonte.includes('GitHub')) icone = 'github';
-              if (vaga.fonte.includes('Remotive') || vaga.fonte.includes('RemoteOK')) icone = 'laptop';
+          <View style={styles.projectsGrid}>
+            {vagasAtivas.map((vaga, index) => {
+              const isFirst = index === 0;
+              const cardBg = isFirst ? colors.primary : colors.cardBackground;
+              const titleColor = isFirst ? '#FFF' : colors.textPrimary;
+              const dateColor = isFirst ? 'rgba(255,255,255,0.7)' : colors.textSecondary;
+              const iconColor = isFirst ? '#FFF' : colors.primary;
 
               return (
-                <VagaCard
-                  key={vaga.id}
-                  id={vaga.id}
-                  titulo={vaga.titulo}
-                  empresa={vaga.empresa}
-                  localOuContrato={vaga.local}
-                  salarioOuFonte={vaga.fonte}
-                  isExterna={true}
-                  tipoOuIcone={icone}
-                  tags={vaga.tags}
-                  tempoRelativo={vaga.tempoPostagem}
-                  linkExterna={vaga.link}
-                />
+                <View key={vaga.id} style={[styles.projectCard, { backgroundColor: cardBg, borderColor: isFirst ? 'transparent' : colors.border }]}>
+                  <View style={styles.cardHeader}>
+                    <Text style={{ color: dateColor, fontSize: 10, fontWeight: '600' }}>{vaga.data}</Text>
+                    <FontAwesome name="ellipsis-v" size={14} color={dateColor} />
+                  </View>
+                  
+                  <View style={styles.cardBody}>
+                    <FontAwesome name={vaga.tipo === 'global' ? 'globe' : 'briefcase'} size={24} color={iconColor} style={{ marginBottom: 12 }} />
+                    <Text style={[styles.cardTitle, { color: titleColor }]} numberOfLines={1}>{vaga.titulo}</Text>
+                    <Text style={{ color: dateColor, fontSize: 10, marginTop: 4 }} numberOfLines={1}>{vaga.empresa}</Text>
+                  </View>
+
+                  <View style={styles.cardFooter}>
+                    <Text style={{ color: titleColor, fontSize: 10, fontWeight: '600', marginBottom: 6 }}>{t('home.progress')}</Text>
+                    <View style={[styles.progressBg, { backgroundColor: isFirst ? 'rgba(255,255,255,0.2)' : '#EAECEF' }]}>
+                      <View style={[styles.progressFill, { width: `${vaga.progress}%`, backgroundColor: isFirst ? '#FFF' : colors.primary }]} />
+                    </View>
+                    <Text style={{ color: dateColor, fontSize: 9, textAlign: 'right', marginTop: 4 }}>{vaga.progress}%</Text>
+                  </View>
+                </View>
               );
             })}
-          </View>
-        )}
-
-        {/* Vagas Internas (TechConnect) */}
-        <View style={[styles.sectionHeader, { marginTop: 32 }]}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>TechConnect Exclusivas ⚡</Text>
-        </View>
-
-        {loading ? (
-          <ActivityIndicator size="large" color={colors.secondary} style={{ marginVertical: 32 }} />
-        ) : (
-          <View>
-            {vagasInternasRecentes.map(vaga => (
-              <VagaCard
-                key={vaga.id}
-                id={vaga.id}
-                titulo={vaga.titulo}
-                empresa={vaga.empresa}
-                localOuContrato={vaga.local}
-                salarioOuFonte={vaga.salario}
-                isExterna={false}
-                tipoOuIcone={vaga.tipo === 'freelancer' ? 'freelancer' : 'recrutador'}
-                tags={vaga.requisitos ? vaga.requisitos.split(',').slice(0, 3) : []}
-                tempoRelativo={vaga.criadoEm ? calcularTempoRelativo(vaga.criadoEm) : 'recentemente'}
-              />
-            ))}
           </View>
         )}
 
@@ -202,105 +151,70 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  headerContainer: { marginBottom: 32 },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  greeting: { fontSize: 26, fontWeight: '900', letterSpacing: -0.5 },
-  subtitle: { fontSize: 15, marginTop: 4 },
-  profileBtn: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+  scrollContent: { padding: 24, paddingTop: 60, paddingBottom: 40 },
   
-  heroBanner: {
-    borderRadius: 24,
-    padding: 24,
-    minHeight: 140,
-    overflow: 'hidden',
-    position: 'relative',
-    shadowColor: '#22C55E',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  heroContent: {
-    zIndex: 2,
-    flex: 1,
-    justifyContent: 'center',
-    width: '80%',
-  },
-  heroTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#000000',
-    marginBottom: 8,
-    lineHeight: 28,
-  },
-  heroSubtitle: {
-    fontSize: 14,
-    color: 'rgba(0,0,0,0.7)',
-    fontWeight: '600',
-  },
-  heroOverlay: {
-    position: 'absolute',
-    right: -20,
-    bottom: -20,
-    zIndex: 1,
-  },
-  heroIconBackground: {
-    transform: [{ rotate: '-15deg' }],
-  },
+  topNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  navIcon: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  navTitle: { fontSize: 16, fontWeight: '700' },
+  notificationDot: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
 
-  searchRow: { flexDirection: 'row', gap: 12, marginBottom: 32 },
-  searchInputContainer: { 
-    flex: 1, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    borderWidth: 1, 
-    borderRadius: 16, 
-    height: 60,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  filterBtn: { 
-    width: 60, 
-    height: 60, 
-    borderRadius: 16, 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    shadowColor: '#22C55E',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  
-  statsContainer: { gap: 16, paddingBottom: 16, marginBottom: 16 },
-  statCard: { 
+  greetingContainer: { marginBottom: 24 },
+  greetingTitle: { fontSize: 28, fontWeight: '800', marginBottom: 4 },
+  greetingSub: { fontSize: 14, fontWeight: '500' },
+
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    minWidth: 180, 
-    padding: 16, 
-    borderRadius: 20, 
     borderWidth: 1,
+    borderRadius: 20,
+    height: 52,
+    paddingHorizontal: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+
+  welcomeCard: {
+    flexDirection: 'row',
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 20,
+    marginBottom: 32,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+  },
+  welcomeTextContainer: { flex: 1, paddingRight: 16 },
+  welcomeTitle: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
+  welcomeSub: { fontSize: 12, lineHeight: 18 },
+  welcomeIllustration: { width: 80, height: 80, resizeMode: 'contain' },
+
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: '700' },
+
+  projectsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     gap: 16,
+  },
+  projectCard: {
+    width: '47%',
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.03,
     shadowRadius: 8,
-    elevation: 1,
+    elevation: 2,
   },
-  statIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statValue: { fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
-  statLabel: { fontSize: 13, fontWeight: '600', marginTop: 2 },
-  
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  sectionTitle: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  cardBody: { marginBottom: 16 },
+  cardTitle: { fontSize: 14, fontWeight: '700' },
+  cardFooter: { marginTop: 'auto' },
+  progressBg: { height: 4, borderRadius: 2, width: '100%' },
+  progressFill: { height: '100%', borderRadius: 2 },
 });

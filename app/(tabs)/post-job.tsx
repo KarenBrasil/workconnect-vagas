@@ -119,16 +119,7 @@ export default function PostJob() {
   };
 
   const currentUser = auth.currentUser;
-  const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'ass.karenm@gmail.com';
-  if (currentUser?.email !== adminEmail) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <FontAwesome name="lock" size={48} color="#EFEFEF" style={{ marginBottom: 16 }} />
-        <Text style={styles.title}>Acesso Restrito</Text>
-        <Text style={styles.subtitle}>Apenas administradores podem publicar vagas.</Text>
-      </View>
-    );
-  }
+  
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>

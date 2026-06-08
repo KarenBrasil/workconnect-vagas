@@ -70,18 +70,11 @@ export default function AdminDashboard() {
   }, [abaAtiva]);
 
   // ──────────────────────────────────────────────────────────────────────────
-  // ANÁLISE DE DADOS (PESQUISAS)
+  // ANÁLISE DE DADOS (PESQUISAS) - APENAS FINALIZADAS
   // ──────────────────────────────────────────────────────────────────────────
 
   const completas = avaliacoes.filter(a => a.status === 'completed');
-  const parciais = avaliacoes.filter(a => a.status !== 'completed');
-  const totalIniciadas = avaliacoes.length;
   
-  const calcConversion = () => {
-    if (totalIniciadas === 0) return 0;
-    return ((completas.length / totalIniciadas) * 100).toFixed(1);
-  };
-
   const calculateNps = () => {
     if (completas.length === 0) return 0;
     let promotores = 0;
@@ -114,17 +107,6 @@ export default function AdminDashboard() {
     return completas
       .map(a => a.respostas?.[qId]?.openText)
       .filter(text => text && text.trim().length > 0);
-  };
-
-  const getDropOffData = () => {
-    const steps = Array(10).fill(0);
-    avaliacoes.forEach(a => {
-      const maxStep = a.status === 'completed' ? 10 : (a.lastStep || 0);
-      for (let i = 0; i < maxStep; i++) {
-        steps[i]++;
-      }
-    });
-    return steps;
   };
 
   const renderProgressChart = (title: string, current: string | number, max: number, colorStart: string, colorEnd: string) => {
@@ -192,53 +174,15 @@ export default function AdminDashboard() {
             ) : (
               <>
                 <View style={styles.funnelContainer}>
-                  <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.funnelCard}>
-                    <Text style={styles.funnelCardLabel}>Entraram na Pesquisa</Text>
-                    <Text style={styles.funnelCardValue}>{totalIniciadas}</Text>
-                    <FontAwesome name="sign-in" size={24} color="rgba(255,255,255,0.3)" style={styles.funnelIcon} />
-                  </LinearGradient>
-
                   <LinearGradient colors={['#10B981', '#059669']} style={styles.funnelCard}>
-                    <Text style={styles.funnelCardLabel}>Finalizaram 100%</Text>
+                    <Text style={styles.funnelCardLabel}>Pesquisas Finalizadas</Text>
                     <Text style={styles.funnelCardValue}>{completas.length}</Text>
                     <FontAwesome name="check-circle" size={24} color="rgba(255,255,255,0.3)" style={styles.funnelIcon} />
                   </LinearGradient>
-
-                  <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.funnelCard}>
-                    <Text style={styles.funnelCardLabel}>Taxa de Conversão</Text>
-                    <Text style={styles.funnelCardValue}>{calcConversion()}%</Text>
-                    <FontAwesome name="line-chart" size={24} color="rgba(255,255,255,0.3)" style={styles.funnelIcon} />
-                  </LinearGradient>
                 </View>
 
-                {totalIniciadas > 0 && (
+                {completas.length > 0 && (
                   <>
-                    <View style={styles.sectionHeader}>
-                      <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginTop: 16 }]}>Gráfico de Retenção (Abandono por Pergunta)</Text>
-                    </View>
-                    
-                    <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-                      <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 20 }}>
-                        Mostra quantas pessoas chegaram até cada etapa da pesquisa.
-                      </Text>
-                      {getDropOffData().map((count, index) => {
-                        const percent = totalIniciadas > 0 ? (count / totalIniciadas) * 100 : 0;
-                        return (
-                          <View key={index} style={styles.dropOffRow}>
-                            <Text style={[styles.dropOffLabel, { color: colors.textSecondary }]}>P{index + 1}</Text>
-                            <View style={[styles.dropOffBarContainer, { backgroundColor: isDark ? '#374151' : '#E5E7EB' }]}>
-                              <LinearGradient 
-                                colors={['#EF4444', '#F43F5E']} 
-                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                                style={[styles.dropOffBar, { width: `${percent}%` }]} 
-                              />
-                            </View>
-                            <Text style={[styles.dropOffCount, { color: colors.textPrimary }]}>{count}</Text>
-                          </View>
-                        );
-                      })}
-                    </View>
-
                     <View style={styles.sectionHeader}>
                       <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginTop: 16 }]}>Satisfação (Média das notas 1 a 5)</Text>
                     </View>
@@ -254,7 +198,7 @@ export default function AdminDashboard() {
                       <View style={styles.npsContainer}>
                         <View>
                           <Text style={[styles.chartTitle, { color: colors.textSecondary }]}>Net Promoter Score (NPS)</Text>
-                          <Text style={{ fontSize: 12, color: '#9CA3AF' }}>Calculado apenas com pesquisas completas.</Text>
+                          <Text style={{ fontSize: 12, color: '#9CA3AF' }}>Baseado nas pesquisas totalmente finalizadas.</Text>
                         </View>
                         <Text style={{ fontSize: 40, fontWeight: '900', color: Number(calculateNps()) > 50 ? '#10B981' : '#F59E0B' }}>
                           {calculateNps()}
