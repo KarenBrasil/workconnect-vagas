@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   ActivityIndicator,
-  Image,
   ScrollView,
   StatusBar
 } from 'react-native';
@@ -17,22 +14,24 @@ import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential, signInWithPopup, createUserWithEmailAndPassword, signOut, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../src/services/firebaseConfig';
-import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { FontAwesome } from '@expo/vector-icons';
 import { useLanguage } from '../src/theme/LanguageContext';
 import { CustomAlert } from '../components/CustomAlert';
+import { Input, ButtonPrimary, ButtonGoogle } from '../components/ui';
+import { IlluRecruiter } from '../assets/illustrations';
+import { useTheme } from '../src/theme/ThemeContext';
 
 export default function Login() {
   const router = useRouter();
   const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Custom Alert State
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
     title: string;
@@ -44,8 +43,8 @@ export default function Login() {
   }>({ visible: false, title: '', message: '', type: 'info' });
 
   const showAlert = (
-    title: string, 
-    message: string, 
+    title: string,
+    message: string,
     type: 'success' | 'error' | 'warning' | 'info' = 'info',
     showCancel = false,
     onConfirm?: () => void,
@@ -54,7 +53,6 @@ export default function Login() {
     setAlertConfig({ visible: true, title, message, type, showCancel, onConfirm, confirmText });
   };
 
-  // Auth Session do Google
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '189326429321-kntm9qp3db45chg2ricg0ijov7rf8ilf.apps.googleusercontent.com',
   });
@@ -63,7 +61,7 @@ export default function Login() {
     if (response?.type === 'success') {
       const { id_token, access_token } = response.params;
       const credential = GoogleAuthProvider.credential(id_token, access_token);
-      
+
       setLoading(true);
       signInWithCredential(auth, credential).then(async (userCred) => {
         await setDoc(doc(db, 'users', userCred.user.uid), {
@@ -120,7 +118,7 @@ export default function Login() {
     try {
       setLoading(true);
       const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
-      
+
       const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'ass.karenm@gmail.com';
       if (!userCredential.user.emailVerified && normalizedEmail !== adminEmail) {
         await signOut(auth);
@@ -148,7 +146,7 @@ export default function Login() {
         try {
           await createUserWithEmailAndPassword(auth, normalizedEmail, password);
           router.replace('/(tabs)');
-          return; 
+          return;
         } catch (createError) {
           setErrorMessage('Erro ao criar a conta admin automaticamente.');
         }
@@ -161,8 +159,8 @@ export default function Login() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F6FA" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       <CustomAlert
         visible={alertConfig.visible}
@@ -180,100 +178,85 @@ export default function Login() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          
-          <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <FontAwesome name="angle-left" size={24} color="#0D2B5A" />
-            </TouchableOpacity>
+
+          {/* Illustration */}
+          <View style={styles.illustrationContainer}>
+            <IlluRecruiter width={180} height={160} />
           </View>
 
           <View style={styles.content}>
-            <Text style={styles.title}>{t('auth.welcome')}</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Bem-vindo de volta 👋</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Conecte-se para continuar.
             </Text>
 
             {errorMessage ? (
-              <View style={styles.errorContainer}>
-                <FontAwesome name="exclamation-circle" size={16} color="#EF4444" style={{ marginRight: 8 }} />
-                <Text style={styles.errorText}>{errorMessage}</Text>
+              <View style={[styles.errorContainer, { borderColor: colors.danger, backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2' }]}>
+                <FontAwesome name="exclamation-circle" size={16} color={colors.danger} style={{ marginRight: 8 }} />
+                <Text style={[styles.errorText, { color: colors.danger }]}>{errorMessage}</Text>
               </View>
             ) : null}
 
             <View style={styles.formContainer}>
-              <Text style={styles.label}>{t('auth.email')}</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="exemplo@email.com"
-                  placeholderTextColor="#A0AEC0"
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-              </View>
+              <Input
+                label="E-mail"
+                placeholder="seu@email.com"
+                icon="envelope"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
 
-              <Text style={styles.label}>{t('auth.password')}</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
+              <View style={styles.passwordContainer}>
+                <Input
+                  label="Senha"
                   placeholder="••••••••"
-                  placeholderTextColor="#A0AEC0"
-                  secureTextEntry={!showPassword}
+                  icon="lock"
                   value={password}
                   onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
                   onSubmitEditing={handleLogin}
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.inputIconRight}>
-                  <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={18} color="#A0AEC0" />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeButton}
+                >
+                  <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={16} color={colors.secondary} />
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity onPress={() => router.push('/forgot-password')} style={styles.forgotPasswordContainer}>
-                <Text style={styles.forgotText}>Esqueceu a senha?</Text>
+              <TouchableOpacity onPress={() => router.push('/forgot-password')}>
+                <Text style={[styles.forgotText, { color: colors.secondary }]}>Esqueceu a senha?</Text>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity 
-              activeOpacity={0.8}
+            <ButtonPrimary
+              label={loading ? '' : t('auth.login')}
               onPress={handleLogin}
               disabled={loading}
-              style={[styles.button, loading && styles.buttonDisabled]}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>{t('auth.login')}</Text>
-              )}
-            </TouchableOpacity>
+              style={styles.loginButton}
+            />
+            {loading && (
+              <ActivityIndicator color="#7AE04A" size="large" style={styles.loader} />
+            )}
 
-            <View style={styles.dividerContainer}>
-              <View style={styles.divider} />
-              <Text style={styles.dividerText}>OU</Text>
-              <View style={styles.divider} />
+            <View style={[styles.dividerContainer, { borderTopColor: colors.border }]}>
+              <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OU</Text>
             </View>
 
-            <TouchableOpacity 
-              style={styles.googleButton} 
+            <ButtonGoogle
+              label={t('auth.google')}
               onPress={handleGoogleLogin}
               disabled={loading}
-              activeOpacity={0.7}
-            >
-              <Image 
-                source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png' }} 
-                style={{ width: 20, height: 20, marginRight: 12 }} 
-              />
-              <Text style={styles.googleButtonText}>{t('auth.google')}</Text>
-            </TouchableOpacity>
+            />
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>{t('auth.noAccount')} </Text>
+              <Text style={[styles.footerText, { color: colors.textSecondary }]}>{t('auth.noAccount')} </Text>
               <TouchableOpacity onPress={() => router.push('/register')}>
-                <Text style={styles.registerText}>{t('auth.registerHere')}</Text>
+                <Text style={[styles.registerText, { color: colors.secondary }]}>{t('auth.registerHere')}</Text>
               </TouchableOpacity>
             </View>
-
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -284,155 +267,80 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F6FA',
   },
   scrollContent: {
     flexGrow: 1,
     padding: 24,
-    paddingTop: 40,
+    paddingTop: 20,
   },
-  headerRow: {
-    marginBottom: 32,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EAECEF',
-    justifyContent: 'center',
+  illustrationContainer: {
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: 32,
+    marginTop: 20,
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '800',
-    color: '#0D2B5A',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 15,
-    color: '#7A7A7A',
-    marginBottom: 32,
+    fontSize: 14,
+    marginBottom: 24,
+    lineHeight: 20,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
-    padding: 16,
+    padding: 14,
     borderRadius: 12,
-    marginBottom: 24,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#FECACA',
   },
   errorText: {
-    color: '#EF4444',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     flex: 1,
   },
   formContainer: {
-    gap: 8,
     marginBottom: 24,
+    gap: 16,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 4,
-    marginTop: 8,
+  passwordContainer: {
+    position: 'relative',
   },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EAECEF',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 56,
-  },
-  input: {
-    flex: 1,
-    color: '#1A1A1A',
-    fontSize: 15,
-  },
-  inputIconRight: {
-    padding: 8,
-  },
-  forgotPasswordContainer: {
-    alignSelf: 'flex-end',
-    marginTop: 8,
+  eyeButton: {
+    position: 'absolute',
+    right: 14,
+    top: 38,
+    zIndex: 10,
   },
   forgotText: {
     fontSize: 13,
-    color: '#0D2B5A',
     fontWeight: '600',
+    alignSelf: 'flex-end',
+    marginTop: 8,
   },
-  button: {
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: '#0D2B5A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#0D2B5A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+  loginButton: {
+    marginBottom: 24,
+    minHeight: 56,
   },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+  loader: {
+    marginVertical: 16,
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#EAECEF',
+    marginVertical: 20,
+    borderTopWidth: 1,
+    paddingTop: 20,
   },
   dividerText: {
-    marginHorizontal: 16,
-    color: '#A0AEC0',
+    marginHorizontal: 'auto',
     fontWeight: '600',
     fontSize: 12,
-  },
-  googleButton: {
-    height: 56,
-    borderRadius: 16,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EAECEF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  googleButtonText: {
-    color: '#1A1A1A',
-    fontSize: 15,
-    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',
@@ -440,12 +348,10 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   footerText: {
-    fontSize: 14,
-    color: '#7A7A7A',
+    fontSize: 13,
   },
   registerText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#0D2B5A',
   },
 });

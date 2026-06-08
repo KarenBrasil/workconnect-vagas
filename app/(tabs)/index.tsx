@@ -97,17 +97,17 @@ export default function Home() {
         </TouchableOpacity>
 
         {/* Premium Welcome Card with Gradient */}
-        <LinearGradient 
-          colors={isDark ? ['#1A202C', '#2D3748'] : ['#E8F5E9', '#F3E5F5']} 
+        <LinearGradient
+          colors={isDark ? ['rgba(122, 224, 74, 0.1)', 'rgba(122, 224, 74, 0.05)'] : ['rgba(122, 224, 74, 0.15)', 'rgba(122, 224, 74, 0.08)']}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={[styles.welcomeCard, { borderColor: isDark ? '#374151' : '#E2E8F0' }]}
+          style={[styles.welcomeCard, { borderColor: colors.border }]}
         >
           <View style={styles.welcomeTextContainer}>
-            <Text style={[styles.welcomeTitle, { color: isDark ? '#4ADE80' : '#22C55E' }]}>{t('home.welcomeCard.title')}</Text>
+            <Text style={[styles.welcomeTitle, { color: colors.primary }]}>🚀 {t('home.welcomeCard.title')}</Text>
             <Text style={[styles.welcomeSub, { color: colors.textSecondary }]}>{t('home.welcomeCard.subtitle')}</Text>
           </View>
-          <View style={[styles.illustrationCircle, { backgroundColor: isDark ? 'rgba(74, 222, 128, 0.1)' : '#FFFFFF' }]}>
-            <FontAwesome name="rocket" size={32} color={isDark ? '#A78BFA' : '#8B5CF6'} />
+          <View style={[styles.illustrationCircle, { backgroundColor: isDark ? 'rgba(122, 224, 74, 0.2)' : 'rgba(122, 224, 74, 0.1)' }]}>
+            <FontAwesome name="bolt" size={28} color={colors.primary} />
           </View>
         </LinearGradient>
 
