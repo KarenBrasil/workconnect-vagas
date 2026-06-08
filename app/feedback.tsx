@@ -162,6 +162,7 @@ export default function PesquisaWizardScreen() {
   const [respostas, setRespostas] = useState<Record<number, RespostaType>>({});
   const [enviando, setEnviando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
+  const [docId, setDocId] = useState<string | null>(null);
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -211,8 +212,32 @@ export default function PesquisaWizardScreen() {
     });
   };
 
+  const iniciarAvaliacao = async () => {
+    setIniciado(true);
+    try {
+      const docRef = await addDoc(collection(db, 'avaliacoes'), {
+        status: 'started',
+        lastStep: 0,
+        plataforma: Platform.OS,
+        criadoEm: serverTimestamp(),
+      });
+      setDocId(docRef.id);
+    } catch (e) {
+      console.log('Erro ao iniciar documento de avaliação:', e);
+    }
+  };
+
   const handleNext = async () => {
     if (currentStep < totalSteps - 1) {
+      if (docId) {
+        // Salva o progresso parcial em background
+        setDoc(doc(db, 'avaliacoes', docId), {
+          respostas,
+          lastStep: currentStep + 1,
+          status: 'in_progress',
+          atualizadoEm: serverTimestamp()
+        }, { merge: true }).catch(console.error);
+      }
       animarTransicao(() => setCurrentStep(curr => curr + 1));
     } else {
       await enviarAvaliacao();
@@ -234,11 +259,21 @@ export default function PesquisaWizardScreen() {
   const enviarAvaliacao = async () => {
     setEnviando(true);
     try {
-      await addDoc(collection(db, 'avaliacoes'), {
-        respostas,
-        plataforma: Platform.OS,
-        criadoEm: serverTimestamp(),
-      });
+      if (docId) {
+        await setDoc(doc(db, 'avaliacoes', docId), {
+          respostas,
+          status: 'completed',
+          atualizadoEm: serverTimestamp(),
+        }, { merge: true });
+      } else {
+        // Fallback caso a pessoa tenha respondido muito rápido e o docId não esteja pronto
+        await addDoc(collection(db, 'avaliacoes'), {
+          respostas,
+          status: 'completed',
+          plataforma: Platform.OS,
+          criadoEm: serverTimestamp(),
+        });
+      }
       setSucesso(true);
     } catch (e) {
       console.error('Erro ao salvar avaliação:', e);
@@ -479,7 +514,7 @@ export default function PesquisaWizardScreen() {
                  <FontAwesome name="external-link" size={20} color="#CDFE00" />
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.buttonContinueDark} onPress={() => setIniciado(true)}>
+              <TouchableOpacity style={styles.buttonContinueDark} onPress={iniciarAvaliacao}>
                 <Text style={styles.buttonTextBlack}>Já explorei o app, quero responder →</Text>
               </TouchableOpacity>
             </View>

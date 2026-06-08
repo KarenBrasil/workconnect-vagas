@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { Alert, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ImageBackground, KeyboardAvoidingView, Platform, StatusBar, Image } from 'react-native';
+import { useState } from 'react';
+import { Alert, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ImageBackground, KeyboardAvoidingView, Platform, StatusBar, Image, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../src/services/firebaseConfig';
 import { BlurView } from 'expo-blur';
 import { FontAwesome } from '@expo/vector-icons';
-import * as Google from 'expo-auth-session/providers/google';
 import { BrandLogo } from '../components/BrandLogo';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function Register() {
   const router = useRouter();
@@ -15,6 +15,7 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [focusedInput, setFocusedInput] = useState<'name' | 'email' | 'password' | null>(null);
   
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -23,8 +24,6 @@ export default function Register() {
     try {
       setLoading(true);
       const provider = new GoogleAuthProvider();
-      // O Firebase cuidará do redirecionamento através do seu próprio servidor seguro,
-      // ignorando a necessidade de configurar a URI no Google Cloud.
       import('firebase/auth').then(async ({ signInWithPopup }) => {
         const userCred = await signInWithPopup(auth, provider);
         await setDoc(doc(db, 'users', userCred.user.uid), {
@@ -33,10 +32,8 @@ export default function Register() {
           uid: userCred.user.uid,
           criadoEm: new Date().toISOString()
         }, { merge: true });
-        // Sucesso, o layout redireciona
       }).catch((error) => {
         setErrorMessage('Erro ao autenticar com o Google.');
-        console.error('Google Auth Error:', error);
       }).finally(() => {
         setLoading(false);
       });
@@ -59,16 +56,13 @@ export default function Register() {
       setLoading(true);
       const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
       
-      // Update profile with the name
       if (userCredential.user) {
         await updateProfile(userCredential.user, {
           displayName: displayName
         });
 
-        // Envia email de verificação
         await sendEmailVerification(userCredential.user);
 
-        // Salva na coleção users para o Painel de Administração
         await setDoc(doc(db, 'users', userCredential.user.uid), {
           nome: displayName,
           email: normalizedEmail,
@@ -83,7 +77,6 @@ export default function Register() {
         router.replace('/login');
       }
     } catch (error: any) {
-      console.error("Register Error:", error);
       let customError = 'Ocorreu um erro ao criar a conta.';
       if (error.code === 'auth/email-already-in-use') {
         customError = 'Este e-mail já está em uso.';
@@ -93,116 +86,132 @@ export default function Register() {
         customError = 'A senha deve ter pelo menos 6 caracteres.';
       }
       setErrorMessage(customError);
-      Alert.alert('Erro no Cadastro', customError);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ImageBackground 
-      source={require('../assets/images/auth_background.png')} 
-      style={styles.container}
-      resizeMode="cover"
-    >
+    <View style={styles.container}>
+      <ImageBackground 
+        source={require('../assets/images/auth_background.png')} 
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+      />
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-      <View style={styles.overlay} />
+      <LinearGradient colors={['rgba(11, 15, 25, 0.4)', 'rgba(11, 15, 25, 0.9)']} style={StyleSheet.absoluteFillObject} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.content}>
-          <BlurView intensity={50} tint="dark" style={styles.glassContainer}>
-            
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                <FontAwesome name="angle-left" size={24} color="#FFF" />
-              </TouchableOpacity>
-              <BrandLogo compact={true} />
-            </View>
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          
+          <View style={styles.headerRow}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <FontAwesome name="angle-left" size={24} color="#FFF" />
+            </TouchableOpacity>
+            <BrandLogo compact={true} />
+          </View>
 
+          <View style={styles.content}>
             <Text style={styles.title}>Criar Conta</Text>
             <Text style={styles.subtitle}>Junte-se ao TechConnect e encontre sua próxima oportunidade.</Text>
 
             {errorMessage ? (
               <View style={styles.errorContainer}>
+                <FontAwesome name="exclamation-circle" size={16} color="#F87171" style={{ marginRight: 8 }} />
                 <Text style={styles.errorText}>{errorMessage}</Text>
               </View>
             ) : null}
 
-            <View style={styles.socialButtonsContainer}>
-              <TouchableOpacity 
-                style={styles.googleButton} 
-                onPress={handleGoogleRegister}
-                disabled={loading}
-              >
-                <Image 
-                  source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png' }} 
-                  style={{ width: 20, height: 20, marginRight: 10 }} 
-                />
-                <Text style={styles.googleButtonText}>Google</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              style={styles.googleButton} 
+              onPress={handleGoogleRegister}
+              disabled={loading}
+              activeOpacity={0.7}
+            >
+              <BlurView intensity={20} tint="light" style={StyleSheet.absoluteFillObject} />
+              <Image 
+                source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png' }} 
+                style={{ width: 22, height: 22, marginRight: 12 }} 
+              />
+              <Text style={styles.googleButtonText}>Cadastrar com Google</Text>
+            </TouchableOpacity>
 
             <View style={styles.dividerContainer}>
               <View style={styles.divider} />
-              <Text style={styles.dividerText}>OU CADASTRE COM E-MAIL</Text>
+              <Text style={styles.dividerText}>OU USE SEU E-MAIL</Text>
               <View style={styles.divider} />
             </View>
 
-            <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
+            <View style={styles.formContainer}>
+              <View style={[styles.inputWrapper, focusedInput === 'name' && styles.inputWrapperFocused]}>
+                <FontAwesome name="user-o" size={18} color={focusedInput === 'name' ? '#A78BFA' : 'rgba(255,255,255,0.4)'} style={styles.inputIconLeft} />
                 <TextInput
                   style={styles.input}
                   placeholder="Nome Completo"
-                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  placeholderTextColor="rgba(255,255,255,0.4)"
                   autoCapitalize="words"
                   value={name}
                   onChangeText={setName}
+                  onFocus={() => setFocusedInput('name')}
+                  onBlur={() => setFocusedInput(null)}
                 />
-                <FontAwesome name="id-card-o" size={18} color="rgba(255,255,255,0.6)" style={styles.inputIcon} />
               </View>
 
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, focusedInput === 'email' && styles.inputWrapperFocused]}>
+                <FontAwesome name="envelope-o" size={18} color={focusedInput === 'email' ? '#A78BFA' : 'rgba(255,255,255,0.4)'} style={styles.inputIconLeft} />
                 <TextInput
                   style={styles.input}
-                  placeholder="E-mail"
-                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  placeholder="E-mail profissional"
+                  placeholderTextColor="rgba(255,255,255,0.4)"
                   autoCapitalize="none"
                   keyboardType="email-address"
                   value={email}
                   onChangeText={setEmail}
+                  onFocus={() => setFocusedInput('email')}
+                  onBlur={() => setFocusedInput(null)}
                 />
-                <FontAwesome name="envelope-o" size={18} color="rgba(255,255,255,0.6)" style={styles.inputIcon} />
               </View>
 
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, focusedInput === 'password' && styles.inputWrapperFocused]}>
+                <FontAwesome name="lock" size={20} color={focusedInput === 'password' ? '#A78BFA' : 'rgba(255,255,255,0.4)'} style={styles.inputIconLeft} />
                 <TextInput
                   style={styles.input}
                   placeholder="Senha (mín. 6 caracteres)"
-                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  placeholderTextColor="rgba(255,255,255,0.4)"
                   secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
                   onSubmitEditing={handleRegister}
+                  onFocus={() => setFocusedInput('password')}
+                  onBlur={() => setFocusedInput(null)}
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.inputIcon}>
-                  <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={18} color="rgba(255,255,255,0.6)" />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.inputIconRight}>
+                  <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={18} color="rgba(255,255,255,0.4)" />
                 </TouchableOpacity>
               </View>
             </View>
 
             <TouchableOpacity 
-              style={[styles.button, loading && styles.buttonDisabled]} 
+              activeOpacity={0.8}
               onPress={handleRegister}
               disabled={loading}
+              style={{ width: '100%' }}
             >
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.buttonText}>Registrar</Text>
-              )}
+              <LinearGradient
+                colors={['#8B5CF6', '#6D28D9']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.button, loading && styles.buttonDisabled]}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.buttonText}>Criar Conta</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
 
             <View style={styles.footer}>
@@ -212,140 +221,152 @@ export default function Register() {
               </TouchableOpacity>
             </View>
 
-          </BlurView>
-        </View>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    backgroundColor: '#0B0F19',
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    paddingTop: 60,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
-  },
-  glassContainer: {
-    padding: 24,
-    borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   title: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 36,
+    fontWeight: '900',
     color: '#FFFFFF',
-    marginBottom: 8,
+    marginBottom: 12,
+    letterSpacing: -1,
   },
   subtitle: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 24,
-    lineHeight: 22,
+    fontSize: 16,
+    color: '#9CA3AF',
+    marginBottom: 40,
+    lineHeight: 24,
   },
   errorContainer: {
-    backgroundColor: 'rgba(220, 38, 38, 0.2)',
-    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    padding: 16,
     borderRadius: 12,
-    marginBottom: 20,
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'rgba(220, 38, 38, 0.5)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
   },
   errorText: {
-    color: '#FFB4B4',
+    color: '#FCA5A5',
     fontSize: 14,
-    textAlign: 'center',
     fontWeight: '500',
-  },
-  socialButtonsContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-  },
-  googleButton: {
     flex: 1,
-    height: 52,
-    borderRadius: 14,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
   },
-  googleButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    color: 'rgba(255,255,255,0.6)',
-    fontWeight: '600',
-    fontSize: 11,
-  },
-  inputContainer: {
-    gap: 14,
-    marginBottom: 24,
+  formContainer: {
+    gap: 16,
+    marginBottom: 32,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 14,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
     paddingHorizontal: 16,
-    height: 56,
+    height: 60,
+  },
+  inputWrapperFocused: {
+    backgroundColor: 'rgba(139, 92, 246, 0.05)', // Purple tint
+    borderColor: '#A78BFA',
   },
   input: {
     flex: 1,
     color: '#FFFFFF',
     fontSize: 16,
+    paddingLeft: 12,
   },
-  inputIcon: {
-    marginLeft: 10,
-    padding: 4,
+  inputIconLeft: {
+    width: 24,
+    textAlign: 'center',
+  },
+  inputIconRight: {
+    padding: 8,
   },
   button: {
-    backgroundColor: '#6A3093', // Roxo
-    height: 56,
-    borderRadius: 14,
+    height: 60,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   buttonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   buttonText: {
+    color: '#FFFFFF', // White text on purple button
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 32,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: '#6B7280',
+    fontWeight: '700',
+    fontSize: 11,
+    letterSpacing: 1,
+  },
+  googleButton: {
+    height: 60,
+    borderRadius: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+  },
+  googleButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
@@ -353,14 +374,15 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
+    marginTop: 40,
   },
   footerText: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: 15,
+    color: '#9CA3AF',
   },
   loginText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#A78BFA', // Purple
   },
 });

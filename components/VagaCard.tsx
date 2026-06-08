@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useTheme } from '../src/theme/ThemeContext';
 import { useRouter } from 'expo-router';
@@ -8,12 +8,12 @@ export interface VagaCardProps {
   id: string;
   titulo: string;
   empresa: string;
-  localOuContrato: string; // Pode ser "São Paulo, Brasil 🇧🇷" ou "CLT"
-  salarioOuFonte: string;  // Pode ser "R$ 5.000" ou "RemoteOK"
+  localOuContrato: string;
+  salarioOuFonte: string;
   isExterna: boolean;
-  tipoOuIcone: string;     // Para internas: "recrutador"|"freelancer". Para externas: o nome do ícone
-  tags: string[];          // Ex: "Remoto", "Pleno"
-  tempoRelativo: string;   // Ex: "há 5h", "há 2 dias"
+  tipoOuIcone: string;
+  tags: string[];
+  tempoRelativo: string;
   onToggleFavorito?: () => void;
   isFavorito?: boolean;
   salvandoFav?: boolean;
@@ -26,28 +26,23 @@ export function VagaCard({
   tipoOuIcone, tags, tempoRelativo, onToggleFavorito, isFavorito, salvandoFav, userId, linkExterna
 }: VagaCardProps) {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const handlePress = () => {
-    if (isExterna && linkExterna) {
-      router.push(`/job/${id}`);
-    } else {
-      router.push(`/job/${id}`);
-    }
+    router.push(`/job/${id}`);
   };
 
-  // Cores dinâmicas
   let corIcone = colors.primary;
   let bgIcone = colors.primaryLight;
   let iconeName: any = 'briefcase';
 
   if (isExterna) {
-    if (tipoOuIcone === 'github') { corIcone = '#24292e'; iconeName = 'github'; }
+    if (tipoOuIcone === 'github') { corIcone = isDark ? '#FFFFFF' : '#24292e'; iconeName = 'github'; }
     else if (tipoOuIcone === 'laptop') { corIcone = '#0ea5e9'; iconeName = 'laptop'; }
-    else if (tipoOuIcone === 'globe') { corIcone = '#4f46e5'; iconeName = 'globe'; }
-    else if (tipoOuIcone === 'search') { corIcone = '#2196F3'; iconeName = 'search'; }
-    else { corIcone = '#FF5A5F'; iconeName = 'briefcase'; } // Arbeitnow
-    bgIcone = corIcone + '18';
+    else if (tipoOuIcone === 'globe') { corIcone = '#8B5CF6'; iconeName = 'globe'; }
+    else if (tipoOuIcone === 'search') { corIcone = '#22C55E'; iconeName = 'search'; }
+    else { corIcone = '#F43F5E'; iconeName = 'briefcase'; }
+    bgIcone = corIcone + '15';
   } else {
     if (tipoOuIcone === 'freelancer') {
       corIcone = colors.secondary;
@@ -61,15 +56,19 @@ export function VagaCard({
   }
 
   return (
-    <TouchableOpacity style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} onPress={handlePress}>
+    <TouchableOpacity 
+      style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} 
+      onPress={handlePress}
+      activeOpacity={0.7}
+    >
       <View style={styles.cardHeader}>
         <View style={[styles.iconBox, { backgroundColor: bgIcone }]}>
-          <FontAwesome name={iconeName} size={20} color={corIcone} />
+          <FontAwesome name={iconeName} size={22} color={corIcone} />
         </View>
         <View style={{ flex: 1 }}>
           <View style={styles.empresaRow}>
             <Text style={[styles.empresa, { color: colors.textSecondary }]} numberOfLines={1}>
-              {empresa || 'Empresa Confidencial'}
+              {empresa || 'Confidencial'}
             </Text>
             <Text style={[styles.tempo, { color: colors.textSecondary }]}> • {tempoRelativo}</Text>
           </View>
@@ -84,23 +83,22 @@ export function VagaCard({
           <TouchableOpacity
             onPress={onToggleFavorito}
             disabled={salvandoFav || !userId}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={styles.coracaoBtn}
           >
             {salvandoFav ? (
-              <FontAwesome name="circle-o-notch" size={20} color="#DC2626" />
+              <FontAwesome name="circle-o-notch" size={22} color="#F43F5E" />
             ) : (
-              <FontAwesome name={isFavorito ? 'heart' : 'heart-o'} size={20} color={isFavorito ? '#DC2626' : colors.textSecondary} />
+              <FontAwesome name={isFavorito ? 'heart' : 'heart-o'} size={22} color={isFavorito ? '#F43F5E' : colors.textSecondary} />
             )}
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Tags Customizadas (Apenas 2 ou 3 para não quebrar layout) */}
       {tags && tags.length > 0 && (
         <View style={styles.tagsRow}>
           {tags.slice(0, 3).map((t, idx) => (
-            <View key={idx} style={[styles.tagBadge, { backgroundColor: colors.background }]}>
+            <View key={idx} style={[styles.tagBadge, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <Text style={[styles.tagText, { color: colors.textSecondary }]}>{t}</Text>
             </View>
           ))}
@@ -111,9 +109,9 @@ export function VagaCard({
         <Text style={[styles.salario, { color: isExterna ? corIcone : colors.secondary }]}>{salarioOuFonte}</Text>
         
         <View style={[styles.tagMatch, { backgroundColor: isExterna ? colors.background : colors.secondaryLight }]}>
-          <FontAwesome name={isExterna ? "external-link" : "star"} size={10} color={isExterna ? colors.textSecondary : colors.secondary} />
+          <FontAwesome name={isExterna ? "external-link" : "star"} size={12} color={isExterna ? colors.textSecondary : colors.secondary} />
           <Text style={[styles.tagMatchText, { color: isExterna ? colors.textSecondary : colors.secondary }]}>
-            {isExterna ? 'Ver Detalhes' : 'Exclusiva'}
+            {isExterna ? 'Ver Detalhes' : 'Vaga Exclusiva'}
           </Text>
         </View>
       </View>
@@ -123,42 +121,48 @@ export function VagaCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
     borderWidth: 1,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.02, shadowRadius: 4, elevation: 1,
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.05, 
+    shadowRadius: 12, 
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: 16,
   },
   iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   empresaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   empresa: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
     flexShrink: 1,
+    letterSpacing: 0.2,
   },
   tempo: {
-    fontSize: 11,
+    fontSize: 12,
   },
   titulo: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 8,
-    lineHeight: 22,
+    fontSize: 17,
+    fontWeight: '800',
+    marginBottom: 10,
+    lineHeight: 24,
+    letterSpacing: -0.3,
   },
   localRow: {
     flexDirection: 'row',
@@ -166,8 +170,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   localText: {
-    fontSize: 12,
+    fontSize: 13,
     flexShrink: 1,
+    fontWeight: '500',
   },
   coracaoBtn: {
     padding: 4,
@@ -175,42 +180,43 @@ const styles = StyleSheet.create({
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 12,
+    gap: 8,
+    marginTop: 16,
   },
   tagBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'transparent',
   },
   tagText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 14,
-    paddingTop: 14,
+    marginTop: 16,
+    paddingTop: 16,
     borderTopWidth: 1,
   },
   salario: {
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: -0.5,
   },
   tagMatch: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 12,
   },
   tagMatchText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
   },
 });

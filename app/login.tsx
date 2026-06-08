@@ -14,14 +14,14 @@ import {
   Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential, createUserWithEmailAndPassword, signOut, sendEmailVerification } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, createUserWithEmailAndPassword, signOut, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../src/services/firebaseConfig';
 import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
 import { BlurView } from 'expo-blur';
 import { FontAwesome } from '@expo/vector-icons';
 import { BrandLogo } from '../components/BrandLogo';
+import { LinearGradient } from 'expo-linear-gradient';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -32,13 +32,12 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [focusedInput, setFocusedInput] = useState<'email' | 'password' | null>(null);
 
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
       const provider = new GoogleAuthProvider();
-      // O Firebase cuidará do redirecionamento através do seu próprio servidor seguro,
-      // ignorando a necessidade de configurar a URI no Google Cloud.
       import('firebase/auth').then(async ({ signInWithPopup }) => {
         const userCred = await signInWithPopup(auth, provider);
         await setDoc(doc(db, 'users', userCred.user.uid), {
@@ -47,10 +46,8 @@ export default function Login() {
           uid: userCred.user.uid,
           criadoEm: new Date().toISOString()
         }, { merge: true });
-        // Sucesso, o layout redireciona
       }).catch((error) => {
         setErrorMessage('Erro ao autenticar com o Google.');
-        console.error('Google Auth Error:', error);
       }).finally(() => {
         setLoading(false);
       });
@@ -77,44 +74,32 @@ export default function Login() {
         await signOut(auth);
         Alert.alert(
           'E-mail não verificado',
-          'Você precisa confirmar o seu e-mail antes de acessar o aplicativo. Deseja reenviar o link de confirmação?',
+          'Você precisa confirmar o seu e-mail antes de acessar o aplicativo.',
           [
             { text: 'Cancelar', style: 'cancel' },
             { 
               text: 'Reenviar E-mail', 
               onPress: async () => {
-                try {
-                  await sendEmailVerification(userCredential.user);
-                  Alert.alert('Sucesso', 'E-mail reenviado! Verifique sua caixa de entrada.');
-                } catch (err) {
-                  Alert.alert('Erro', 'Não foi possível reenviar o e-mail no momento. Tente novamente mais tarde.');
-                }
+                await sendEmailVerification(userCredential.user);
+                Alert.alert('Sucesso', 'E-mail reenviado! Verifique sua caixa de entrada.');
               }
             }
           ]
         );
         return;
       }
-      // O _layout.tsx com o AuthProvider vai redirecionar automaticamente
     } catch (error: any) {
-      // Cria a conta admin se ela ainda não existir e o usuário digitar essas credenciais
       const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'ass.karenm@gmail.com';
       if ((error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') && normalizedEmail === adminEmail && password === 'admin123') {
         try {
           await createUserWithEmailAndPassword(auth, normalizedEmail, password);
-          return; // Sucesso na criação e auto-login
+          return; 
         } catch (createError) {
           setErrorMessage('Erro ao criar a conta admin automaticamente.');
-          console.error(createError);
         }
       } else {
-        console.error(error);
         let customError = error.message || 'Ocorreu um erro ao fazer login.';
-        if (error.code) {
-          customError += ` (Código: ${error.code})`;
-        }
         setErrorMessage(customError);
-        Alert.alert('Falha no Login', customError);
       }
     } finally {
       setLoading(false);
@@ -122,88 +107,103 @@ export default function Login() {
   };
 
   return (
-    <ImageBackground 
-      source={require('../assets/images/auth_background.png')} 
-      style={styles.container}
-      resizeMode="cover"
-    >
+    <View style={styles.container}>
+      <ImageBackground 
+        source={require('../assets/images/auth_background.png')} 
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+      />
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-      <View style={styles.overlay} />
+      <LinearGradient colors={['rgba(11, 15, 25, 0.4)', 'rgba(11, 15, 25, 0.9)']} style={StyleSheet.absoluteFillObject} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.content}>
-          <BlurView intensity={50} tint="dark" style={styles.glassContainer}>
-            
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                <FontAwesome name="angle-left" size={24} color="#FFF" />
-              </TouchableOpacity>
-              <BrandLogo compact={true} />
-            </View>
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          
+          <View style={styles.headerRow}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <FontAwesome name="angle-left" size={24} color="#FFF" />
+            </TouchableOpacity>
+            <BrandLogo compact={true} />
+          </View>
 
-            <Text style={styles.title}>Login</Text>
+          <View style={styles.content}>
+            <Text style={styles.title}>Bem-vindo de volta</Text>
             <Text style={styles.subtitle}>
-              Bem-vindo de volta! Por favor, faça login na sua conta.
+              O seu portal para as melhores oportunidades de tecnologia.
             </Text>
 
             {errorMessage ? (
               <View style={styles.errorContainer}>
+                <FontAwesome name="exclamation-circle" size={16} color="#F87171" style={{ marginRight: 8 }} />
                 <Text style={styles.errorText}>{errorMessage}</Text>
               </View>
             ) : null}
 
-            <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
+            <View style={styles.formContainer}>
+              <View style={[styles.inputWrapper, focusedInput === 'email' && styles.inputWrapperFocused]}>
+                <FontAwesome name="envelope-o" size={18} color={focusedInput === 'email' ? '#4ADE80' : 'rgba(255,255,255,0.4)'} style={styles.inputIconLeft} />
                 <TextInput
                   style={styles.input}
-                  placeholder="E-mail"
-                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  placeholder="E-mail profissional"
+                  placeholderTextColor="rgba(255,255,255,0.4)"
                   autoCapitalize="none"
                   keyboardType="email-address"
                   value={email}
                   onChangeText={setEmail}
+                  onFocus={() => setFocusedInput('email')}
+                  onBlur={() => setFocusedInput(null)}
                 />
-                <FontAwesome name="user-o" size={18} color="rgba(255,255,255,0.6)" style={styles.inputIcon} />
               </View>
 
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, focusedInput === 'password' && styles.inputWrapperFocused]}>
+                <FontAwesome name="lock" size={20} color={focusedInput === 'password' ? '#4ADE80' : 'rgba(255,255,255,0.4)'} style={styles.inputIconLeft} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Senha"
-                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  placeholder="Sua senha secreta"
+                  placeholderTextColor="rgba(255,255,255,0.4)"
                   secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
                   onSubmitEditing={handleLogin}
+                  onFocus={() => setFocusedInput('password')}
+                  onBlur={() => setFocusedInput(null)}
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.inputIcon}>
-                  <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={18} color="rgba(255,255,255,0.6)" />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.inputIconRight}>
+                  <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={18} color="rgba(255,255,255,0.4)" />
                 </TouchableOpacity>
               </View>
 
               <TouchableOpacity onPress={() => router.push('/forgot-password')} style={styles.forgotPasswordContainer}>
-                <Text style={styles.forgotText}>Esqueceu a senha?</Text>
+                <Text style={styles.forgotText}>Recuperar senha</Text>
               </TouchableOpacity>
             </View>
 
             <TouchableOpacity 
-              style={[styles.button, loading && styles.buttonDisabled]} 
+              activeOpacity={0.8}
               onPress={handleLogin}
               disabled={loading}
+              style={{ width: '100%' }}
             >
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.buttonText}>Entrar</Text>
-              )}
+              <LinearGradient
+                colors={['#4ADE80', '#22C55E']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.button, loading && styles.buttonDisabled]}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#0B0F19" />
+                ) : (
+                  <Text style={styles.buttonText}>Acessar Conta</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
 
             <View style={styles.dividerContainer}>
               <View style={styles.divider} />
-              <Text style={styles.dividerText}>OU</Text>
+              <Text style={styles.dividerText}>OU CONECTE-SE COM</Text>
               <View style={styles.divider} />
             </View>
 
@@ -211,176 +211,194 @@ export default function Login() {
               style={styles.googleButton} 
               onPress={handleGoogleLogin}
               disabled={loading}
+              activeOpacity={0.7}
             >
+              <BlurView intensity={20} tint="light" style={StyleSheet.absoluteFillObject} />
               <Image 
                 source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png' }} 
-                style={{ width: 20, height: 20, marginRight: 10 }} 
+                style={{ width: 22, height: 22, marginRight: 12 }} 
               />
-              <Text style={styles.googleButtonText}>Entrar com o Google</Text>
+              <Text style={styles.googleButtonText}>Continuar com Google</Text>
             </TouchableOpacity>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Não tem uma conta?{' '}</Text>
+              <Text style={styles.footerText}>Novo por aqui?{' '}</Text>
               <TouchableOpacity onPress={() => router.push('/register')}>
-                <Text style={styles.registerText}>Cadastre-se</Text>
+                <Text style={styles.registerText}>Crie sua conta agora</Text>
               </TouchableOpacity>
             </View>
 
-          </BlurView>
-        </View>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    backgroundColor: '#0B0F19',
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    paddingTop: 60,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
-  },
-  glassContainer: {
-    padding: 24,
-    borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   title: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 36,
+    fontWeight: '900',
     color: '#FFFFFF',
-    marginBottom: 8,
+    marginBottom: 12,
+    letterSpacing: -1,
   },
   subtitle: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 32,
-    lineHeight: 22,
+    fontSize: 16,
+    color: '#9CA3AF',
+    marginBottom: 40,
+    lineHeight: 24,
   },
   errorContainer: {
-    backgroundColor: 'rgba(220, 38, 38, 0.2)',
-    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    padding: 16,
     borderRadius: 12,
-    marginBottom: 20,
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'rgba(220, 38, 38, 0.5)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
   },
   errorText: {
-    color: '#FFB4B4',
+    color: '#FCA5A5',
     fontSize: 14,
-    textAlign: 'center',
     fontWeight: '500',
+    flex: 1,
   },
-  inputContainer: {
+  formContainer: {
     gap: 16,
-    marginBottom: 24,
+    marginBottom: 32,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 14,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
     paddingHorizontal: 16,
-    height: 56,
+    height: 60,
+  },
+  inputWrapperFocused: {
+    backgroundColor: 'rgba(74, 222, 128, 0.05)',
+    borderColor: '#4ADE80',
   },
   input: {
     flex: 1,
     color: '#FFFFFF',
     fontSize: 16,
+    paddingLeft: 12,
   },
-  inputIcon: {
-    marginLeft: 10,
-    padding: 4,
+  inputIconLeft: {
+    width: 24,
+    textAlign: 'center',
+  },
+  inputIconRight: {
+    padding: 8,
   },
   forgotPasswordContainer: {
-    alignItems: 'flex-end',
-    marginTop: -4,
+    alignSelf: 'flex-end',
+    marginTop: 4,
   },
   forgotText: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#A78BFA', // Neon purple accent
     fontWeight: '600',
-    opacity: 0.9,
   },
   button: {
-    backgroundColor: '#2E9D4D',
-    height: 56,
-    borderRadius: 14,
+    height: 60,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    shadowColor: '#4ADE80',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   buttonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    color: '#0B0F19', // Dark text on bright button
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginVertical: 32,
   },
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   dividerText: {
     marginHorizontal: 16,
-    color: 'rgba(255,255,255,0.6)',
-    fontWeight: '600',
-    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '700',
+    fontSize: 11,
+    letterSpacing: 1,
   },
   googleButton: {
-    height: 56,
-    borderRadius: 14,
+    height: 60,
+    borderRadius: 16,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
   },
   googleButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 32,
+    marginTop: 40,
   },
   footerText: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: 15,
+    color: '#9CA3AF',
   },
   registerText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#4ADE80',
   },
 });

@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { collection, getDocs, query, limit, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../src/services/firebaseConfig';
 import { useTheme } from '../../src/theme/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
 
 interface Usuario {
   id: string;
@@ -15,21 +18,22 @@ interface Usuario {
 interface AvaliacaoData {
   id: string;
   criadoEm: any;
-  respostas: Record<number, any>;
+  status?: string;
+  lastStep?: number;
+  respostas?: Record<number, any>;
 }
 
 export default function AdminDashboard() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   
-  const [abaAtiva, setAbaAtiva] = useState<'usuarios' | 'pesquisas'>('usuarios');
+  const [abaAtiva, setAbaAtiva] = useState<'usuarios' | 'pesquisas' | 'respostas'>('pesquisas');
   
   // Dados de Usuários
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Dados de Pesquisas
   const [avaliacoes, setAvaliacoes] = useState<AvaliacaoData[]>([]);
-  const [totalVisits, setTotalVisits] = useState(0);
   const [loadingPesquisas, setLoadingPesquisas] = useState(true);
 
   const carregarUsuarios = async () => {
@@ -49,14 +53,6 @@ export default function AdminDashboard() {
   const carregarPesquisas = async () => {
     setLoadingPesquisas(true);
     try {
-      // Busca Total de Visitas
-      const docRef = doc(db, 'avaliacoes_stats', 'metrics');
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setTotalVisits(docSnap.data().visits || 0);
-      }
-
-      // Busca Respostas Reais
       const q = query(collection(db, 'avaliacoes'), orderBy('criadoEm', 'desc'));
       const snap = await getDocs(q);
       const lista = snap.docs.map(d => ({ id: d.id, ...d.data() })) as AvaliacaoData[];
@@ -70,40 +66,44 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (abaAtiva === 'usuarios' && usuarios.length === 0) carregarUsuarios();
-    if (abaAtiva === 'pesquisas' && avaliacoes.length === 0) carregarPesquisas();
+    if ((abaAtiva === 'pesquisas' || abaAtiva === 'respostas') && avaliacoes.length === 0) carregarPesquisas();
   }, [abaAtiva]);
 
   // ──────────────────────────────────────────────────────────────────────────
   // ANÁLISE DE DADOS (PESQUISAS)
   // ──────────────────────────────────────────────────────────────────────────
 
+  const completas = avaliacoes.filter(a => a.status === 'completed');
+  const parciais = avaliacoes.filter(a => a.status !== 'completed');
+  const totalIniciadas = avaliacoes.length;
+  
   const calcConversion = () => {
-    if (totalVisits === 0) return 0;
-    return ((avaliacoes.length / totalVisits) * 100).toFixed(1);
+    if (totalIniciadas === 0) return 0;
+    return ((completas.length / totalIniciadas) * 100).toFixed(1);
   };
 
   const calculateNps = () => {
-    if (avaliacoes.length === 0) return 0;
+    if (completas.length === 0) return 0;
     let promotores = 0;
     let detratores = 0;
-    avaliacoes.forEach(a => {
-      const score = a.respostas[10]?.score;
-      if (score >= 9) promotores++;
-      if (score <= 6) detratores++;
+    completas.forEach(a => {
+      const score = a.respostas?.[10]?.score;
+      if (score !== undefined) {
+        if (score >= 9) promotores++;
+        if (score <= 6) detratores++;
+      }
     });
-    const total = avaliacoes.length;
-    return (((promotores - detratores) / total) * 100).toFixed(0);
+    return (((promotores - detratores) / completas.length) * 100).toFixed(0);
   };
 
-  // Calcula a média das notas (1 a 5) de uma pergunta do tipo 'scale+reason'
   const getAverageScale = (qId: number) => {
-    if (avaliacoes.length === 0) return 0;
+    if (completas.length === 0) return 0;
     let sum = 0;
     let count = 0;
-    avaliacoes.forEach(a => {
-      const scale = a.respostas[qId]?.scale;
+    completas.forEach(a => {
+      const scale = a.respostas?.[qId]?.scale;
       if (scale !== undefined) {
-        sum += (scale + 1); // porque nosso array era 0-4 internamente
+        sum += (scale + 1); 
         count++;
       }
     });
@@ -111,21 +111,37 @@ export default function AdminDashboard() {
   };
 
   const getOpenComments = (qId: number) => {
-    return avaliacoes
-      .map(a => a.respostas[qId]?.openText)
+    return completas
+      .map(a => a.respostas?.[qId]?.openText)
       .filter(text => text && text.trim().length > 0);
   };
 
-  const renderProgressChart = (title: string, current: string | number, max: number, suffix: string = '') => {
+  const getDropOffData = () => {
+    const steps = Array(10).fill(0);
+    avaliacoes.forEach(a => {
+      const maxStep = a.status === 'completed' ? 10 : (a.lastStep || 0);
+      for (let i = 0; i < maxStep; i++) {
+        steps[i]++;
+      }
+    });
+    return steps;
+  };
+
+  const renderProgressChart = (title: string, current: string | number, max: number, colorStart: string, colorEnd: string) => {
     const percent = Math.min((Number(current) / max) * 100, 100);
     return (
       <View style={styles.chartItem}>
         <View style={styles.chartHeader}>
           <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>{title}</Text>
-          <Text style={[styles.chartValue, { color: colors.textPrimary }]}>{current}{suffix}</Text>
+          <Text style={[styles.chartValue, { color: colors.textPrimary }]}>{current} / {max}</Text>
         </View>
-        <View style={styles.chartBarBg}>
-          <View style={[styles.chartBarFill, { width: `${percent}%` }]} />
+        <View style={[styles.chartBarBg, { backgroundColor: isDark ? '#374151' : '#E5E7EB' }]}>
+          <LinearGradient
+            colors={[colorStart, colorEnd]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.chartBarFill, { width: `${percent}%` }]}
+          />
         </View>
       </View>
     );
@@ -134,39 +150,165 @@ export default function AdminDashboard() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Painel Admin</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Analytics & Admin</Text>
         
         {/* Toggle Abas */}
-        <View style={styles.toggleContainer}>
+        <View style={[styles.toggleContainer, { backgroundColor: isDark ? '#1F2937' : '#F3F4F6' }]}>
           <TouchableOpacity 
-            style={[styles.toggleBtn, abaAtiva === 'usuarios' && styles.toggleBtnActive]}
-            onPress={() => setAbaAtiva('usuarios')}
-          >
-            <Text style={[styles.toggleText, abaAtiva === 'usuarios' && styles.toggleTextActive]}>Usuários</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.toggleBtn, abaAtiva === 'pesquisas' && styles.toggleBtnActive]}
+            style={[styles.toggleBtn, abaAtiva === 'pesquisas' && [styles.toggleBtnActive, { backgroundColor: isDark ? '#374151' : '#FFFFFF' }]]}
             onPress={() => setAbaAtiva('pesquisas')}
           >
-            <Text style={[styles.toggleText, abaAtiva === 'pesquisas' && styles.toggleTextActive]}>Pesquisas</Text>
+            <Text style={[styles.toggleText, abaAtiva === 'pesquisas' && [styles.toggleTextActive, { color: colors.textPrimary }]]}>Dashboard</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.toggleBtn, abaAtiva === 'respostas' && [styles.toggleBtnActive, { backgroundColor: isDark ? '#374151' : '#FFFFFF' }]]}
+            onPress={() => setAbaAtiva('respostas')}
+          >
+            <Text style={[styles.toggleText, abaAtiva === 'respostas' && [styles.toggleTextActive, { color: colors.textPrimary }]]}>Feedbacks</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.toggleBtn, abaAtiva === 'usuarios' && [styles.toggleBtnActive, { backgroundColor: isDark ? '#374151' : '#FFFFFF' }]]}
+            onPress={() => setAbaAtiva('usuarios')}
+          >
+            <Text style={[styles.toggleText, abaAtiva === 'usuarios' && [styles.toggleTextActive, { color: colors.textPrimary }]]}>Usuários</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {abaAtiva === 'usuarios' && (
+        {/* ABA: DASHBOARD GERAL */}
+        {abaAtiva === 'pesquisas' && (
           <View>
-            <View style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-              <View style={[styles.iconBox, { backgroundColor: colors.primaryLight }]}>
-                <FontAwesome name="users" size={24} color={colors.primary} />
-              </View>
-              <View>
-                <Text style={[styles.statValue, { color: colors.textPrimary }]}>{loadingUsers ? '...' : usuarios.length}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Usuários Cadastrados</Text>
-              </View>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Métricas de Funil</Text>
+              <TouchableOpacity onPress={carregarPesquisas}>
+                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600' }}>Atualizar</Text>
+              </TouchableOpacity>
             </View>
 
+            {loadingPesquisas ? (
+              <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
+            ) : (
+              <>
+                <View style={styles.funnelContainer}>
+                  <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.funnelCard}>
+                    <Text style={styles.funnelCardLabel}>Entraram na Pesquisa</Text>
+                    <Text style={styles.funnelCardValue}>{totalIniciadas}</Text>
+                    <FontAwesome name="sign-in" size={24} color="rgba(255,255,255,0.3)" style={styles.funnelIcon} />
+                  </LinearGradient>
+
+                  <LinearGradient colors={['#10B981', '#059669']} style={styles.funnelCard}>
+                    <Text style={styles.funnelCardLabel}>Finalizaram 100%</Text>
+                    <Text style={styles.funnelCardValue}>{completas.length}</Text>
+                    <FontAwesome name="check-circle" size={24} color="rgba(255,255,255,0.3)" style={styles.funnelIcon} />
+                  </LinearGradient>
+
+                  <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.funnelCard}>
+                    <Text style={styles.funnelCardLabel}>Taxa de Conversão</Text>
+                    <Text style={styles.funnelCardValue}>{calcConversion()}%</Text>
+                    <FontAwesome name="line-chart" size={24} color="rgba(255,255,255,0.3)" style={styles.funnelIcon} />
+                  </LinearGradient>
+                </View>
+
+                {totalIniciadas > 0 && (
+                  <>
+                    <View style={styles.sectionHeader}>
+                      <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginTop: 16 }]}>Gráfico de Retenção (Abandono por Pergunta)</Text>
+                    </View>
+                    
+                    <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+                      <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 20 }}>
+                        Mostra quantas pessoas chegaram até cada etapa da pesquisa.
+                      </Text>
+                      {getDropOffData().map((count, index) => {
+                        const percent = totalIniciadas > 0 ? (count / totalIniciadas) * 100 : 0;
+                        return (
+                          <View key={index} style={styles.dropOffRow}>
+                            <Text style={[styles.dropOffLabel, { color: colors.textSecondary }]}>P{index + 1}</Text>
+                            <View style={[styles.dropOffBarContainer, { backgroundColor: isDark ? '#374151' : '#E5E7EB' }]}>
+                              <LinearGradient 
+                                colors={['#EF4444', '#F43F5E']} 
+                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                                style={[styles.dropOffBar, { width: `${percent}%` }]} 
+                              />
+                            </View>
+                            <Text style={[styles.dropOffCount, { color: colors.textPrimary }]}>{count}</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+
+                    <View style={styles.sectionHeader}>
+                      <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginTop: 16 }]}>Satisfação (Média das notas 1 a 5)</Text>
+                    </View>
+
+                    <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+                      {renderProgressChart('Design e Visual', getAverageScale(2), 5, '#8B5CF6', '#6D28D9')}
+                      {renderProgressChart('Navegação e Usabilidade', getAverageScale(3), 5, '#3B82F6', '#1D4ED8')}
+                      {renderProgressChart('Filtros e Busca', getAverageScale(4), 5, '#0EA5E9', '#0369A1')}
+                      {renderProgressChart('Qualidade das Vagas', getAverageScale(5), 5, '#10B981', '#047857')}
+                      {renderProgressChart('Fluxo de Candidatura', getAverageScale(7), 5, '#F59E0B', '#B45309')}
+                      {renderProgressChart('Resolução de Problemas', getAverageScale(9), 5, '#EC4899', '#BE185D')}
+                      
+                      <View style={styles.npsContainer}>
+                        <View>
+                          <Text style={[styles.chartTitle, { color: colors.textSecondary }]}>Net Promoter Score (NPS)</Text>
+                          <Text style={{ fontSize: 12, color: '#9CA3AF' }}>Calculado apenas com pesquisas completas.</Text>
+                        </View>
+                        <Text style={{ fontSize: 40, fontWeight: '900', color: Number(calculateNps()) > 50 ? '#10B981' : '#F59E0B' }}>
+                          {calculateNps()}
+                        </Text>
+                      </View>
+                    </View>
+                  </>
+                )}
+              </>
+            )}
+          </View>
+        )}
+
+        {/* ABA: FEEDBACKS ABERTOS */}
+        {abaAtiva === 'respostas' && (
+          <View>
+             <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Feedbacks Escritos</Text>
+              <TouchableOpacity onPress={carregarPesquisas}>
+                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600' }}>Atualizar</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {loadingPesquisas ? (
+              <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
+            ) : (
+              <View>
+                {getOpenComments(10).length === 0 ? (
+                  <Text style={{ color: colors.textSecondary }}>Nenhum comentário final registrado.</Text>
+                ) : (
+                  getOpenComments(10).map((comment, index) => (
+                    <View key={index} style={[styles.feedbackCard, { backgroundColor: isDark ? '#1F2937' : '#FFFFFF', borderColor: colors.border }]}>
+                      <FontAwesome name="quote-left" size={16} color={colors.primary} style={{ marginBottom: 12, opacity: 0.5 }} />
+                      <Text style={[styles.commentText, { color: colors.textPrimary }]}>{comment}</Text>
+                    </View>
+                  ))
+                )}
+
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginTop: 32 }]}>Sugestões de Filtros</Text>
+                </View>
+                {getOpenComments(4).map((comment, index) => (
+                    <View key={index} style={[styles.feedbackCard, { backgroundColor: isDark ? '#1F2937' : '#FFFFFF', borderColor: colors.border }]}>
+                      <Text style={[styles.commentText, { color: colors.textPrimary }]}>{comment}</Text>
+                    </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* ABA: USUÁRIOS */}
+        {abaAtiva === 'usuarios' && (
+          <View>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Lista de Usuários</Text>
               <TouchableOpacity onPress={carregarUsuarios}>
@@ -185,79 +327,11 @@ export default function AdminDashboard() {
                   <Text style={[styles.userName, { color: colors.textPrimary }]} numberOfLines={1}>{user.nome || 'Sem Nome'}</Text>
                   <Text style={[styles.userEmail, { color: colors.textSecondary }]} numberOfLines={1}>{user.email}</Text>
                 </View>
+                <TouchableOpacity style={styles.actionBtn}>
+                  <FontAwesome name="chevron-right" size={14} color={colors.textSecondary} />
+                </TouchableOpacity>
               </View>
             ))}
-          </View>
-        )}
-
-        {abaAtiva === 'pesquisas' && (
-          <View>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Funil de Conversão</Text>
-              <TouchableOpacity onPress={carregarPesquisas}>
-                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600' }}>Atualizar</Text>
-              </TouchableOpacity>
-            </View>
-
-            {loadingPesquisas ? (
-              <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
-            ) : (
-              <>
-                <View style={styles.funnelContainer}>
-                  <View style={[styles.funnelBox, { backgroundColor: '#F3F4F6' }]}>
-                    <Text style={styles.funnelValue}>{totalVisits}</Text>
-                    <Text style={styles.funnelLabel}>Visitas no Formulário</Text>
-                  </View>
-                  <View style={[styles.funnelBox, { backgroundColor: '#F3F4F6' }]}>
-                    <Text style={styles.funnelValue}>{avaliacoes.length}</Text>
-                    <Text style={styles.funnelLabel}>Respostas Enviadas</Text>
-                  </View>
-                  <View style={[styles.funnelBox, { backgroundColor: '#CDFE00' }]}>
-                    <Text style={[styles.funnelValue, { color: '#111827' }]}>{calcConversion()}%</Text>
-                    <Text style={[styles.funnelLabel, { color: '#111827' }]}>Taxa de Conversão</Text>
-                  </View>
-                </View>
-
-                {avaliacoes.length > 0 && (
-                  <>
-                    <View style={styles.sectionHeader}>
-                      <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginTop: 16 }]}>Métricas de Satisfação (Médias)</Text>
-                    </View>
-
-                    <View style={[styles.chartsContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-                      {renderProgressChart('Design Visual (1-5)', getAverageScale(2), 5)}
-                      {renderProgressChart('Navegação Intuitiva (1-5)', getAverageScale(3), 5)}
-                      {renderProgressChart('Eficiência de Filtros (1-5)', getAverageScale(4), 5)}
-                      {renderProgressChart('Qualidade das Vagas (1-5)', getAverageScale(5), 5)}
-                      {renderProgressChart('Fluxo de Candidatura (1-5)', getAverageScale(7), 5)}
-                      {renderProgressChart('Resolução de Problema (1-5)', getAverageScale(9), 5)}
-                      
-                      <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
-                        <Text style={[styles.chartTitle, { color: colors.textSecondary }]}>Net Promoter Score (NPS)</Text>
-                        <Text style={{ fontSize: 32, fontWeight: '800', color: calculateNps() > 50 ? '#10B981' : '#F59E0B' }}>
-                          {calculateNps()}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.sectionHeader}>
-                      <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginTop: 16 }]}>Comentários Finais (NPS)</Text>
-                    </View>
-
-                    {getOpenComments(10).length === 0 ? (
-                      <Text style={{ color: colors.textSecondary }}>Nenhum comentário deixado.</Text>
-                    ) : (
-                      getOpenComments(10).map((comment, index) => (
-                        <View key={index} style={styles.commentBox}>
-                          <FontAwesome name="quote-left" size={14} color="#D1D5DB" style={{ marginBottom: 8 }} />
-                          <Text style={styles.commentText}>{comment}</Text>
-                        </View>
-                      ))
-                    )}
-                  </>
-                )}
-              </>
-            )}
           </View>
         )}
 
@@ -269,42 +343,53 @@ export default function AdminDashboard() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 16 },
-  title: { fontSize: 28, fontWeight: '800', marginBottom: 16 },
-  toggleContainer: { flexDirection: 'row', backgroundColor: '#F3F4F6', borderRadius: 12, padding: 4 },
-  toggleBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
-  toggleBtnActive: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width:0, height:2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 },
+  title: { fontSize: 32, fontWeight: '900', marginBottom: 24, letterSpacing: -0.5 },
+  toggleContainer: { flexDirection: 'row', borderRadius: 14, padding: 4 },
+  toggleBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 10 },
+  toggleBtnActive: { shadowColor: '#000', shadowOffset: { width:0, height:2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
   toggleText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
-  toggleTextActive: { color: '#111827' },
+  toggleTextActive: { fontWeight: '800' },
   
   scrollContent: { padding: 20, paddingTop: 10, paddingBottom: 40 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  sectionTitle: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
   
-  statCard: { flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 16, borderWidth: 1, marginBottom: 24, gap: 16 },
-  iconBox: { width: 56, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  statValue: { fontSize: 24, fontWeight: '800', marginBottom: 2 },
-  statLabel: { fontSize: 13, fontWeight: '500' },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: 18, fontWeight: '700' },
-  
-  userCard: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 10, gap: 14 },
-  avatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  avatarText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-  userInfo: { flex: 1 },
-  userName: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
-  userEmail: { fontSize: 13 },
+  card: { padding: 24, borderRadius: 20, borderWidth: 1, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
 
-  funnelContainer: { flexDirection: 'row', gap: 10, marginBottom: 24 },
-  funnelBox: { flex: 1, padding: 16, borderRadius: 16, alignItems: 'center' },
-  funnelValue: { fontSize: 24, fontWeight: '800', color: '#111827', marginBottom: 4 },
-  funnelLabel: { fontSize: 12, fontWeight: '600', color: '#6B7280', textAlign: 'center' },
+  // FUNIL CARDS
+  funnelContainer: { flexDirection: 'column', gap: 12, marginBottom: 32 },
+  funnelCard: { padding: 20, borderRadius: 20, overflow: 'hidden', position: 'relative' },
+  funnelCardLabel: { fontSize: 14, color: 'rgba(255,255,255,0.8)', fontWeight: '600', marginBottom: 4 },
+  funnelCardValue: { fontSize: 36, color: '#FFFFFF', fontWeight: '900', letterSpacing: -1 },
+  funnelIcon: { position: 'absolute', right: 20, top: '50%', transform: [{ translateY: -12 }] },
 
-  chartsContainer: { padding: 20, borderRadius: 16, borderWidth: 1, marginBottom: 24, gap: 16 },
-  chartItem: { marginBottom: 4 },
+  // DROP OFF BARS
+  dropOffRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12 },
+  dropOffLabel: { width: 28, fontSize: 13, fontWeight: '700' },
+  dropOffBarContainer: { flex: 1, height: 12, borderRadius: 6, overflow: 'hidden' },
+  dropOffBar: { height: '100%', borderRadius: 6 },
+  dropOffCount: { width: 32, textAlign: 'right', fontSize: 14, fontWeight: '800' },
+
+  // CHARTS
+  chartItem: { marginBottom: 16 },
   chartHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  chartTitle: { fontSize: 13, fontWeight: '600' },
-  chartValue: { fontSize: 13, fontWeight: '800' },
-  chartBarBg: { height: 8, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden' },
-  chartBarFill: { height: '100%', backgroundColor: '#2E9D4D', borderRadius: 4 },
+  chartTitle: { fontSize: 14, fontWeight: '700' },
+  chartValue: { fontSize: 14, fontWeight: '900' },
+  chartBarBg: { height: 10, borderRadius: 5, overflow: 'hidden' },
+  chartBarFill: { height: '100%', borderRadius: 5 },
 
-  commentBox: { backgroundColor: '#F9FAFB', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12 },
-  commentText: { fontSize: 14, color: '#4B5563', lineHeight: 22, fontStyle: 'italic' },
+  npsContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 24, borderTopWidth: 1, borderTopColor: 'rgba(156, 163, 175, 0.2)' },
+
+  // FEEDBACKS
+  feedbackCard: { padding: 20, borderRadius: 16, borderWidth: 1, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  commentText: { fontSize: 15, lineHeight: 24, fontStyle: 'italic', fontWeight: '500' },
+
+  // USERS
+  userCard: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 5, elevation: 1 },
+  avatar: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
+  avatarText: { color: '#FFF', fontWeight: '800', fontSize: 16 },
+  userInfo: { flex: 1, marginLeft: 16 },
+  userName: { fontSize: 16, fontWeight: '800', marginBottom: 2 },
+  userEmail: { fontSize: 13 },
+  actionBtn: { padding: 8 },
 });

@@ -8,6 +8,7 @@ import { salvarFavorito, removerFavorito, buscarFavoritos } from '../../src/serv
 import { useTheme } from '../../src/theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import { VagaCard } from '../../components/VagaCard';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface VagaInterna {
   id: string;
@@ -24,7 +25,7 @@ const FILTROS_TAGS = ['Todos', 'Remoto', 'Híbrido', 'PJ', 'CLT', 'Freelance', '
 
 export default function SearchScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [busca, setBusca] = useState('');
   const [abaAtiva, setAbaAtiva] = useState<'externas' | 'internas'>('externas'); // Padrão Externas
   const [filtroTag, setFiltroTag] = useState('Todos');
@@ -125,27 +126,29 @@ export default function SearchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>Buscar</Text>
-        <Text style={[styles.pageSubtitle, { color: colors.textSecondary }]}>Encontre vagas ou freelancers</Text>
+        <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>Explorar Vagas</Text>
+        <Text style={[styles.pageSubtitle, { color: colors.textSecondary }]}>Milhares de oportunidades em um só lugar.</Text>
 
         <View style={styles.searchRow}>
           <View style={[styles.searchInputContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-            <FontAwesome name="search" size={16} color={colors.textSecondary} style={{ marginHorizontal: 12 }} />
+            <FontAwesome name="search" size={18} color={colors.primary} style={{ marginHorizontal: 16 }} />
             <TextInput
               style={[styles.searchInput, { color: colors.textPrimary }]}
-              placeholder="React Native, Designer..."
+              placeholder="Ex: React Native, UX Designer..."
               placeholderTextColor={colors.textSecondary}
               value={busca}
               onChangeText={setBusca}
             />
             {busca.length > 0 && (
-              <TouchableOpacity onPress={() => setBusca('')} style={{ padding: 10 }}>
-                <FontAwesome name="times-circle" size={16} color={colors.textSecondary} />
+              <TouchableOpacity onPress={() => setBusca('')} style={{ padding: 12 }}>
+                <FontAwesome name="times-circle" size={18} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
-          <TouchableOpacity style={[styles.filterBtn, { backgroundColor: colors.primary }]} onPress={() => carregarTudo(true)}>
-            <FontAwesome name="refresh" size={18} color="#FFF" />
+          <TouchableOpacity onPress={() => carregarTudo(true)} activeOpacity={0.8}>
+            <LinearGradient colors={colors.primaryGradient || ['#22C55E', '#16A34A']} style={styles.filterBtn}>
+              <FontAwesome name="refresh" size={20} color="#FFF" />
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
@@ -154,10 +157,11 @@ export default function SearchScreen() {
             <TouchableOpacity
               key={f}
               style={[styles.tagBtn, {
-                backgroundColor: filtroTag === f ? colors.secondary : colors.cardBackground,
+                backgroundColor: filtroTag === f ? colors.secondary : 'transparent',
                 borderColor: filtroTag === f ? colors.secondary : colors.border
               }]}
               onPress={() => setFiltroTag(f)}
+              activeOpacity={0.7}
             >
               <Text style={[styles.tagBtnText, { color: filtroTag === f ? '#FFF' : colors.textPrimary }]}>{f}</Text>
             </TouchableOpacity>
@@ -167,34 +171,43 @@ export default function SearchScreen() {
 
       <View style={styles.abasWrapper}>
         <View style={[styles.abasContainer, { backgroundColor: colors.badgeBackground }]}>
-          <TouchableOpacity style={[styles.abaBtn, abaAtiva === 'externas' && { backgroundColor: colors.cardBackground }]} onPress={() => setAbaAtiva('externas')}>
-            <Text style={[styles.abaText, { color: abaAtiva === 'externas' ? colors.textPrimary : colors.textSecondary, fontWeight: abaAtiva === 'externas' ? '700' : '500' }]}>Vagas Globais</Text>
+          <TouchableOpacity 
+            style={[styles.abaBtn, abaAtiva === 'externas' && { backgroundColor: colors.cardBackground, shadowColor: '#000', shadowOpacity: 0.1, elevation: 3, shadowRadius: 8 }]} 
+            onPress={() => setAbaAtiva('externas')}
+          >
+            <Text style={[styles.abaText, { color: abaAtiva === 'externas' ? colors.primary : colors.textSecondary, fontWeight: abaAtiva === 'externas' ? '800' : '600' }]}>Vagas Globais</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.abaBtn, abaAtiva === 'internas' && { backgroundColor: colors.cardBackground }]} onPress={() => setAbaAtiva('internas')}>
-            <Text style={[styles.abaText, { color: abaAtiva === 'internas' ? colors.textPrimary : colors.textSecondary, fontWeight: abaAtiva === 'internas' ? '700' : '500' }]}>TechConnect</Text>
+          <TouchableOpacity 
+            style={[styles.abaBtn, abaAtiva === 'internas' && { backgroundColor: colors.cardBackground, shadowColor: '#000', shadowOpacity: 0.1, elevation: 3, shadowRadius: 8 }]} 
+            onPress={() => setAbaAtiva('internas')}
+          >
+            <Text style={[styles.abaText, { color: abaAtiva === 'internas' ? colors.secondary : colors.textSecondary, fontWeight: abaAtiva === 'internas' ? '800' : '600' }]}>TechConnect</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.listContent}>
         {!userId && (
-          <View style={[styles.loginHint, { backgroundColor: colors.primaryLight }]}>
-            <FontAwesome name="info-circle" size={14} color={colors.primary} />
+          <View style={[styles.loginHint, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '30', borderWidth: 1 }]}>
+            <FontAwesome name="info-circle" size={16} color={colors.primary} />
             <Text style={[styles.loginHintText, { color: colors.primary }]}>  Faça login para salvar vagas nos favoritos</Text>
           </View>
         )}
 
         <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
-          {abaAtiva === 'internas' ? vagasInternasFiltradas.length : vagasExternasFiltradas.length} vagas encontradas
+          {abaAtiva === 'internas' ? vagasInternasFiltradas.length : vagasExternasFiltradas.length} oportunidades encontradas
         </Text>
 
         {loading ? (
-          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 60 }} />
         ) : abaAtiva === 'internas' ? (
           vagasInternasFiltradas.length === 0 ? (
             <View style={styles.emptySearch}>
-              <FontAwesome name="search" size={32} color="#EFEFEF" />
-              <Text style={[styles.emptySearchText, { color: colors.textSecondary }]}>Nenhuma vaga encontrada</Text>
+              <View style={[styles.emptySearchIcon, { backgroundColor: colors.primaryLight }]}>
+                <FontAwesome name="search" size={36} color={colors.primary} />
+              </View>
+              <Text style={[styles.emptySearchText, { color: colors.textPrimary }]}>Nenhuma vaga encontrada</Text>
+              <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 8 }}>Tente usar palavras mais genéricas ou limpar os filtros.</Text>
             </View>
           ) : vagasInternasFiltradas.map(vaga => (
             <VagaCard
@@ -217,8 +230,11 @@ export default function SearchScreen() {
         ) : (
           vagasExternasFiltradas.length === 0 ? (
             <View style={styles.emptySearch}>
-              <FontAwesome name="search" size={32} color="#EFEFEF" />
-              <Text style={[styles.emptySearchText, { color: colors.textSecondary }]}>Nenhuma vaga encontrada</Text>
+              <View style={[styles.emptySearchIcon, { backgroundColor: colors.secondaryLight }]}>
+                <FontAwesome name="search" size={36} color={colors.secondary} />
+              </View>
+              <Text style={[styles.emptySearchText, { color: colors.textPrimary }]}>Nenhuma vaga encontrada</Text>
+              <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 8 }}>Tente usar palavras mais genéricas ou limpar os filtros.</Text>
             </View>
           ) : vagasExternasFiltradas.map(vaga => {
             let icone = 'globe';
@@ -253,24 +269,80 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 10 },
-  pageTitle: { fontSize: 28, fontWeight: '800' },
-  pageSubtitle: { fontSize: 14, marginTop: 4, marginBottom: 20 },
-  searchRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  searchInputContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12, height: 50 },
-  searchInput: { flex: 1, height: '100%', fontSize: 15 },
-  filterBtn: { width: 50, height: 50, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  tagsContainer: { gap: 8, paddingRight: 20 },
-  tagBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
-  tagBtnText: { fontSize: 13, fontWeight: '600' },
-  abasWrapper: { paddingHorizontal: 20, paddingBottom: 10 },
-  abasContainer: { flexDirection: 'row', borderRadius: 12, padding: 4 },
-  abaBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
-  abaText: { fontSize: 13 },
-  listContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  loginHint: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 10, marginBottom: 12 },
-  loginHintText: { fontSize: 13, fontWeight: '500' },
-  resultsCount: { fontSize: 13, marginBottom: 16, fontWeight: '500' },
-  emptySearch: { alignItems: 'center', paddingVertical: 48, gap: 8 },
-  emptySearchText: { fontSize: 16, fontWeight: '700' },
+  header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 16 },
+  pageTitle: { fontSize: 32, fontWeight: '900', letterSpacing: -0.5 },
+  pageSubtitle: { fontSize: 16, marginTop: 6, marginBottom: 24, fontWeight: '500' },
+  
+  searchRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  searchInputContainer: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderWidth: 1, 
+    borderRadius: 16, 
+    height: 56,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  searchInput: { flex: 1, height: '100%', fontSize: 16 },
+  filterBtn: { 
+    width: 56, 
+    height: 56, 
+    borderRadius: 16, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  
+  tagsContainer: { gap: 10, paddingRight: 20, paddingBottom: 10 },
+  tagBtn: { 
+    paddingHorizontal: 20, 
+    paddingVertical: 10, 
+    borderRadius: 24, 
+    borderWidth: 1 
+  },
+  tagBtnText: { fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
+  
+  abasWrapper: { paddingHorizontal: 20, paddingBottom: 16 },
+  abasContainer: { 
+    flexDirection: 'row', 
+    borderRadius: 16, 
+    padding: 6 
+  },
+  abaBtn: { 
+    flex: 1, 
+    paddingVertical: 12, 
+    alignItems: 'center', 
+    borderRadius: 12 
+  },
+  abaText: { fontSize: 14, letterSpacing: 0.3 },
+  
+  listContent: { paddingHorizontal: 20, paddingBottom: 60 },
+  loginHint: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 16, 
+    borderRadius: 12, 
+    marginBottom: 20 
+  },
+  loginHintText: { fontSize: 14, fontWeight: '700' },
+  resultsCount: { fontSize: 14, marginBottom: 20, fontWeight: '600' },
+  
+  emptySearch: { alignItems: 'center', paddingVertical: 60, gap: 12, paddingHorizontal: 40 },
+  emptySearchIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptySearchText: { fontSize: 18, fontWeight: '800' },
 });
