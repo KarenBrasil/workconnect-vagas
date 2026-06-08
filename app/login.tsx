@@ -98,11 +98,8 @@ export default function Login() {
         setLoading(false);
       }
     } else {
-      showAlert(
-        'Ambiente de Desenvolvimento',
-        'No aplicativo de testes (Expo Go), utilize o acesso por E-mail e Senha.\n\nO login nativo com Google estará totalmente funcional na versão final do aplicativo.',
-        'info'
-      );
+      // No Mobile (Expo Go), chama o prompt de autenticação do expo-auth-session
+      promptAsync();
     }
   };
 

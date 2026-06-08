@@ -1,12 +1,26 @@
 import { useState } from 'react';
-import { Alert, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../src/services/firebaseConfig';
-import { BrandLogo } from '../components/BrandLogo';
+import { FontAwesome } from '@expo/vector-icons';
+import { Input, ButtonPrimary, ButtonOutline } from '../components/ui';
+import { useTheme } from '../src/theme/ThemeContext';
+import { IlluResume } from '../assets/illustrations';
 
 export default function ForgotPassword() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -26,9 +40,9 @@ export default function ForgotPassword() {
       setLoading(true);
       await sendPasswordResetEmail(auth, normalizedEmail);
       setSuccessMessage('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
-      Alert.alert('Sucesso', 'Instruções enviadas para o seu e-mail.');
+      setEmail('');
     } catch (error: any) {
-      console.error("Reset Password Error:", error);
+      console.error('Reset Password Error:', error);
       let customError = 'Ocorreu um erro ao tentar recuperar a senha.';
       if (error.code === 'auth/user-not-found') {
         customError = 'Não há usuário cadastrado com este e-mail.';
@@ -42,50 +56,72 @@ export default function ForgotPassword() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.logoContainer}>
-        <BrandLogo />
-      </View>
-      <Text style={styles.title}>Recuperar Senha</Text>
-      <Text style={styles.subtitle}>Enviaremos um link para redefinir sua senha.</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
-      {errorMessage ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{errorMessage}</Text>
-        </View>
-      ) : null}
-
-      {successMessage ? (
-        <View style={styles.successContainer}>
-          <Text style={styles.successText}>{successMessage}</Text>
-        </View>
-      ) : null}
-
-      <TextInput
-        style={styles.input}
-        placeholder="Seu e-mail cadastrado"
-        placeholderTextColor="#aaa"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-
-      <TouchableOpacity 
-        style={[styles.button, loading && styles.buttonDisabled]} 
-        onPress={handleResetPassword}
-        disabled={loading}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {loading ? (
-          <ActivityIndicator color="#FFF" />
-        ) : (
-          <Text style={styles.buttonText}>Enviar E-mail</Text>
-        )}
-      </TouchableOpacity>
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
 
-      <TouchableOpacity style={styles.linkButton} onPress={() => router.back()}>
-        <Text style={styles.linkText}>Voltar para o Login</Text>
-      </TouchableOpacity>
+          {/* Illustration */}
+          <View style={styles.illustrationContainer}>
+            <IlluResume width={140} height={120} />
+          </View>
+
+          <View style={styles.content}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Recuperar Senha 🔐</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              Enviaremos um link para você redefinir sua senha.
+            </Text>
+
+            {errorMessage ? (
+              <View style={[styles.errorContainer, { borderColor: colors.danger, backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2' }]}>
+                <FontAwesome name="exclamation-circle" size={16} color={colors.danger} style={{ marginRight: 8 }} />
+                <Text style={[styles.errorText, { color: colors.danger }]}>{errorMessage}</Text>
+              </View>
+            ) : null}
+
+            {successMessage ? (
+              <View style={[styles.successContainer, { borderColor: colors.success, backgroundColor: isDark ? 'rgba(34, 197, 94, 0.1)' : '#DCFCE7' }]}>
+                <FontAwesome name="check-circle" size={16} color={colors.success} style={{ marginRight: 8 }} />
+                <Text style={[styles.successText, { color: colors.success }]}>{successMessage}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.formContainer}>
+              <Input
+                label="E-mail de Recuperação"
+                placeholder="seu@email.com"
+                icon="envelope"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <ButtonPrimary
+              label={loading ? '' : 'Enviar E-mail'}
+              onPress={handleResetPassword}
+              disabled={loading}
+              style={styles.button}
+              icon="paper-plane"
+            />
+            {loading && (
+              <ActivityIndicator color={colors.primary} size="large" style={styles.loader} />
+            )}
+
+            <ButtonOutline
+              label="Voltar para Login"
+              onPress={() => router.back()}
+              style={styles.backButton}
+              icon="arrow-left"
+            />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -93,88 +129,69 @@ export default function ForgotPassword() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: '#FAFAFC',
   },
-  logoContainer: {
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    paddingTop: 20,
+    justifyContent: 'center',
+  },
+  illustrationContainer: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
+  },
+  content: {
+    flex: 1,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#312651',
+    fontSize: 26,
+    fontWeight: '800',
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#83829A',
+    fontSize: 14,
     marginBottom: 24,
+    lineHeight: 20,
     textAlign: 'center',
-    paddingHorizontal: 20,
   },
   errorContainer: {
-    backgroundColor: '#FEE2E2',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#FCA5A5',
   },
   errorText: {
-    color: '#DC2626',
-    fontSize: 14,
-    textAlign: 'center',
+    fontSize: 13,
     fontWeight: '500',
+    flex: 1,
   },
   successContainer: {
-    backgroundColor: '#D1FAE5',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#6EE7B7',
   },
   successText: {
-    color: '#059669',
-    fontSize: 14,
-    textAlign: 'center',
+    fontSize: 13,
     fontWeight: '500',
+    flex: 1,
   },
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EFEFEF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    fontSize: 16,
-    color: '#312651',
+  formContainer: {
+    marginBottom: 24,
   },
   button: {
-    backgroundColor: '#2E9D4D',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
+    marginBottom: 16,
+    minHeight: 56,
+  },
+  loader: {
+    marginVertical: 16,
+  },
+  backButton: {
     marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  linkButton: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  linkText: {
-    color: '#83829A',
-    fontSize: 14,
-    fontWeight: '600',
   },
 });

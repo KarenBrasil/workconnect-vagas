@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   ActivityIndicator,
@@ -19,10 +17,14 @@ import { auth, db } from '../src/services/firebaseConfig';
 import { FontAwesome } from '@expo/vector-icons';
 import { useLanguage } from '../src/theme/LanguageContext';
 import { CustomAlert } from '../components/CustomAlert';
+import { Input, ButtonPrimary } from '../components/ui';
+import { IlluOnboarding } from '../assets/illustrations';
+import { useTheme } from '../src/theme/ThemeContext';
 
 export default function Register() {
   const router = useRouter();
   const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -81,7 +83,7 @@ export default function Register() {
       if (error.code === 'auth/email-already-in-use') customError = 'Este e-mail já está em uso.';
       else if (error.code === 'auth/invalid-email') customError = 'E-mail inválido.';
       else if (error.code === 'auth/weak-password') customError = 'A senha é muito fraca.';
-      
+
       setErrorMessage(customError);
     } finally {
       setLoading(false);
@@ -89,8 +91,8 @@ export default function Register() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F6FA" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       <CustomAlert
         visible={alertConfig.visible}
@@ -106,89 +108,80 @@ export default function Register() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          
-          <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <FontAwesome name="angle-left" size={24} color="#0D2B5A" />
-            </TouchableOpacity>
+
+          {/* Illustration */}
+          <View style={styles.illustrationContainer}>
+            <IlluOnboarding width={160} height={140} />
           </View>
 
           <View style={styles.content}>
-            <Text style={styles.title}>{t('auth.createAccount')}</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Criar Conta 🚀</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Junte-se a nós para descobrir as melhores vagas.
             </Text>
 
             {errorMessage ? (
-              <View style={styles.errorContainer}>
-                <FontAwesome name="exclamation-circle" size={16} color="#EF4444" style={{ marginRight: 8 }} />
-                <Text style={styles.errorText}>{errorMessage}</Text>
+              <View style={[styles.errorContainer, { borderColor: colors.danger, backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2' }]}>
+                <FontAwesome name="exclamation-circle" size={16} color={colors.danger} style={{ marginRight: 8 }} />
+                <Text style={[styles.errorText, { color: colors.danger }]}>{errorMessage}</Text>
               </View>
             ) : null}
 
             <View style={styles.formContainer}>
-              <Text style={styles.label}>{t('auth.name')}</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Seu nome completo"
-                  placeholderTextColor="#A0AEC0"
-                  autoCapitalize="words"
-                  value={nome}
-                  onChangeText={setNome}
-                />
-              </View>
+              <Input
+                label="Nome Completo"
+                placeholder="Seu nome completo"
+                icon="user"
+                value={nome}
+                onChangeText={setNome}
+                autoCapitalize="words"
+              />
 
-              <Text style={styles.label}>{t('auth.email')}</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="exemplo@email.com"
-                  placeholderTextColor="#A0AEC0"
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-              </View>
+              <Input
+                label="E-mail"
+                placeholder="seu@email.com"
+                icon="envelope"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
 
-              <Text style={styles.label}>{t('auth.password')}</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Mínimo de 6 caracteres"
-                  placeholderTextColor="#A0AEC0"
-                  secureTextEntry={!showPassword}
+              <View style={styles.passwordContainer}>
+                <Input
+                  label="Senha"
+                  placeholder="Mínimo 6 caracteres"
+                  icon="lock"
                   value={password}
                   onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
                   onSubmitEditing={handleRegister}
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.inputIconRight}>
-                  <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={18} color="#A0AEC0" />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeButton}
+                >
+                  <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={16} color={colors.secondary} />
                 </TouchableOpacity>
               </View>
             </View>
 
-            <TouchableOpacity 
-              activeOpacity={0.8}
+            <ButtonPrimary
+              label={loading ? '' : t('auth.register')}
               onPress={handleRegister}
               disabled={loading}
-              style={[styles.button, loading && styles.buttonDisabled]}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>{t('auth.register')}</Text>
-              )}
-            </TouchableOpacity>
+              style={styles.registerButton}
+            />
+            {loading && (
+              <ActivityIndicator color={colors.primary} size="large" style={styles.loader} />
+            )}
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>{t('auth.hasAccount')} </Text>
+              <Text style={[styles.footerText, { color: colors.textSecondary }]}>{t('auth.hasAccount')} </Text>
               <TouchableOpacity onPress={() => router.push('/login')}>
-                <Text style={styles.registerText}>{t('auth.loginHere')}</Text>
+                <Text style={[styles.loginText, { color: colors.secondary }]}>{t('auth.loginHere')}</Text>
               </TouchableOpacity>
             </View>
-
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -199,110 +192,62 @@ export default function Register() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F6FA',
   },
   scrollContent: {
     flexGrow: 1,
     padding: 24,
-    paddingTop: 40,
+    paddingTop: 20,
   },
-  headerRow: {
-    marginBottom: 32,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EAECEF',
-    justifyContent: 'center',
+  illustrationContainer: {
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: 32,
+    marginTop: 20,
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '800',
-    color: '#0D2B5A',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 15,
-    color: '#7A7A7A',
-    marginBottom: 32,
+    fontSize: 14,
+    marginBottom: 24,
+    lineHeight: 20,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
-    padding: 16,
+    padding: 14,
     borderRadius: 12,
-    marginBottom: 24,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#FECACA',
   },
   errorText: {
-    color: '#EF4444',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     flex: 1,
   },
   formContainer: {
-    gap: 8,
-    marginBottom: 32,
+    marginBottom: 24,
+    gap: 16,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 4,
-    marginTop: 8,
+  passwordContainer: {
+    position: 'relative',
   },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EAECEF',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 56,
+  eyeButton: {
+    position: 'absolute',
+    right: 14,
+    top: 38,
+    zIndex: 10,
   },
-  input: {
-    flex: 1,
-    color: '#1A1A1A',
-    fontSize: 15,
+  registerButton: {
+    marginBottom: 24,
+    minHeight: 56,
   },
-  inputIconRight: {
-    padding: 8,
-  },
-  button: {
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: '#0D2B5A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#0D2B5A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+  loader: {
+    marginVertical: 16,
   },
   footer: {
     flexDirection: 'row',
@@ -310,12 +255,10 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   footerText: {
-    fontSize: 14,
-    color: '#7A7A7A',
+    fontSize: 13,
   },
-  registerText: {
-    fontSize: 14,
+  loginText: {
+    fontSize: 13,
     fontWeight: '700',
-    color: '#0D2B5A',
   },
 });
