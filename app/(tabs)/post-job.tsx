@@ -8,6 +8,7 @@ import { db, auth } from '../../src/services/firebaseConfig';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { CustomAlert } from '../../components/CustomAlert';
+import { useTheme } from '../../src/theme/ThemeContext';
 
 interface VagaPublicada {
   id: string;
@@ -20,6 +21,7 @@ interface VagaPublicada {
 
 export default function PostJob() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [tipo, setTipo] = useState<'recrutador' | 'freelancer'>('recrutador');
   const [titulo, setTitulo] = useState('');
   const [empresa, setEmpresa] = useState('');
@@ -134,10 +136,10 @@ export default function PostJob() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Publicações</Text>
-        <Text style={styles.subtitle}>Gerencie suas vagas</Text>
+    <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Publicações</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Gerencie suas vagas</Text>
       </View>
 
       {/* Abas */}

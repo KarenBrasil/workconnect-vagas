@@ -9,6 +9,7 @@ import { useTheme } from '../../src/theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import { VagaCard } from '../../components/VagaCard';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Chip } from '../../components/ui';
 
 interface VagaInterna {
   id: string;
@@ -146,42 +147,57 @@ export default function SearchScreen() {
             )}
           </View>
           <TouchableOpacity onPress={() => carregarTudo(true)} activeOpacity={0.8}>
-            <LinearGradient colors={colors.primaryGradient || ['#22C55E', '#16A34A']} style={styles.filterBtn}>
-              <FontAwesome name="refresh" size={20} color="#FFF" />
+            <LinearGradient colors={[colors.primary, colors.primaryDark]} style={[styles.filterBtn, { shadowColor: colors.primary }]}>
+              <FontAwesome name="refresh" size={20} color={colors.textInverse} />
             </LinearGradient>
           </TouchableOpacity>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagsContainer}>
           {FILTROS_TAGS.map(f => (
-            <TouchableOpacity
+            <Chip
               key={f}
-              style={[styles.tagBtn, {
-                backgroundColor: filtroTag === f ? colors.secondary : 'transparent',
-                borderColor: filtroTag === f ? colors.secondary : colors.border
-              }]}
+              label={f}
+              active={filtroTag === f}
               onPress={() => setFiltroTag(f)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.tagBtnText, { color: filtroTag === f ? '#FFF' : colors.textPrimary }]}>{f}</Text>
-            </TouchableOpacity>
+            />
           ))}
         </ScrollView>
       </View>
 
       <View style={styles.abasWrapper}>
-        <View style={[styles.abasContainer, { backgroundColor: colors.badgeBackground }]}>
-          <TouchableOpacity 
-            style={[styles.abaBtn, abaAtiva === 'externas' && { backgroundColor: colors.cardBackground, shadowColor: '#000', shadowOpacity: 0.1, elevation: 3, shadowRadius: 8 }]} 
+        <View style={[styles.abasContainer]}>
+          <TouchableOpacity
+            style={[
+              styles.abaBtn,
+              abaAtiva === 'externas' && styles.abaBtnActive
+            ]}
             onPress={() => setAbaAtiva('externas')}
           >
-            <Text style={[styles.abaText, { color: abaAtiva === 'externas' ? colors.primary : colors.textSecondary, fontWeight: abaAtiva === 'externas' ? '800' : '600' }]}>Vagas Globais</Text>
+            <Text style={[
+              styles.abaText,
+              { color: abaAtiva === 'externas' ? colors.primary : colors.textSecondary },
+              abaAtiva === 'externas' && { fontWeight: '800' }
+            ]}>
+              Vagas Globais
+            </Text>
+            {abaAtiva === 'externas' && <View style={[styles.abaUnderline, { backgroundColor: colors.primary }]} />}
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.abaBtn, abaAtiva === 'internas' && { backgroundColor: colors.cardBackground, shadowColor: '#000', shadowOpacity: 0.1, elevation: 3, shadowRadius: 8 }]} 
+          <TouchableOpacity
+            style={[
+              styles.abaBtn,
+              abaAtiva === 'internas' && styles.abaBtnActive
+            ]}
             onPress={() => setAbaAtiva('internas')}
           >
-            <Text style={[styles.abaText, { color: abaAtiva === 'internas' ? colors.secondary : colors.textSecondary, fontWeight: abaAtiva === 'internas' ? '800' : '600' }]}>TechConnect</Text>
+            <Text style={[
+              styles.abaText,
+              { color: abaAtiva === 'internas' ? colors.secondary : colors.textSecondary },
+              abaAtiva === 'internas' && { fontWeight: '800' }
+            ]}>
+              TechConnect
+            </Text>
+            {abaAtiva === 'internas' && <View style={[styles.abaUnderline, { backgroundColor: colors.secondary }]} />}
           </TouchableOpacity>
         </View>
       </View>
@@ -311,18 +327,29 @@ const styles = StyleSheet.create({
   tagBtnText: { fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
   
   abasWrapper: { paddingHorizontal: 20, paddingBottom: 16 },
-  abasContainer: { 
-    flexDirection: 'row', 
-    borderRadius: 16, 
-    padding: 6 
+  abasContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 2,
+    borderBottomColor: '#E8E8EE',
+    gap: 20,
   },
-  abaBtn: { 
-    flex: 1, 
-    paddingVertical: 12, 
-    alignItems: 'center', 
-    borderRadius: 12 
+  abaBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    position: 'relative',
   },
-  abaText: { fontSize: 14, letterSpacing: 0.3 },
+  abaBtnActive: {
+    opacity: 1,
+  },
+  abaUnderline: {
+    position: 'absolute',
+    bottom: -2,
+    left: 0,
+    right: 0,
+    height: 2,
+  },
+  abaText: { fontSize: 14, letterSpacing: 0.3, fontWeight: '600' },
   
   listContent: { paddingHorizontal: 20, paddingBottom: 60 },
   loginHint: { 

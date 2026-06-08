@@ -129,10 +129,10 @@ export default function ProfileScreen() {
 
       {/* Hero Header com Gradiente */}
       <View style={styles.heroSection}>
-        <LinearGradient 
-          colors={colors.primaryGradient || ['#22C55E', '#16A34A']} 
+        <LinearGradient
+          colors={[colors.primary, colors.primaryDark]}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={styles.heroBanner} 
+          style={styles.heroBanner}
         />
         <View style={[styles.profileCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
           <View style={[styles.avatarCircle, { backgroundColor: colors.primary, borderColor: colors.cardBackground }]}>
@@ -284,7 +284,7 @@ export default function ProfileScreen() {
           />
 
           <TouchableOpacity activeOpacity={0.8} onPress={salvarPerfil} disabled={salvando}>
-            <LinearGradient colors={colors.primaryGradient || ['#22C55E', '#16A34A']} style={styles.salvarBtn}>
+            <LinearGradient colors={[colors.primary, colors.primaryDark]} style={styles.salvarBtn}>
               {salvando ? <ActivityIndicator color="#fff" /> : <Text style={styles.salvarBtnText}>💾 Salvar Perfil</Text>}
             </LinearGradient>
           </TouchableOpacity>
