@@ -1,52 +1,54 @@
 // src/theme/colors.ts
 
 export const lightColors = {
-  // Cores de fundo (Light Mode Clean)
-  background: '#F5F6FA',       // Fundo gelo/cinza clarinho (Base do Insightlancer)
-  cardBackground: '#FFFFFF',   // Fundo dos cartões
+  // Cores de fundo (Light Mode Premium)
+  background: '#F8FAFC',       // Fundo cinza clarinho
+  cardBackground: '#FFFFFF',   // Fundo dos cartões em branco puro
   tabBackground: '#FFFFFF',    // Fundo da barra inferior
   
-  // Cores Principais
-  primary: '#0D2B5A',          // Azul Profundo / Marinho Escuro (Cor central da referência)
-  primaryLight: '#E8EDF5',     // Fundo suave para botões/ícones ativos
+  // Cores Principais (Conforme pedido: Verde e Roxo)
+  primary: '#22C55E',          // Verde principal premium
+  primaryLight: 'rgba(34, 197, 94, 0.1)', // Verde suave
   
-  // Acentos (mantendo o verde/roxo do app, mas em tons mais brandos)
-  accent: '#22C55E',           // Verde suave para 'Completed' ou 'Success'
-  accentPurple: '#8B5CF6',     // Roxo para detalhes secundários
+  // Acentos
+  secondary: '#8B5CF6',        // Roxo para destaques e ícones
+  secondaryLight: 'rgba(139, 92, 246, 0.1)', // Roxo suave
   
   // Texto
-  text: '#1A1A1A',             // Texto principal (Quase preto)
-  textSecondary: '#7A7A7A',    // Subtítulos e descrições (Cinza)
-  textInverse: '#FFFFFF',      // Texto sobre o fundo Azul Profundo
+  textPrimary: '#0F172A',      // Texto escuro
+  textSecondary: '#64748B',    // Texto cinza secundário
+  textInverse: '#FFFFFF',      // Texto sobre o verde/roxo
   
   // UI Elements
-  border: '#EAECEF',           // Bordas muito suaves
-  danger: '#EF4444',           // Vermelho para erros
+  border: '#E2E8F0',           // Bordas suaves
+  danger: '#EF4444',           // Vermelho
   
   // Navegação
-  tabActive: '#0D2B5A',
-  tabInactive: '#A0AEC0',
+  tabActive: '#22C55E',
+  tabInactive: '#94A3B8',
 };
 
-// O Dark mode será uma versão invertida, mas mantendo a classe do azul
 export const darkColors = {
+  // Dark Mode Premium (Neon Tech)
   background: '#0B0F19',
   cardBackground: '#1A202C',
   tabBackground: '#1A202C',
   
-  primary: '#3B82F6',          // Azul mais claro no dark mode para contraste
-  primaryLight: '#1E3A8A',     
+  primary: '#4ADE80',          // Verde neon no escuro
+  primaryLight: 'rgba(74, 222, 128, 0.15)',
   
-  accent: '#22C55E',           
-  accentPurple: '#8B5CF6',     
+  secondary: '#A78BFA',        // Roxo claro no escuro
+  secondaryLight: 'rgba(167, 139, 250, 0.15)',
   
-  text: '#F3F4F6',             
-  textSecondary: '#9CA3AF',    
-  textInverse: '#FFFFFF',      
+  textPrimary: '#F8FAFC',             
+  textSecondary: '#94A3B8',    
+  textInverse: '#0F172A',      
   
   border: '#2D3748',           
   danger: '#F87171',           
   
-  tabActive: '#3B82F6',
-  tabInactive: '#4A5568',
+  tabActive: '#4ADE80',
+  tabInactive: '#475569',
 };
+
+export type ThemeColors = typeof lightColors;
