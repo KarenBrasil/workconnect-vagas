@@ -11,7 +11,8 @@ import {
   ActivityIndicator,
   ImageBackground,
   StatusBar,
-  Image
+  Image,
+  ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword, GoogleAuthProvider, createUserWithEmailAndPassword, signOut, sendEmailVerification } from 'firebase/auth';
