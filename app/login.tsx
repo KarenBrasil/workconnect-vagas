@@ -62,7 +62,6 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     if (Platform.OS === 'web') {
-      // Na web, o signInWithPopup funciona perfeitamente
       try {
         setLoading(true);
         const provider = new GoogleAuthProvider();
@@ -80,8 +79,11 @@ export default function Login() {
         setLoading(false);
       }
     } else {
-      // No celular (Expo), usamos o AuthSession
-      promptAsync();
+      Alert.alert(
+        'Ambiente de Desenvolvimento',
+        'No aplicativo de testes (Expo Go), utilize o acesso por E-mail e Senha.\n\nO login nativo com Google estará totalmente funcional na versão de produção do aplicativo.',
+        [{ text: 'Entendi' }]
+      );
     }
   };
 
