@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../src/services/firebaseConfig';
 import { FontAwesome } from '@expo/vector-icons';
-import { Input, ButtonPrimary, ButtonOutline } from '../components/ui';
+import { TextInputField, PrimaryButton, OutlineButton } from '../components/ui';
 import { useTheme } from '../src/theme/ThemeContext';
 import { IlluResume } from '../assets/illustrations';
 
@@ -91,7 +91,7 @@ export default function ForgotPassword() {
             ) : null}
 
             <View style={styles.formContainer}>
-              <Input
+              <TextInputField
                 label="E-mail de Recuperação"
                 placeholder="seu@email.com"
                 icon="envelope"
@@ -102,22 +102,20 @@ export default function ForgotPassword() {
               />
             </View>
 
-            <ButtonPrimary
+            <PrimaryButton
               label={loading ? '' : 'Enviar E-mail'}
               onPress={handleResetPassword}
               disabled={loading}
               style={styles.button}
-              icon="paper-plane"
             />
             {loading && (
               <ActivityIndicator color={colors.primary} size="large" style={styles.loader} />
             )}
 
-            <ButtonOutline
+            <OutlineButton
               label="Voltar para Login"
               onPress={() => router.back()}
               style={styles.backButton}
-              icon="arrow-left"
             />
           </View>
         </ScrollView>

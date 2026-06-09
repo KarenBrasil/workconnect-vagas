@@ -110,10 +110,3 @@ export const IlluSearch = () => (
   </Svg>
 );
 
-export default {
-  IlluOnboarding,
-  IlluRecruiter,
-  IlluResume,
-  IlluProfile,
-  IlluSearch,
-};
