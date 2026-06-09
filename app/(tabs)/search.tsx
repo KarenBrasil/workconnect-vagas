@@ -188,7 +188,7 @@ export default function SearchScreen() {
         <FlatList
           data={vagasFiltradas}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
+          renderItem={({ item }: { item: any }) => (
             <Card style={styles.vagaItem}>
               <View style={styles.vagaHeader}>
                 <View style={[styles.companyLogo, { backgroundColor: item.tipo === 'local' ? COLORS.primary : COLORS.accent }]}>

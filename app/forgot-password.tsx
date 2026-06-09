@@ -67,7 +67,7 @@ export default function ForgotPassword() {
 
           {/* Illustration */}
           <View style={styles.illustrationContainer}>
-            <IlluResume width={140} height={120} />
+            <IlluResume />
           </View>
 
           <View style={styles.content}>

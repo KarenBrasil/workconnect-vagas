@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ViewStyle, TextInputProps } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import COLORS from './Colors';
 
@@ -66,6 +66,7 @@ export const TextInputField = ({
   secureTextEntry = false,
   label,
   style,
+  ...props
 }: {
   placeholder: string;
   value: string;
@@ -74,7 +75,7 @@ export const TextInputField = ({
   secureTextEntry?: boolean;
   label?: string;
   style?: ViewStyle;
-}) => (
+} & TextInputProps) => (
   <View style={[styles.inputContainer, style]}>
     {label && <Text style={styles.inputLabel}>{label}</Text>}
     <View style={styles.inputField}>
@@ -93,6 +94,7 @@ export const TextInputField = ({
         secureTextEntry={secureTextEntry}
         style={[styles.input, { paddingLeft: icon ? 40 : 14 }]}
         placeholderTextColor={COLORS.textSecondary}
+        {...props}
       />
     </View>
   </View>
