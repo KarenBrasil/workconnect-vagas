@@ -40,7 +40,10 @@ export default function RootLayout() {
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
-    if (error) throw error;
+    if (error) {
+      console.warn("Erro ao carregar fontes:", error);
+      // Evitamos dar throw error aqui para não causar tela preta em produção
+    }
   }, [error]);
 
   useEffect(() => {
@@ -49,7 +52,7 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  if (!loaded) {
+  if (!loaded && !error) {
     return null;
   }
 
