@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, Platform } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db, auth } from '../../src/services/firebaseConfig';
 import { buscarVagasComCache, calcularTempoRelativo } from '../../src/services/vagasExternas';
-import { useTheme } from '../../src/theme/ThemeContext';
-import { useLanguage } from '../../src/theme/LanguageContext';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, Card, Tag, FilterChip } from '../../components/ui';
 
 export default function Home() {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
-  const { t } = useLanguage();
-  
   const [userName, setUserName] = useState('');
   const [vagasAtivas, setVagasAtivas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,18 +32,18 @@ export default function Home() {
     setLoading(true);
     try {
       const externas = await buscarVagasComCache();
-      const globais = externas.slice(0, 2).map(v => ({
+      const globais = externas.slice(0, 4).map((v) => ({
         id: v.id,
         titulo: v.titulo,
         empresa: v.empresa,
         data: v.tempoPostagem,
         tipo: 'global',
-        progress: 75,
+        fonte: v.fonte,
       }));
 
       const q = query(collection(db, 'vagas'), orderBy('criadoEm', 'desc'), limit(4));
       const snapInternas = await getDocs(q);
-      const locais = snapInternas.docs.map(d => {
+      const locais = snapInternas.docs.map((d) => {
         const data = d.data();
         return {
           id: d.id,
@@ -49,7 +51,6 @@ export default function Home() {
           empresa: data.empresa,
           data: data.criadoEm ? calcularTempoRelativo(data.criadoEm) : 'Hoje',
           tipo: 'local',
-          progress: 40,
         };
       });
 
@@ -62,176 +63,275 @@ export default function Home() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* Top Navbar Premium */}
-        <View style={styles.topNav}>
-          <TouchableOpacity style={[styles.navIcon, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-            <FontAwesome name="th-large" size={16} color={colors.primary} />
-          </TouchableOpacity>
-          <Text style={[styles.navTitle, { color: colors.textPrimary }]}>Home</Text>
-          <TouchableOpacity style={[styles.navIcon, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-            <FontAwesome name="bell" size={16} color={colors.secondary} />
-            <View style={[styles.notificationDot, { backgroundColor: colors.danger }]} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Greeting */}
-        <View style={styles.greetingContainer}>
-          <Text style={[styles.greetingTitle, { color: colors.textPrimary }]}>{t('home.greeting')} {userName || 'Visitante'}!</Text>
-          <Text style={[styles.greetingSub, { color: colors.textSecondary }]}>Pronto para o seu próximo projeto?</Text>
-        </View>
-
-        {/* Search Premium */}
-        <TouchableOpacity 
-          style={[styles.searchBar, { backgroundColor: colors.cardBackground, borderColor: colors.border, shadowColor: isDark ? '#000' : colors.primary }]} 
-          onPress={() => router.push('/search')} 
-          activeOpacity={0.8}
-        >
-          <FontAwesome name="search" size={14} color={colors.secondary} style={{ marginRight: 12 }} />
-          <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500' }}>{t('home.searchPlaceholder')}</Text>
-          <View style={[styles.searchFilter, { backgroundColor: colors.primaryLight }]}>
-            <FontAwesome name="sliders" size={14} color={colors.primary} />
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Olá, {userName || 'Visitante'}! 👋</Text>
+            <Text style={styles.subGreeting}>Encontre suas próximas oportunidades</Text>
           </View>
+          <TouchableOpacity style={styles.headerIcon}>
+            <MaterialIcons name="notifications-none" size={24} color={COLORS.textMain} />
+            <View style={styles.notificationDot} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Search Bar */}
+        <TouchableOpacity
+          style={styles.searchBar}
+          onPress={() => router.push('/search')}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons name="search" size={18} color={COLORS.textSecondary} />
+          <Text style={styles.searchPlaceholder}>Buscar vagas...</Text>
+          <MaterialIcons name="tune" size={18} color={COLORS.primary} />
         </TouchableOpacity>
 
-        {/* Premium Welcome Card with Gradient */}
-        <LinearGradient
-          colors={isDark ? ['rgba(122, 224, 74, 0.1)', 'rgba(122, 224, 74, 0.05)'] : ['rgba(122, 224, 74, 0.15)', 'rgba(122, 224, 74, 0.08)']}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={[styles.welcomeCard, { borderColor: colors.border }]}
-        >
-          <View style={styles.welcomeTextContainer}>
-            <Text style={[styles.welcomeTitle, { color: colors.primary }]}>🚀 {t('home.welcomeCard.title')}</Text>
-            <Text style={[styles.welcomeSub, { color: colors.textSecondary }]}>{t('home.welcomeCard.subtitle')}</Text>
+        {/* Featured Banner */}
+        <Card style={styles.banner}>
+          <View style={styles.bannerContent}>
+            <View>
+              <Text style={styles.bannerTitle}>🚀 Vagas em Destaque</Text>
+              <Text style={styles.bannerSub}>Explore oportunidades exclusivas hoje</Text>
+            </View>
+            <MaterialIcons name="arrow-forward" size={28} color={COLORS.primary} />
           </View>
-          <View style={[styles.illustrationCircle, { backgroundColor: isDark ? 'rgba(122, 224, 74, 0.2)' : 'rgba(122, 224, 74, 0.1)' }]}>
-            <FontAwesome name="bolt" size={28} color={colors.primary} />
-          </View>
-        </LinearGradient>
+        </Card>
 
-        {/* Ongoing Projects Section */}
+        {/* Featured Jobs Section */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{t('home.ongoingProjects')}</Text>
+          <Text style={styles.sectionTitle}>Vagas Recentes</Text>
           <TouchableOpacity onPress={() => router.push('/search')}>
-            <Text style={{ color: colors.secondary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' }}>{t('home.viewAll')}</Text>
+            <Text style={styles.viewAll}>Ver todas →</Text>
           </TouchableOpacity>
         </View>
 
         {loading ? (
-          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={COLORS.primary} size="large" style={{ marginVertical: 40 }} />
         ) : (
-          <View style={styles.projectsGrid}>
-            {vagasAtivas.map((vaga, index) => {
-              const isFirst = index === 0;
-              const cardBg = isFirst ? colors.primary : colors.cardBackground;
-              const titleColor = isFirst ? '#FFFFFF' : colors.textPrimary;
-              const dateColor = isFirst ? 'rgba(255,255,255,0.8)' : colors.textSecondary;
-              const iconColor = isFirst ? '#FFFFFF' : colors.secondary;
-              const shadowCol = isFirst ? colors.primary : '#000';
-
-              return (
-                <View key={vaga.id} style={[styles.projectCard, { backgroundColor: cardBg, borderColor: isFirst ? 'transparent' : colors.border, shadowColor: shadowCol }]}>
-                  <View style={styles.cardHeader}>
-                    <Text style={{ color: dateColor, fontSize: 9, fontWeight: '600' }}>{vaga.data}</Text>
-                    <TouchableOpacity>
-                      <FontAwesome name="ellipsis-v" size={12} color={dateColor} />
-                    </TouchableOpacity>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.vagasScroll}>
+            {vagasAtivas.slice(0, 5).map((vaga) => (
+              <Card key={vaga.id} style={styles.vagaCard}>
+                <View style={styles.vagaHeader}>
+                  <View
+                    style={[
+                      styles.companylconBox,
+                      { backgroundColor: vaga.tipo === 'local' ? COLORS.primary : COLORS.accent },
+                    ]}
+                  >
+                    <Text style={styles.companyIcon}>{vaga.empresa.charAt(0).toUpperCase()}</Text>
                   </View>
-                  
-                  <View style={styles.cardBody}>
-                    <View style={[styles.iconContainer, { backgroundColor: isFirst ? 'rgba(255,255,255,0.2)' : colors.secondaryLight }]}>
-                      <FontAwesome name={vaga.tipo === 'global' ? 'globe' : 'briefcase'} size={16} color={iconColor} />
-                    </View>
-                    <Text style={[styles.cardTitle, { color: titleColor }]} numberOfLines={1}>{vaga.titulo}</Text>
-                    <Text style={{ color: dateColor, fontSize: 10, marginTop: 2, fontWeight: '500' }} numberOfLines={1}>{vaga.empresa}</Text>
-                  </View>
-
-                  <View style={styles.cardFooter}>
-                    <Text style={{ color: titleColor, fontSize: 9, fontWeight: '700', marginBottom: 4 }}>{t('home.progress')}</Text>
-                    <View style={[styles.progressBg, { backgroundColor: isFirst ? 'rgba(255,255,255,0.3)' : '#E2E8F0' }]}>
-                      <View style={[styles.progressFill, { width: `${vaga.progress}%`, backgroundColor: isFirst ? '#FFFFFF' : colors.primary }]} />
-                    </View>
-                  </View>
+                  <TouchableOpacity>
+                    <MaterialIcons name="favorite-border" size={20} color={COLORS.textSecondary} />
+                  </TouchableOpacity>
                 </View>
-              );
-            })}
-          </View>
+
+                <Text style={styles.vagaTitle} numberOfLines={2}>
+                  {vaga.titulo}
+                </Text>
+                <Text style={styles.vagaCompany}>{vaga.empresa}</Text>
+
+                <View style={styles.vagaFooter}>
+                  <Text style={styles.vagaTime}>{vaga.data}</Text>
+                  {vaga.tipo === 'local' && <Tag label="Local" variant="green" />}
+                </View>
+              </Card>
+            ))}
+          </ScrollView>
         )}
 
+        {/* Recently Published Section */}
+        <View style={[styles.sectionHeader, { marginTop: 32 }]}>
+          <Text style={styles.sectionTitle}>Publicadas Recentemente</Text>
+        </View>
+
+        <View style={styles.vagasList}>
+          {vagasAtivas.slice(0, 3).map((vaga) => (
+            <TouchableOpacity key={vaga.id} onPress={() => router.push(`/job/${vaga.id}`)}>
+              <Card style={styles.vagaListItem}>
+                <View style={styles.vagaListContent}>
+                  <View>
+                    <Text style={styles.vagaListTitle} numberOfLines={1}>
+                      {vaga.titulo}
+                    </Text>
+                    <Text style={styles.vagaListCompany} numberOfLines={1}>
+                      {vaga.empresa}
+                    </Text>
+                  </View>
+                  <MaterialIcons name="chevron-right" size={24} color={COLORS.textSecondary} />
+                </View>
+              </Card>
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { padding: 20, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 40 },
-  
-  topNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  navIcon: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 20, borderWidth: 1 },
-  navTitle: { fontSize: 15, fontWeight: '800', letterSpacing: 0.5 },
-  notificationDot: { position: 'absolute', top: 10, right: 10, width: 6, height: 6, borderRadius: 3 },
-
-  greetingContainer: { marginBottom: 20 },
-  greetingTitle: { fontSize: 24, fontWeight: '900', letterSpacing: -0.5, marginBottom: 2 },
-  greetingSub: { fontSize: 13, fontWeight: '500' },
-
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.bg,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 100,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 24,
+  },
+  greeting: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: COLORS.textMain,
+  },
+  subGreeting: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 16,
-    height: 50,
-    paddingHorizontal: 16,
-    marginBottom: 24,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
   },
-  searchFilter: { marginLeft: 'auto', width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-
-  welcomeCard: {
-    flexDirection: 'row',
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 20,
-    marginBottom: 32,
-    alignItems: 'center',
-    overflow: 'hidden',
+  searchPlaceholder: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginHorizontal: 12,
   },
-  welcomeTextContainer: { flex: 1, paddingRight: 16 },
-  welcomeTitle: { fontSize: 18, fontWeight: '800', marginBottom: 6, letterSpacing: -0.3 },
-  welcomeSub: { fontSize: 12, lineHeight: 18, fontWeight: '500' },
-  illustrationCircle: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 },
-
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  sectionTitle: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
-
-  projectsGrid: {
+  banner: {
+    backgroundColor: COLORS.primary,
+    marginBottom: 28,
+  },
+  bannerContent: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 12,
+    alignItems: 'center',
   },
-  projectCard: {
-    width: '48%',
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+  bannerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.primaryDark,
     marginBottom: 4,
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  cardBody: { marginBottom: 16 },
-  iconContainer: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-  cardTitle: { fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
-  cardFooter: { marginTop: 'auto' },
-  progressBg: { height: 4, borderRadius: 2, width: '100%' },
-  progressFill: { height: '100%', borderRadius: 2 },
+  bannerSub: {
+    fontSize: 12,
+    color: COLORS.primaryDark,
+    opacity: 0.8,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.textMain,
+  },
+  viewAll: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.accent,
+  },
+  vagasScroll: {
+    marginBottom: 28,
+  },
+  vagaCard: {
+    width: 160,
+    padding: 12,
+    marginRight: 12,
+  },
+  vagaHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  companylconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  companyIcon: {
+    color: COLORS.surface,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  vagaTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textMain,
+    marginBottom: 4,
+  },
+  vagaCompany: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
+  vagaFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  vagaTime: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+  },
+  vagasList: {
+    gap: 12,
+  },
+  vagaListItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  vagaListContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  vagaListTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textMain,
+    marginBottom: 4,
+  },
+  vagaListCompany: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
 });

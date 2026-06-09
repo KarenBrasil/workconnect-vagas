@@ -1,14 +1,21 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, TextInput, TouchableOpacity,
-  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Modal
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Alert,
+  TextInput,
 } from 'react-native';
 import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../../src/services/firebaseConfig';
 import { useRouter } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
-import { CustomAlert } from '../../components/CustomAlert';
-import { useTheme } from '../../src/theme/ThemeContext';
+import { MaterialIcons } from '@expo/vector-icons';
+import { PrimaryButton, TextInputField, Card, COLORS } from '../../components/ui';
 
 interface VagaPublicada {
   id: string;
@@ -21,8 +28,7 @@ interface VagaPublicada {
 
 export default function PostJob() {
   const router = useRouter();
-  const { colors } = useTheme();
-  const [tipo, setTipo] = useState<'recrutador' | 'freelancer'>('recrutador');
+  const [abaAtiva, setAbaAtiva] = useState<'nova' | 'gerenciar'>('nova');
   const [titulo, setTitulo] = useState('');
   const [empresa, setEmpresa] = useState('');
   const [contrato, setContrato] = useState('');
@@ -30,27 +36,6 @@ export default function PostJob() {
   const [descricao, setDescricao] = useState('');
   const [contato, setContato] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-
-  // Custom Alert State
-  const [alertConfig, setAlertConfig] = useState<{
-    visible: boolean;
-    title: string;
-    message: string;
-    type: 'success' | 'error' | 'warning' | 'info';
-    showCancel?: boolean;
-    onConfirm?: () => void;
-  }>({ visible: false, title: '', message: '', type: 'info' });
-
-  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
-    setAlertConfig({ visible: true, title, message, type });
-  };
-
-  const showConfirm = (title: string, message: string, onConfirm: () => void) => {
-    setAlertConfig({ visible: true, title, message, type: 'warning', showCancel: true, onConfirm });
-  };
-
-  const [abaAtiva, setAbaAtiva] = useState<'nova' | 'gerenciar'>('nova');
   const [minhasVagas, setMinhasVagas] = useState<VagaPublicada[]>([]);
   const [loadingVagas, setLoadingVagas] = useState(false);
   const [deletandoId, setDeletandoId] = useState<string | null>(null);
@@ -59,8 +44,8 @@ export default function PostJob() {
     setLoadingVagas(true);
     try {
       const snapshot = await getDocs(collection(db, 'vagas'));
-      const lista = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as VagaPublicada));
-      setMinhasVagas(lista.sort((a, b) => b.criadoEm?.localeCompare(a.criadoEm)));
+      const lista = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as VagaPublicada));
+      setMinhasVagas(lista.sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || '')));
     } catch (e) {
       console.log('Erro ao carregar vagas:', e);
     } finally {
@@ -83,13 +68,12 @@ export default function PostJob() {
 
   const handlePublicar = async () => {
     if (!titulo || !descricao) {
-      showAlert('Atenção', 'Preencha pelo menos o título e a descrição da vaga.', 'warning');
+      Alert.alert('Atenção', 'Preencha o título e a descrição da vaga.');
       return;
     }
     setLoading(true);
     try {
       await addDoc(collection(db, 'vagas'), {
-        tipo,
         titulo,
         empresa: empresa || 'Não informado',
         contrato: contrato || 'Não informado',
@@ -98,276 +82,310 @@ export default function PostJob() {
         contato: contato || '',
         criadoEm: new Date().toISOString(),
       });
-      setShowSuccessModal(true);
-      resetForm();
-    } catch (e: any) {
-      showAlert('Erro', 'Não foi possível publicar: ' + e.message, 'error');
+
+      Alert.alert('Sucesso', 'Vaga publicada com sucesso!', [
+        { text: 'OK', onPress: () => { resetForm(); setAbaAtiva('gerenciar'); } },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Erro', error.message || 'Erro ao publicar vaga.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeletar = (vagaId: string, vagaTitulo: string) => {
-    showConfirm(
-      'Excluir Vaga',
-      `Deseja realmente excluir "${vagaTitulo}"? Esta ação não pode ser desfeita.`,
-      () => deletarVaga(vagaId)
+  const handleDeleteVaga = async (vagaId: string) => {
+    Alert.alert(
+      'Deletar Vaga',
+      'Tem certeza que deseja deletar esta vaga? Esta ação não pode ser desfeita.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Deletar',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletandoId(vagaId);
+            try {
+              await deleteDoc(doc(db, 'vagas', vagaId));
+              setMinhasVagas((prev) => prev.filter((v) => v.id !== vagaId));
+              Alert.alert('Sucesso', 'Vaga deletada com sucesso.');
+            } catch (error) {
+              Alert.alert('Erro', 'Erro ao deletar vaga.');
+            } finally {
+              setDeletandoId(null);
+            }
+          },
+        },
+      ]
     );
   };
 
-  const deletarVaga = async (vagaId: string) => {
-    setDeletandoId(vagaId);
-    try {
-      await deleteDoc(doc(db, 'vagas', vagaId));
-      setMinhasVagas(prev => prev.filter(v => v.id !== vagaId));
-      showAlert('Sucesso', 'Vaga excluída com sucesso.', 'success');
-    } catch (e: any) {
-      showAlert('Erro', 'Não foi possível excluir a vaga: ' + e.message, 'error');
-    } finally {
-      setDeletandoId(null);
-    }
-  };
-
-  const formatarData = (iso: string) => {
-    try {
-      const d = new Date(iso);
-      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-    } catch { return '—'; }
-  };
-
   return (
-    <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Publicações</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Gerencie suas vagas</Text>
-      </View>
-
-      {/* Abas */}
-      <View style={styles.abasContainer}>
+    <View style={styles.container}>
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
         <TouchableOpacity
-          style={[styles.abaBtn, abaAtiva === 'nova' && styles.abaBtnAtiva]}
+          style={[styles.tab, abaAtiva === 'nova' && styles.tabActive]}
           onPress={() => setAbaAtiva('nova')}
         >
-          <FontAwesome name="plus-circle" size={14} color={abaAtiva === 'nova' ? '#2E9D4D' : '#83829A'} />
-          <Text style={[styles.abaText, abaAtiva === 'nova' && styles.abaTextAtiva]}>{' '}Nova Vaga</Text>
+          <Text style={[styles.tabText, abaAtiva === 'nova' && styles.tabTextActive]}>
+            Nova Vaga
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.abaBtn, abaAtiva === 'gerenciar' && styles.abaBtnAtiva]}
+          style={[styles.tab, abaAtiva === 'gerenciar' && styles.tabActive]}
           onPress={() => setAbaAtiva('gerenciar')}
         >
-          <FontAwesome name="list" size={14} color={abaAtiva === 'gerenciar' ? '#2E9D4D' : '#83829A'} />
-          <Text style={[styles.abaText, abaAtiva === 'gerenciar' && styles.abaTextAtiva]}>{' '}Gerenciar</Text>
+          <Text style={[styles.tabText, abaAtiva === 'gerenciar' && styles.tabTextActive]}>
+            Gerenciar
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-
-        {/* ABA: Nova Vaga */}
-        {abaAtiva === 'nova' && (
-          <View>
-            <View style={styles.tipoContainer}>
-              <TouchableOpacity
-                style={[styles.tipoBtn, tipo === 'recrutador' && styles.tipoBtnAtivo]}
-                onPress={() => setTipo('recrutador')}
-              >
-                <Text style={[styles.tipoText, tipo === 'recrutador' && styles.tipoTextAtivo]}>🏢 Busco Profissional</Text>
-                <Text style={[styles.tipoSub, tipo === 'recrutador' && styles.tipoTextAtivo]}>Sou recrutador</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tipoBtn, tipo === 'freelancer' && styles.tipoBtnAtivoRoxo]}
-                onPress={() => setTipo('freelancer')}
-              >
-                <Text style={[styles.tipoText, tipo === 'freelancer' && styles.tipoTextAtivo]}>💼 Busco Projeto</Text>
-                <Text style={[styles.tipoSub, tipo === 'freelancer' && styles.tipoTextAtivo]}>Sou freelancer</Text>
-              </TouchableOpacity>
+      {abaAtiva === 'nova' ? (
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView contentContainerStyle={styles.formContent} keyboardShouldPersistTaps="handled">
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Publicar Vaga</Text>
+              <Text style={styles.subtitle}>Preencha os dados da oportunidade</Text>
             </View>
 
-            <View style={styles.form}>
-              <Text style={styles.label}>{tipo === 'recrutador' ? 'Título da Vaga' : 'Título da Oferta'}</Text>
-              <TextInput
-                style={styles.input} placeholderTextColor="#A0A0A0" value={titulo} onChangeText={setTitulo}
-                placeholder={tipo === 'recrutador' ? 'Ex: Desenvolvedor Front-end Pleno' : 'Ex: Dev React Native disponível'}
-              />
-              <Text style={styles.label}>{tipo === 'recrutador' ? 'Empresa' : 'Seu nome ou marca'}</Text>
-              <TextInput
-                style={styles.input} placeholderTextColor="#A0A0A0" value={empresa} onChangeText={setEmpresa}
-                placeholder={tipo === 'recrutador' ? 'Nome da empresa' : 'Seu nome profissional'}
-              />
-              <Text style={styles.label}>Tipo de Contrato</Text>
-              <TextInput
-                style={styles.input} placeholderTextColor="#A0A0A0" value={contrato} onChangeText={setContrato}
-                placeholder="Ex: PJ, CLT, Freelance, Remoto"
-              />
-              <Text style={styles.label}>{tipo === 'recrutador' ? 'Faixa Salarial' : 'Valor por hora ou projeto'}</Text>
-              <TextInput
-                style={styles.input} placeholderTextColor="#A0A0A0" value={salario} onChangeText={setSalario}
-                placeholder="Ex: R$ 5.000 - R$ 8.000"
-              />
-              <Text style={styles.label}>Descrição</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]} placeholderTextColor="#A0A0A0"
-                value={descricao} onChangeText={setDescricao} multiline numberOfLines={4} textAlignVertical="top"
-                placeholder={tipo === 'recrutador' ? 'Descreva as responsabilidades e requisitos...' : 'Descreva suas habilidades e experiência...'}
+            {/* Form */}
+            <View style={styles.formContainer}>
+              <TextInputField
+                label="Título da Vaga"
+                placeholder="Ex: Senior React Developer"
+                icon="briefcase"
+                value={titulo}
+                onChangeText={setTitulo}
               />
 
-              <Text style={styles.label}>📞 Contato para Candidatura</Text>
-              <Text style={styles.labelHint}>E-mail ou número de WhatsApp. Candidatos entrarão em contato diretamente.</Text>
-              <TextInput
-                style={styles.input} placeholderTextColor="#A0A0A0" value={contato} onChangeText={setContato}
-                placeholder="Ex: email@empresa.com ou 85 99999-9999"
-                autoCapitalize="none"
-                keyboardType="email-address"
+              <TextInputField
+                label="Empresa"
+                placeholder="Nome da empresa"
+                icon="business"
+                value={empresa}
+                onChangeText={setEmpresa}
               />
 
-              <TouchableOpacity
-                style={[styles.button, tipo === 'freelancer' && styles.buttonRoxo]}
-                onPress={handlePublicar} disabled={loading}
-              >
-                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Publicar</Text>}
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* ABA: Gerenciar */}
-        {abaAtiva === 'gerenciar' && (
-          <View>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Publicações no Feed</Text>
-              <TouchableOpacity onPress={carregarMinhasVagas}>
-                <Text style={styles.atualizarText}>↻ Atualizar</Text>
-              </TouchableOpacity>
-            </View>
-
-            {loadingVagas ? (
-              <ActivityIndicator color="#2E9D4D" style={{ marginTop: 30 }} size="large" />
-            ) : minhasVagas.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <FontAwesome name="briefcase" size={32} color="#EFEFEF" />
-                <Text style={styles.emptyText}>Nenhuma vaga publicada</Text>
-                <Text style={styles.emptySubText}>Crie sua primeira publicação na aba "Nova Vaga"</Text>
+              <View style={styles.row}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <TextInputField
+                    label="Tipo de Contrato"
+                    placeholder="PJ, CLT, Freelance"
+                    icon="description"
+                    value={contrato}
+                    onChangeText={setContrato}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <TextInputField
+                    label="Salário"
+                    placeholder="A combinar"
+                    icon="attach-money"
+                    value={salario}
+                    onChangeText={setSalario}
+                  />
+                </View>
               </View>
-            ) : (
-              minhasVagas.map(vaga => (
-                <View key={vaga.id} style={styles.vagaCard}>
-                  <View style={styles.vagaCardLeft}>
-                    <View style={[styles.vagaIcone, { backgroundColor: vaga.tipo === 'freelancer' ? '#6A309315' : '#2E9D4D15' }]}>
-                      <FontAwesome
-                        name={vaga.tipo === 'freelancer' ? 'briefcase' : 'building'}
-                        size={18}
-                        color={vaga.tipo === 'freelancer' ? '#6A3093' : '#2E9D4D'}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.vagaTitulo} numberOfLines={2}>{vaga.titulo}</Text>
-                      <Text style={styles.vagaEmpresa}>{vaga.empresa || '—'}</Text>
-                      <Text style={styles.vagaData}>📅{' '}{formatarData(vaga.criadoEm)}</Text>
-                    </View>
+
+              {/* Description Textarea */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>DESCRIÇÃO</Text>
+                <TextInput
+                  placeholder="Descrição completa da vaga..."
+                  value={descricao}
+                  onChangeText={setDescricao}
+                  multiline
+                  numberOfLines={6}
+                  style={[styles.textarea]}
+                  placeholderTextColor={COLORS.textSecondary}
+                />
+              </View>
+
+              <TextInputField
+                label="Contato"
+                placeholder="Email ou telefone"
+                icon="email"
+                value={contato}
+                onChangeText={setContato}
+              />
+
+              {/* Publish Button */}
+              <PrimaryButton label={loading ? '' : 'Publicar Vaga'} onPress={handlePublicar} />
+              {loading && (
+                <ActivityIndicator color={COLORS.primary} size="large" style={{ marginVertical: 16 }} />
+              )}
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      ) : (
+        <ScrollView contentContainerStyle={styles.vagasListContent}>
+          {loadingVagas ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator color={COLORS.primary} size="large" />
+            </View>
+          ) : minhasVagas.length === 0 ? (
+            <View style={styles.emptyState}>
+              <MaterialIcons name="inbox" size={48} color={COLORS.textSecondary} />
+              <Text style={styles.emptyText}>Nenhuma vaga publicada ainda</Text>
+            </View>
+          ) : (
+            minhasVagas.map((vaga) => (
+              <Card key={vaga.id} style={styles.vagaItem}>
+                <View style={styles.vagaHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.vagaTitle} numberOfLines={2}>
+                      {vaga.titulo}
+                    </Text>
+                    <Text style={styles.vagaCompany}>{vaga.empresa}</Text>
                   </View>
                   <TouchableOpacity
-                    style={styles.deletarBtn}
-                    onPress={() => handleDeletar(vaga.id, vaga.titulo)}
+                    onPress={() => handleDeleteVaga(vaga.id)}
                     disabled={deletandoId === vaga.id}
                   >
-                    {deletandoId === vaga.id
-                      ? <ActivityIndicator size="small" color="#DC2626" />
-                      : <FontAwesome name="trash" size={18} color="#DC2626" />
-                    }
+                    <MaterialIcons
+                      name="delete-outline"
+                      size={22}
+                      color={deletandoId === vaga.id ? COLORS.textSecondary : '#EF4444'}
+                    />
                   </TouchableOpacity>
                 </View>
-              ))
-            )}
-          </View>
-        )}
-      </ScrollView>
-
-      {/* Modais de Alerta e Sucesso dentro do app (nunca no navegador) */}
-      <CustomAlert
-        visible={alertConfig.visible}
-        title={alertConfig.title}
-        message={alertConfig.message}
-        type={alertConfig.type}
-        showCancel={alertConfig.showCancel}
-        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
-        onConfirm={alertConfig.onConfirm}
-      />
-
-      <Modal visible={showSuccessModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalIconContainer}>
-              <FontAwesome name="check" size={32} color="#FFFFFF" />
-            </View>
-            <Text style={styles.modalTitle}>Sucesso!</Text>
-            <Text style={styles.modalText}>
-              Sua publicação foi postada com sucesso no feed.
-            </Text>
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => {
-                setShowSuccessModal(false);
-                router.push('/(tabs)');
-              }}
-            >
-              <Text style={styles.modalButtonText}>Ver no feed</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-    </KeyboardAvoidingView>
+                <View style={styles.vagaFooter}>
+                  <Text style={styles.vagaMeta}>{vaga.contrato}</Text>
+                  <Text style={styles.vagaMeta}>•</Text>
+                  <Text style={styles.vagaMeta}>{vaga.tipo || 'Remoto'}</Text>
+                </View>
+              </Card>
+            ))
+          )}
+        </ScrollView>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F4F5F7' },
-  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 16, backgroundColor: '#F4F5F7' },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#1A1A2E' },
-  subtitle: { fontSize: 14, color: '#83829A', marginTop: 4 },
-  abasContainer: { flexDirection: 'row', marginHorizontal: 24, backgroundColor: '#E8E9EC', borderRadius: 14, padding: 4, marginBottom: 4 },
-  abaBtn: { flex: 1, flexDirection: 'row', paddingVertical: 10, alignItems: 'center', justifyContent: 'center', borderRadius: 11 },
-  abaBtnAtiva: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
-  abaText: { fontSize: 13, color: '#83829A', fontWeight: '600' },
-  abaTextAtiva: { color: '#1A1A2E', fontWeight: '700' },
-  scrollContent: { padding: 24, paddingBottom: 60 },
-  tipoContainer: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  tipoBtn: { flex: 1, padding: 16, borderRadius: 14, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#EFEFEF', alignItems: 'center' },
-  tipoBtnAtivo: { backgroundColor: '#2E9D4D', borderColor: '#2E9D4D' },
-  tipoBtnAtivoRoxo: { backgroundColor: '#6A3093', borderColor: '#6A3093' },
-  tipoText: { fontSize: 14, fontWeight: 'bold', color: '#1A1A2E', marginBottom: 4 },
-  tipoSub: { fontSize: 12, color: '#83829A' },
-  tipoTextAtivo: { color: '#FFFFFF' },
-  form: { backgroundColor: '#FFFFFF', padding: 20, borderRadius: 18, borderWidth: 1, borderColor: '#EFEFEF' },
-  label: { fontSize: 13, fontWeight: '600', color: '#1A1A2E', marginBottom: 6, marginTop: 14 },
-  labelHint: { fontSize: 12, color: '#83829A', marginBottom: 8, marginTop: -4 },
-  input: { backgroundColor: '#F4F5F7', borderWidth: 1, borderColor: '#EFEFEF', borderRadius: 12, padding: 14, fontSize: 15, color: '#1A1A2E' },
-  textArea: { height: 120 },
-  button: { backgroundColor: '#2E9D4D', paddingVertical: 16, borderRadius: 14, alignItems: 'center', marginTop: 28 },
-  buttonRoxo: { backgroundColor: '#6A3093' },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A2E' },
-  atualizarText: { fontSize: 14, color: '#2E9D4D', fontWeight: '600' },
-  vagaCard: {
-    backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 12,
-    flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderColor: '#EFEFEF',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 1,
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.bg,
   },
-  vagaCardLeft: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  vagaIcone: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  vagaTitulo: { fontSize: 15, fontWeight: '700', color: '#1A1A2E', marginBottom: 2 },
-  vagaEmpresa: { fontSize: 13, color: '#83829A', marginBottom: 4 },
-  vagaData: { fontSize: 12, color: '#B0B0B8' },
-  deletarBtn: { padding: 10, marginLeft: 8, borderRadius: 10, backgroundColor: '#FEE2E2' },
-  emptyCard: { backgroundColor: '#FFFFFF', borderRadius: 18, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: '#EFEFEF', gap: 8 },
-  emptyText: { fontSize: 16, color: '#312651', fontWeight: 'bold', marginTop: 8 },
-  emptySubText: { fontSize: 14, color: '#83829A', textAlign: 'center' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 32, alignItems: 'center', width: '100%', maxWidth: 340, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
-  modalIconContainer: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#2E9D4D', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 22, fontWeight: '800', color: '#1A1A2E', marginBottom: 8 },
-  modalText: { fontSize: 15, color: '#83829A', textAlign: 'center', marginBottom: 32, lineHeight: 22 },
-  modalButton: { backgroundColor: '#1A1A2E', width: '100%', paddingVertical: 16, borderRadius: 16, alignItems: 'center' },
-  modalButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  tabsContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingHorizontal: 16,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: COLORS.primary,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  tabTextActive: {
+    color: COLORS.primary,
+  },
+  formContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 100,
+  },
+  header: {
+    marginBottom: 28,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: COLORS.textMain,
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+  },
+  formContainer: {
+    gap: 16,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.04,
+    marginBottom: 8,
+  },
+  textarea: {
+    backgroundColor: '#F9F9FC',
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: COLORS.textMain,
+    textAlignVertical: 'top',
+  },
+  vagasListContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingBottom: 100,
+    gap: 12,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 300,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: 12,
+  },
+  vagaItem: {
+    paddingVertical: 12,
+  },
+  vagaHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  vagaTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textMain,
+    marginBottom: 4,
+  },
+  vagaCompany: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  vagaFooter: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  vagaMeta: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+  },
 });

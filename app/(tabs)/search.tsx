@@ -1,15 +1,24 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  FlatList,
+} from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { collection, getDocs } from 'firebase/firestore';
 import { db, auth } from '../../src/services/firebaseConfig';
-import { buscarVagasComCache, limparCacheVagas, VagaExterna, calcularTempoRelativo } from '../../src/services/vagasExternas';
+import {
+  buscarVagasComCache,
+  limparCacheVagas,
+  VagaExterna,
+} from '../../src/services/vagasExternas';
 import { salvarFavorito, removerFavorito, buscarFavoritos } from '../../src/services/favoritos';
-import { useTheme } from '../../src/theme/ThemeContext';
 import { useRouter } from 'expo-router';
-import { VagaCard } from '../../components/VagaCard';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Chip } from '../../components/ui';
+import { COLORS, Card, Tag, FilterChip, TextInputField } from '../../components/ui';
 
 interface VagaInterna {
   id: string;
@@ -22,19 +31,17 @@ interface VagaInterna {
   criadoEm: string;
 }
 
-const FILTROS_TAGS = ['Todos', 'Remoto', 'Híbrido', 'PJ', 'CLT', 'Freelance', 'Exterior'];
+const FILTROS = ['Todos', 'Remoto', 'Híbrido', 'PJ', 'CLT'];
 
 export default function SearchScreen() {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
-  const [busca, setBusca] = useState('');
-  const [abaAtiva, setAbaAtiva] = useState<'externas' | 'internas'>('externas'); // Padrão Externas
-  const [filtroTag, setFiltroTag] = useState('Todos');
+  const [searchText, setSearchText] = useState('');
+  const [abaAtiva, setAbaAtiva] = useState<'externas' | 'internas'>('externas');
+  const [filtroAtivo, setFiltroAtivo] = useState('Todos');
 
   const [vagasExternas, setVagasExternas] = useState<VagaExterna[]>([]);
   const [vagasInternas, setVagasInternas] = useState<VagaInterna[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [favoritosMap, setFavoritosMap] = useState<Record<string, string>>({});
   const [salvandoFavId, setSalvandoFavId] = useState<string | null>(null);
 
@@ -48,13 +55,11 @@ export default function SearchScreen() {
     setLoading(true);
     try {
       if (forcar) await limparCacheVagas();
-      
-      let listaInterna: VagaInterna[] = [];
+
       try {
         const snap = await getDocs(collection(db, 'vagas'));
-        listaInterna = snap.docs.map(d => ({ id: d.id, ...d.data() } as VagaInterna));
-        listaInterna.sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || ''));
-        setVagasInternas(listaInterna);
+        const internas = snap.docs.map((d) => ({ id: d.id, ...d.data() } as VagaInterna));
+        setVagasInternas(internas.sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || '')));
       } catch (e) {
         console.log('Erro vagas internas:', e);
       }
@@ -70,306 +75,279 @@ export default function SearchScreen() {
         try {
           const favs = await buscarFavoritos(userId);
           const mapa: Record<string, string> = {};
-          favs.forEach(f => { mapa[f.vagaId] = f.id!; });
+          favs.forEach((f) => {
+            mapa[f.vagaId] = f.id!;
+          });
           setFavoritosMap(mapa);
         } catch (e) {}
       }
-    } catch (error) {
-      console.log('Erro na busca', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleFavorito = async (vagaId: string, titulo: string, empresa: string, fonte: string, link?: string) => {
+  const toggleFavorito = async (vaga: any) => {
     if (!userId) return;
-    setSalvandoFavId(vagaId);
+    setSalvandoFavId(vaga.id);
     try {
-      if (favoritosMap[vagaId]) {
-        await removerFavorito(favoritosMap[vagaId]);
-        setFavoritosMap(prev => {
+      if (favoritosMap[vaga.id]) {
+        await removerFavorito(favoritosMap[vaga.id]);
+        setFavoritosMap((prev) => {
           const novo = { ...prev };
-          delete novo[vagaId];
+          delete novo[vaga.id];
           return novo;
         });
       } else {
-        await salvarFavorito({ userId, vagaId, titulo, empresa, fonte, link });
-        const favs = await buscarFavoritos(userId);
-        const mapa: Record<string, string> = {};
-        favs.forEach(f => { mapa[f.vagaId] = f.id!; });
-        setFavoritosMap(mapa);
+        await salvarFavorito({
+          userId,
+          vagaId: vaga.id,
+          titulo: vaga.titulo,
+          empresa: vaga.empresa,
+          fonte: vaga.fonte || 'Interna',
+          link: vaga.link,
+        });
+        setFavoritosMap((prev) => ({ ...prev, [vaga.id]: 'temp' }));
       }
-    } catch (e) {
-      console.log('Erro ao favoritar:', e);
     } finally {
       setSalvandoFavId(null);
     }
   };
 
-  const termoBusca = busca.toLowerCase().trim();
-
-  const vagasInternasFiltradas = vagasInternas.filter(v => {
-    if (termoBusca && !v.titulo.toLowerCase().includes(termoBusca) && !(v.empresa || '').toLowerCase().includes(termoBusca)) return false;
-    if (filtroTag === 'Todos') return true;
-    if (filtroTag === 'PJ') return v.contrato?.toLowerCase().includes('pj');
-    if (filtroTag === 'CLT') return v.contrato?.toLowerCase().includes('clt');
-    if (filtroTag === 'Remoto') return v.contrato?.toLowerCase().includes('remoto');
-    return true;
-  });
-
-  const vagasExternasFiltradas = vagasExternas.filter(v => {
-    if (termoBusca && !v.titulo.toLowerCase().includes(termoBusca) && !(v.empresa || '').toLowerCase().includes(termoBusca) && !(v.tags || []).some(t => t.toLowerCase().includes(termoBusca))) return false;
-    if (filtroTag === 'Todos') return true;
-    if (filtroTag === 'Exterior') return (v.local || '').includes('🌍') || (v.local || '').toLowerCase().includes('internac');
-    return (v.tags || []).some(t => t.toLowerCase() === filtroTag.toLowerCase());
+  const vagasParaMostrar = abaAtiva === 'externas' ? vagasExternas : vagasInternas;
+  const vagasFiltradas = vagasParaMostrar.filter((v: any) => {
+    const match = `${v.titulo} ${v.empresa}`.toLowerCase().includes(searchText.toLowerCase());
+    const filtroMatch =
+      filtroAtivo === 'Todos' || (v.tags && v.tags.some((t: string) => t.includes(filtroAtivo)));
+    return match && filtroMatch;
   });
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>Explorar Vagas</Text>
-        <Text style={[styles.pageSubtitle, { color: colors.textSecondary }]}>Milhares de oportunidades em um só lugar.</Text>
-
-        <View style={styles.searchRow}>
-          <View style={[styles.searchInputContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-            <FontAwesome name="search" size={18} color={colors.primary} style={{ marginHorizontal: 16 }} />
-            <TextInput
-              style={[styles.searchInput, { color: colors.textPrimary }]}
-              placeholder="Ex: React Native, UX Designer..."
-              placeholderTextColor={colors.textSecondary}
-              value={busca}
-              onChangeText={setBusca}
-            />
-            {busca.length > 0 && (
-              <TouchableOpacity onPress={() => setBusca('')} style={{ padding: 12 }}>
-                <FontAwesome name="times-circle" size={18} color={colors.textSecondary} />
-              </TouchableOpacity>
-            )}
-          </View>
-          <TouchableOpacity onPress={() => carregarTudo(true)} activeOpacity={0.8}>
-            <LinearGradient colors={[colors.primary, colors.primaryDark]} style={[styles.filterBtn, { shadowColor: colors.primary }]}>
-              <FontAwesome name="refresh" size={20} color={colors.textInverse} />
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagsContainer}>
-          {FILTROS_TAGS.map(f => (
-            <Chip
-              key={f}
-              label={f}
-              active={filtroTag === f}
-              onPress={() => setFiltroTag(f)}
-            />
-          ))}
-        </ScrollView>
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Explorar Vagas</Text>
+        <Text style={styles.subtitle}>Encontre a oportunidade perfeita</Text>
       </View>
 
-      <View style={styles.abasWrapper}>
-        <View style={[styles.abasContainer]}>
-          <TouchableOpacity
-            style={[
-              styles.abaBtn,
-              abaAtiva === 'externas' && styles.abaBtnActive
-            ]}
-            onPress={() => setAbaAtiva('externas')}
-          >
-            <Text style={[
-              styles.abaText,
-              { color: abaAtiva === 'externas' ? colors.primary : colors.textSecondary },
-              abaAtiva === 'externas' && { fontWeight: '800' }
-            ]}>
-              Vagas Globais
-            </Text>
-            {abaAtiva === 'externas' && <View style={[styles.abaUnderline, { backgroundColor: colors.primary }]} />}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.abaBtn,
-              abaAtiva === 'internas' && styles.abaBtnActive
-            ]}
-            onPress={() => setAbaAtiva('internas')}
-          >
-            <Text style={[
-              styles.abaText,
-              { color: abaAtiva === 'internas' ? colors.secondary : colors.textSecondary },
-              abaAtiva === 'internas' && { fontWeight: '800' }
-            ]}>
-              TechConnect
-            </Text>
-            {abaAtiva === 'internas' && <View style={[styles.abaUnderline, { backgroundColor: colors.secondary }]} />}
-          </TouchableOpacity>
-        </View>
+      {/* Search & Filter */}
+      <View style={styles.searchContainer}>
+        <TextInputField
+          placeholder="Buscar vagas..."
+          icon="search"
+          value={searchText}
+          onChangeText={setSearchText}
+        />
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.listContent}>
-        {!userId && (
-          <View style={[styles.loginHint, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '30', borderWidth: 1 }]}>
-            <FontAwesome name="info-circle" size={16} color={colors.primary} />
-            <Text style={[styles.loginHintText, { color: colors.primary }]}>  Faça login para salvar vagas nos favoritos</Text>
-          </View>
-        )}
-
-        <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
-          {abaAtiva === 'internas' ? vagasInternasFiltradas.length : vagasExternasFiltradas.length} oportunidades encontradas
-        </Text>
-
-        {loading ? (
-          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 60 }} />
-        ) : abaAtiva === 'internas' ? (
-          vagasInternasFiltradas.length === 0 ? (
-            <View style={styles.emptySearch}>
-              <View style={[styles.emptySearchIcon, { backgroundColor: colors.primaryLight }]}>
-                <FontAwesome name="search" size={36} color={colors.primary} />
-              </View>
-              <Text style={[styles.emptySearchText, { color: colors.textPrimary }]}>Nenhuma vaga encontrada</Text>
-              <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 8 }}>Tente usar palavras mais genéricas ou limpar os filtros.</Text>
-            </View>
-          ) : vagasInternasFiltradas.map(vaga => (
-            <VagaCard
-              key={vaga.id}
-              id={vaga.id}
-              titulo={vaga.titulo}
-              empresa={vaga.empresa}
-              localOuContrato={vaga.contrato}
-              salarioOuFonte={vaga.salario}
-              isExterna={false}
-              tipoOuIcone={vaga.tipo === 'freelancer' ? 'freelancer' : 'recrutador'}
-              tags={[]}
-              tempoRelativo={vaga.criadoEm ? calcularTempoRelativo(vaga.criadoEm) : 'recentemente'}
-              onToggleFavorito={() => handleToggleFavorito(vaga.id, vaga.titulo, vaga.empresa, 'TechConnect')}
-              isFavorito={!!favoritosMap[vaga.id]}
-              salvandoFav={salvandoFavId === vaga.id}
-              userId={userId}
-            />
-          ))
-        ) : (
-          vagasExternasFiltradas.length === 0 ? (
-            <View style={styles.emptySearch}>
-              <View style={[styles.emptySearchIcon, { backgroundColor: colors.secondaryLight }]}>
-                <FontAwesome name="search" size={36} color={colors.secondary} />
-              </View>
-              <Text style={[styles.emptySearchText, { color: colors.textPrimary }]}>Nenhuma vaga encontrada</Text>
-              <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 8 }}>Tente usar palavras mais genéricas ou limpar os filtros.</Text>
-            </View>
-          ) : vagasExternasFiltradas.map(vaga => {
-            let icone = 'globe';
-            if (vaga.fonte.includes('GitHub')) icone = 'github';
-            if (vaga.fonte.includes('Remotive') || vaga.fonte.includes('RemoteOK')) icone = 'laptop';
-
-            return (
-              <VagaCard
-                key={vaga.id}
-                id={vaga.id}
-                titulo={vaga.titulo}
-                empresa={vaga.empresa}
-                localOuContrato={vaga.local}
-                salarioOuFonte={vaga.fonte}
-                isExterna={true}
-                tipoOuIcone={icone}
-                tags={vaga.tags}
-                tempoRelativo={vaga.tempoPostagem}
-                onToggleFavorito={() => handleToggleFavorito(vaga.id, vaga.titulo, vaga.empresa, vaga.fonte, vaga.link)}
-                isFavorito={!!favoritosMap[vaga.id]}
-                salvandoFav={salvandoFavId === vaga.id}
-                userId={userId}
-                linkExterna={vaga.link}
-              />
-            );
-          })
-        )}
+      {/* Filter Chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipsContainer}
+        contentContainerStyle={styles.chipsContent}
+      >
+        {FILTROS.map((filtro) => (
+          <FilterChip
+            key={filtro}
+            label={filtro}
+            active={filtroAtivo === filtro}
+            onPress={() => setFiltroAtivo(filtro)}
+          />
+        ))}
       </ScrollView>
+
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tab, abaAtiva === 'externas' && styles.tabActive]}
+          onPress={() => setAbaAtiva('externas')}
+        >
+          <Text style={[styles.tabText, abaAtiva === 'externas' && styles.tabTextActive]}>
+            Globais
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, abaAtiva === 'internas' && styles.tabActive]}
+          onPress={() => setAbaAtiva('internas')}
+        >
+          <Text style={[styles.tabText, abaAtiva === 'internas' && styles.tabTextActive]}>
+            TechConnect
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Counter */}
+      <Text style={styles.counter}>{vagasFiltradas.length} oportunidades encontradas</Text>
+
+      {/* Vagas List */}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator color={COLORS.primary} size="large" />
+        </View>
+      ) : (
+        <FlatList
+          data={vagasFiltradas}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <Card style={styles.vagaItem}>
+              <View style={styles.vagaContent}>
+                <View style={styles.vagaInfo}>
+                  <Text style={styles.vagaTitle} numberOfLines={2}>
+                    {item.titulo}
+                  </Text>
+                  <Text style={styles.vagaCompany} numberOfLines={1}>
+                    {item.empresa}
+                  </Text>
+                  <Text style={styles.vagaLocation}>{item.local || 'Localização não especificada'}</Text>
+
+                  <View style={styles.vagaTags}>
+                    {item.tags && item.tags.slice(0, 2).map((tag: string, i: number) => (
+                      <Tag key={i} label={tag} variant="gray" />
+                    ))}
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => toggleFavorito(item)}
+                  disabled={salvandoFavId === item.id}
+                >
+                  <MaterialIcons
+                    name={favoritosMap[item.id] ? 'favorite' : 'favorite-border'}
+                    size={24}
+                    color={favoritosMap[item.id] ? COLORS.accent : COLORS.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.vagaFooter}>
+                <Text style={styles.vagaTime}>{item.tempoPostagem || item.data}</Text>
+                {item.tipo === 'local' && <Tag label="Vaga Exclusiva" variant="purple" />}
+              </View>
+            </Card>
+          )}
+          contentContainerStyle={styles.listContent}
+          scrollEnabled={false}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 16 },
-  pageTitle: { fontSize: 32, fontWeight: '900', letterSpacing: -0.5 },
-  pageSubtitle: { fontSize: 16, marginTop: 6, marginBottom: 24, fontWeight: '500' },
-  
-  searchRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  searchInputContainer: { 
-    flex: 1, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    borderWidth: 1, 
-    borderRadius: 16, 
-    height: 56,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  searchInput: { flex: 1, height: '100%', fontSize: 16 },
-  filterBtn: { 
-    width: 56, 
-    height: 56, 
-    borderRadius: 16, 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    shadowColor: '#22C55E',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  
-  tagsContainer: { gap: 10, paddingRight: 20, paddingBottom: 10 },
-  tagBtn: { 
-    paddingHorizontal: 20, 
-    paddingVertical: 10, 
-    borderRadius: 24, 
-    borderWidth: 1 
-  },
-  tagBtnText: { fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
-  
-  abasWrapper: { paddingHorizontal: 20, paddingBottom: 16 },
-  abasContainer: {
-    flexDirection: 'row',
-    borderBottomWidth: 2,
-    borderBottomColor: '#E8E8EE',
-    gap: 20,
-  },
-  abaBtn: {
+  container: {
     flex: 1,
-    paddingVertical: 14,
-    alignItems: 'center',
-    position: 'relative',
+    backgroundColor: COLORS.bg,
   },
-  abaBtnActive: {
-    opacity: 1,
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
-  abaUnderline: {
-    position: 'absolute',
-    bottom: -2,
-    left: 0,
-    right: 0,
-    height: 2,
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: COLORS.textMain,
   },
-  abaText: { fontSize: 14, letterSpacing: 0.3, fontWeight: '600' },
-  
-  listContent: { paddingHorizontal: 20, paddingBottom: 60 },
-  loginHint: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    padding: 16, 
-    borderRadius: 12, 
-    marginBottom: 20 
+  subtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
-  loginHintText: { fontSize: 14, fontWeight: '700' },
-  resultsCount: { fontSize: 14, marginBottom: 20, fontWeight: '600' },
-  
-  emptySearch: { alignItems: 'center', paddingVertical: 60, gap: 12, paddingHorizontal: 40 },
-  emptySearchIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+  searchContainer: {
+    paddingHorizontal: 16,
     marginBottom: 16,
   },
-  emptySearchText: { fontSize: 18, fontWeight: '800' },
+  chipsContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    height: 44,
+  },
+  chipsContent: {
+    gap: 8,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: COLORS.accent,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  tabTextActive: {
+    color: COLORS.accent,
+  },
+  counter: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 100,
+    gap: 12,
+  },
+  vagaItem: {
+    paddingVertical: 12,
+  },
+  vagaContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  vagaInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  vagaTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textMain,
+    marginBottom: 4,
+  },
+  vagaCompany: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginBottom: 2,
+  },
+  vagaLocation: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
+  vagaTags: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  vagaFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  vagaTime: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+  },
 });
