@@ -49,14 +49,16 @@ Este arquivo é o registro central de todo o progresso do projeto. **Não apague
   - "Vagas Salvas" na Home conectado ao Firestore real
   - Admin query com limit(100) + orderBy
   - Campo de contato (e-mail/WhatsApp) adicionado ao formulário de postagem
+- **09/06:** Resolução Crítica do Login do Google no Vercel (Crash de Autenticação).
+  - **Problema 1 (Erro 400 - redirect_uri_mismatch):** O `expo-auth-session` não conseguia lidar com o domínio customizado da Vercel (`techconnect-br.vercel.app`). Solução: Substituição total pelo `signInWithPopup` nativo do Firebase.
+  - **Problema 2 (Vercel Env Vars Bug):** A Vercel não injetou o `process.env.EXPO_PUBLIC_FIREBASE_API_KEY`, gerando uma URL do Firebase com chaves literais (`apiKey=EXPO_PUBLIC...`) e bloqueando o sistema de segurança do Google com "The requested action is invalid". Solução: Chaves do Firebase tiveram que ser **hardcoded (chumbadas)** novamente no `firebaseConfig.ts` para burlar esse bug da Vercel.
+  - **Problema 3 (Popup Bloqueado Silenciosamente):** Usar carregamento dinâmico assíncrono (`await import`) antes de abrir o popup fazia o navegador perder o contexto de "clique do usuário", acionando o antivírus/bloqueador de popups nativo do Chrome e fazendo o botão "não fazer nada". Solução: O `signInWithPopup` deve ser importado de forma estática e síncrona no topo do arquivo.
+  - **Problema 4 (Cegueira de Erros):** O navegador Chrome bloqueia chamadas repetidas de `Alert.alert()` (window.alert) silenciosamente. Solução: Foi construído um painel vermelho fixo na tela atrelado à variável `errorMessage` para garantir que qualquer erro de segurança seja visível ao usuário, independentemente de bloqueadores.
 
 ---
 
 ## 📋 Próximas Tarefas
-- [ ] Configurar variáveis de ambiente na Vercel (dashboard do projeto)
 - [ ] Ativar Jooble (assim que a chave for fornecida).
 - [ ] Ativar InfoJobs (assim que a chave for fornecida).
 - [ ] Implementar Firebase Security Rules para validar admin no backend.
 - [ ] Cache de vagas para app nativo (AsyncStorage em vez de localStorage).
-
-
