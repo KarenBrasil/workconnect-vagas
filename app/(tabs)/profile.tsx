@@ -295,47 +295,61 @@ export default function ProfileScreen() {
       <View style={styles.settingsSection}>
         <Text style={[styles.settingsTitle, { color: colors.textPrimary }]}>Configurações</Text>
 
-        <View style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+        <View style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border, shadowColor: colors.primary, shadowOpacity: isDark ? 0.2 : 0.05, shadowRadius: 10, elevation: 3 }]}>
           <View style={styles.settingLeft}>
             <View style={[styles.settingIcon, { backgroundColor: colors.secondaryLight }]}>
               <FontAwesome name="moon-o" size={18} color={colors.primary} />
             </View>
-            <Text style={[styles.settingText, { color: colors.textPrimary }]}>Modo Escuro</Text>
+            <View>
+              <Text style={[styles.settingText, { color: colors.textPrimary }]}>Modo Escuro</Text>
+              <Text style={[styles.settingSubtext, { color: colors.textSecondary }]}>Aparência do aplicativo</Text>
+            </View>
           </View>
           <Switch 
             value={isDark} 
             onValueChange={(val) => setThemeMode(val ? 'dark' : 'light')} 
-            trackColor={{ false: '#767577', true: colors.primary }}
+            trackColor={{ false: '#E2E8F0', true: colors.primary }}
             thumbColor={'#FFFFFF'}
           />
         </View>
 
-        <TouchableOpacity style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+        <TouchableOpacity activeOpacity={0.7} style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border, shadowColor: colors.primary, shadowOpacity: isDark ? 0.2 : 0.05, shadowRadius: 10, elevation: 3 }]}>
           <View style={styles.settingLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: colors.secondaryLight }]}>
+            <View style={[styles.settingIcon, { backgroundColor: colors.primaryLight }]}>
               <FontAwesome name="bell" size={18} color={colors.primary} />
             </View>
-            <Text style={[styles.settingText, { color: colors.textPrimary }]}>Notificações</Text>
-          </View>
-          <FontAwesome name="chevron-right" size={14} color={colors.textSecondary} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-          <View style={styles.settingLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: colors.secondaryLight }]}>
-              <FontAwesome name="lock" size={18} color={colors.primary} />
+            <View>
+              <Text style={[styles.settingText, { color: colors.textPrimary }]}>Notificações</Text>
+              <Text style={[styles.settingSubtext, { color: colors.textSecondary }]}>Gerencie seus alertas</Text>
             </View>
-            <Text style={[styles.settingText, { color: colors.textPrimary }]}>Privacidade e Segurança</Text>
           </View>
           <FontAwesome name="chevron-right" size={14} color={colors.textSecondary} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} onPress={handleLogout}>
+        <TouchableOpacity activeOpacity={0.7} style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border, shadowColor: colors.primary, shadowOpacity: isDark ? 0.2 : 0.05, shadowRadius: 10, elevation: 3 }]}>
           <View style={styles.settingLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: isDark ? 'rgba(248, 113, 113, 0.15)' : 'rgba(239, 68, 68, 0.1)' }]}>
+            <View style={[styles.settingIcon, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)' }]}>
+              <FontAwesome name="lock" size={18} color="#3B82F6" />
+            </View>
+            <View>
+              <Text style={[styles.settingText, { color: colors.textPrimary }]}>Privacidade</Text>
+              <Text style={[styles.settingSubtext, { color: colors.textSecondary }]}>Segurança da conta</Text>
+            </View>
+          </View>
+          <FontAwesome name="chevron-right" size={14} color={colors.textSecondary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity activeOpacity={0.8} style={styles.logoutContainer} onPress={handleLogout}>
+          <LinearGradient 
+            colors={['#FEF2F2', '#FEE2E2']} 
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={[styles.logoutGradient, isDark && { opacity: 0.15 }]} 
+          />
+          <View style={styles.logoutContent}>
+            <View style={[styles.settingIcon, { backgroundColor: '#FECACA' }]}>
               <FontAwesome name="sign-out" size={18} color={colors.danger} />
             </View>
-            <Text style={[styles.settingText, { color: colors.danger }]}>Sair da Conta</Text>
+            <Text style={[styles.logoutText, { color: colors.danger }]}>Sair da Conta</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -428,10 +442,34 @@ const styles = StyleSheet.create({
   settingsTitle: { fontSize: 18, fontWeight: '800', marginBottom: 16 },
   settingRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 16, borderRadius: 16, marginBottom: 12,
+    padding: 16, borderRadius: 20, marginBottom: 14,
     borderWidth: 1,
   },
   settingLeft: { flexDirection: 'row', alignItems: 'center' },
-  settingIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
-  settingText: { fontSize: 15, fontWeight: '700' },
+  settingIcon: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  settingText: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3, marginBottom: 2 },
+  settingSubtext: { fontSize: 12, fontWeight: '500' },
+  
+  // Botão Sair Premium
+  logoutContainer: {
+    marginTop: 8,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    position: 'relative',
+  },
+  logoutGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  logoutContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
 });
