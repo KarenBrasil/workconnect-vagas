@@ -34,30 +34,43 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  useEffect(() => {
+    const checkRedirect = async () => {
+      if (Platform.OS !== 'web') return;
+      try {
+        const { getRedirectResult } = await import('firebase/auth');
+        const result = await getRedirectResult(auth);
+        if (result) {
+          console.log("USUÁRIO AUTENTICADO COM GOOGLE (REDIRECT):", result.user.uid);
+          await setDoc(
+            doc(db, 'users', result.user.uid),
+            {
+              nome: result.user.displayName || 'Usuário Google',
+              email: result.user.email,
+              uid: result.user.uid,
+              criadoEm: new Date().toISOString(),
+            },
+            { merge: true }
+          );
+          router.replace('/(tabs)');
+        }
+      } catch (error: any) {
+        console.error("ERRO FIREBASE REDIRECT:", error);
+        Alert.alert('Erro', 'Não foi possível entrar com Google: ' + error.message);
+      }
+    };
+    checkRedirect();
+  }, []);
+
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
       const provider = new GoogleAuthProvider();
-      
-      const { signInWithPopup } = await import('firebase/auth');
-      const userCred = await signInWithPopup(auth, provider);
-      
-      console.log("USUÁRIO AUTENTICADO COM GOOGLE (POPUP):", userCred.user.uid);
-      await setDoc(
-        doc(db, 'users', userCred.user.uid),
-        {
-          nome: userCred.user.displayName || 'Usuário Google',
-          email: userCred.user.email,
-          uid: userCred.user.uid,
-          criadoEm: new Date().toISOString(),
-        },
-        { merge: true }
-      );
-      router.replace('/(tabs)');
+      const { signInWithRedirect } = await import('firebase/auth');
+      await signInWithRedirect(auth, provider);
     } catch (error: any) {
-      console.error("ERRO FIREBASE POPUP:", error);
-      Alert.alert('Erro', 'Não foi possível entrar com Google: ' + error.message);
-    } finally {
+      console.error("ERRO FIREBASE REDIRECT INIT:", error);
+      Alert.alert('Erro', 'Não foi possível iniciar o login com Google: ' + error.message);
       setLoading(false);
     }
   };
