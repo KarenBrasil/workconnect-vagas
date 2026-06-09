@@ -138,14 +138,11 @@ export default function ProfileScreen() {
         <Text style={[styles.nomeText, { color: colors.textPrimary }]}>{nomeExibido}</Text>
         <Text style={[styles.emailText, { color: colors.textSecondary }]}>{userEmail}</Text>
 
-        <TouchableOpacity
-          style={styles.editarBtn}
-          onPress={() => setEditando(!editando)}
-          activeOpacity={0.7}
-        >
-          <FontAwesome name={editando ? 'times' : 'pencil'} size={14} color="#111" />
-          <Text style={styles.editarBtnText}>{editando ? 'Cancelar' : 'Editar Perfil'}</Text>
-        </TouchableOpacity>
+        <OutlineButton 
+          label={editando ? 'Cancelar' : 'Editar Perfil'} 
+          icon={editando ? 'close' : 'edit'}
+          onPress={() => setEditando(!editando)} 
+        />
       </View>
 
       {/* Links rápidos (exibidos quando não está editando) */}
@@ -271,11 +268,13 @@ export default function ProfileScreen() {
             autoCapitalize="none" keyboardType="url"
           />
 
-          <TouchableOpacity activeOpacity={0.8} onPress={salvarPerfil} disabled={salvando}>
-            <LinearGradient colors={[colors.primary, colors.primaryDark]} style={styles.salvarBtn}>
-              {salvando ? <ActivityIndicator color="#fff" /> : <Text style={styles.salvarBtnText}>💾 Salvar Perfil</Text>}
-            </LinearGradient>
-          </TouchableOpacity>
+          <PrimaryButton 
+            label={salvando ? 'Salvando...' : 'Salvar Perfil'}
+            icon="save"
+            onPress={salvarPerfil}
+            disabled={salvando}
+            style={{ marginTop: 32 }}
+          />
         </View>
       )}
 
@@ -327,19 +326,12 @@ export default function ProfileScreen() {
           <FontAwesome name="chevron-right" size={14} color={colors.textSecondary} />
         </TouchableOpacity>
 
-        <TouchableOpacity activeOpacity={0.8} style={styles.logoutContainer} onPress={handleLogout}>
-          <LinearGradient 
-            colors={['#FEF2F2', '#FEE2E2']} 
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={[styles.logoutGradient, isDark && { opacity: 0.15 }]} 
-          />
-          <View style={styles.logoutContent}>
-            <View style={[styles.settingIcon, { backgroundColor: '#FECACA' }]}>
-              <FontAwesome name="sign-out" size={18} color={colors.danger} />
-            </View>
-            <Text style={[styles.logoutText, { color: colors.danger }]}>Sair da Conta</Text>
-          </View>
-        </TouchableOpacity>
+        <OutlineButton 
+          label="Sair da Conta"
+          icon="logout"
+          onPress={handleLogout}
+          style={{ borderColor: colors.danger, marginTop: 8 }}
+        />
       </View>
 
     </ScrollView>

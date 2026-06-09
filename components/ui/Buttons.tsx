@@ -61,11 +61,13 @@ export const PrimaryButton = ({
   onPress,
   style,
   disabled = false,
+  icon,
 }: {
   label: string;
   onPress: () => void;
   style?: ViewStyle;
   disabled?: boolean;
+  icon?: keyof typeof MaterialIcons.glyphMap;
 }) => (
   <TouchableOpacity
     style={[styles.primaryButton, style, disabled && { opacity: 0.5 }]}
@@ -73,7 +75,10 @@ export const PrimaryButton = ({
     disabled={disabled}
     activeOpacity={0.8}
   >
-    <Text style={styles.primaryButtonText}>{label}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+      {icon && <MaterialIcons name={icon} size={18} color={COLORS.primaryDark} style={{ marginRight: 8 }} />}
+      <Text style={styles.primaryButtonText}>{label}</Text>
+    </View>
   </TouchableOpacity>
 );
 
@@ -81,17 +86,22 @@ export const OutlineButton = ({
   label,
   onPress,
   style,
+  icon,
 }: {
   label: string;
   onPress: () => void;
   style?: ViewStyle;
+  icon?: keyof typeof MaterialIcons.glyphMap;
 }) => (
   <TouchableOpacity
     style={[styles.outlineButton, style]}
     onPress={onPress}
     activeOpacity={0.8}
   >
-    <Text style={styles.outlineButtonText}>{label}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+      {icon && <MaterialIcons name={icon} size={18} color={COLORS.textMain} style={{ marginRight: 8 }} />}
+      <Text style={styles.outlineButtonText}>{label}</Text>
+    </View>
   </TouchableOpacity>
 );
 
