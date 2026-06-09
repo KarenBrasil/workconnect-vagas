@@ -120,7 +120,7 @@ export default function Home() {
                       { backgroundColor: vaga.tipo === 'local' ? COLORS.primary : COLORS.accent },
                     ]}
                   >
-                    <Text style={styles.companyIcon}>{vaga.empresa.charAt(0).toUpperCase()}</Text>
+                    <Text style={styles.companyIcon}>{(vaga.empresa || 'C').charAt(0).toUpperCase()}</Text>
                   </View>
                   <TouchableOpacity>
                     <MaterialIcons name="favorite-border" size={20} color={COLORS.textSecondary} />
@@ -130,7 +130,7 @@ export default function Home() {
                 <Text style={styles.vagaTitle} numberOfLines={2}>
                   {vaga.titulo}
                 </Text>
-                <Text style={styles.vagaCompany}>{vaga.empresa}</Text>
+                <Text style={styles.vagaCompany}>{vaga.empresa || 'Confidencial'}</Text>
 
                 <View style={styles.vagaFooter}>
                   <Text style={styles.vagaTime}>{vaga.data}</Text>
@@ -156,7 +156,7 @@ export default function Home() {
                       {vaga.titulo}
                     </Text>
                     <Text style={styles.vagaListCompany} numberOfLines={1}>
-                      {vaga.empresa}
+                      {vaga.empresa || 'Confidencial'}
                     </Text>
                   </View>
                   <MaterialIcons name="chevron-right" size={24} color={COLORS.textSecondary} />
