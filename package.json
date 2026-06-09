@@ -1,4 +1,5 @@
 {
+  "main": "expo-router/entry",
   "name": "app-vagas",
   "version": "1.0.0",
   "scripts": {
