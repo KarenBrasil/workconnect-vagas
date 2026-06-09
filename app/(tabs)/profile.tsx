@@ -297,7 +297,7 @@ export default function ProfileScreen() {
 
         <View style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
           <View style={styles.settingLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: colors.iconBox }]}>
+            <View style={[styles.settingIcon, { backgroundColor: colors.secondaryLight }]}>
               <FontAwesome name="moon-o" size={18} color={colors.primary} />
             </View>
             <Text style={[styles.settingText, { color: colors.textPrimary }]}>Modo Escuro</Text>
@@ -312,7 +312,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
           <View style={styles.settingLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: colors.iconBox }]}>
+            <View style={[styles.settingIcon, { backgroundColor: colors.secondaryLight }]}>
               <FontAwesome name="bell" size={18} color={colors.primary} />
             </View>
             <Text style={[styles.settingText, { color: colors.textPrimary }]}>Notificações</Text>
@@ -322,7 +322,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
           <View style={styles.settingLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: colors.iconBox }]}>
+            <View style={[styles.settingIcon, { backgroundColor: colors.secondaryLight }]}>
               <FontAwesome name="lock" size={18} color={colors.primary} />
             </View>
             <Text style={[styles.settingText, { color: colors.textPrimary }]}>Privacidade e Segurança</Text>
@@ -332,10 +332,10 @@ export default function ProfileScreen() {
 
         <TouchableOpacity style={[styles.settingRow, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} onPress={handleLogout}>
           <View style={styles.settingLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: colors.errorBackground }]}>
-              <FontAwesome name="sign-out" size={18} color={colors.error} />
+            <View style={[styles.settingIcon, { backgroundColor: isDark ? 'rgba(248, 113, 113, 0.15)' : 'rgba(239, 68, 68, 0.1)' }]}>
+              <FontAwesome name="sign-out" size={18} color={colors.danger} />
             </View>
-            <Text style={[styles.settingText, { color: colors.error }]}>Sair da Conta</Text>
+            <Text style={[styles.settingText, { color: colors.danger }]}>Sair da Conta</Text>
           </View>
         </TouchableOpacity>
       </View>
