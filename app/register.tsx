@@ -8,53 +8,35 @@ import {
   View,
   ActivityIndicator,
   ScrollView,
-  StatusBar
+  StatusBar,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../src/services/firebaseConfig';
-import { FontAwesome } from '@expo/vector-icons';
-import { useLanguage } from '../src/theme/LanguageContext';
-import { CustomAlert } from '../components/CustomAlert';
-import { Input, ButtonPrimary } from '../components/ui';
+import { MaterialIcons } from '@expo/vector-icons';
+import { PrimaryButton, TextInputField, COLORS } from '../components/ui';
 import { IlluOnboarding } from '../assets/illustrations';
-import { useTheme } from '../src/theme/ThemeContext';
 
 export default function Register() {
   const router = useRouter();
-  const { t } = useLanguage();
-  const { colors, isDark } = useTheme();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const [alertConfig, setAlertConfig] = useState<{
-    visible: boolean;
-    title: string;
-    message: string;
-    type: 'success' | 'error' | 'warning' | 'info';
-    onConfirm?: () => void;
-  }>({ visible: false, title: '', message: '', type: 'info' });
-
-  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', onConfirm?: () => void) => {
-    setAlertConfig({ visible: true, title, message, type, onConfirm });
-  };
-
   const handleRegister = async () => {
-    setErrorMessage('');
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!nome.trim() || !normalizedEmail || !password.trim()) {
-      setErrorMessage('Por favor, preencha todos os campos.');
+      Alert.alert('Erro', 'Por favor, preencha todos os campos.');
       return;
     }
 
     if (password.length < 6) {
-      setErrorMessage('A senha deve ter pelo menos 6 caracteres.');
+      Alert.alert('Erro', 'A senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
@@ -67,80 +49,70 @@ export default function Register() {
         nome: nome.trim(),
         email: normalizedEmail,
         uid: user.uid,
-        criadoEm: new Date().toISOString()
+        criadoEm: new Date().toISOString(),
       });
 
       await sendEmailVerification(user);
 
-      showAlert(
+      Alert.alert(
         'Conta criada com sucesso!',
-        'Um e-mail de confirmação foi enviado. Por favor, verifique sua caixa de entrada para ativar a conta antes de fazer o login.',
-        'success',
-        () => router.replace('/login')
+        'Um e-mail de confirmação foi enviado. Verifique sua caixa de entrada.',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/login'),
+          },
+        ]
       );
     } catch (error: any) {
       let customError = error.message || 'Ocorreu um erro ao criar a conta.';
-      if (error.code === 'auth/email-already-in-use') customError = 'Este e-mail já está em uso.';
-      else if (error.code === 'auth/invalid-email') customError = 'E-mail inválido.';
-      else if (error.code === 'auth/weak-password') customError = 'A senha é muito fraca.';
+      if (error.code === 'auth/email-already-in-use') {
+        customError = 'Este e-mail já está em uso.';
+      } else if (error.code === 'auth/invalid-email') {
+        customError = 'E-mail inválido.';
+      } else if (error.code === 'auth/weak-password') {
+        customError = 'A senha é muito fraca.';
+      }
 
-      setErrorMessage(customError);
+      Alert.alert('Erro', customError);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-
-      <CustomAlert
-        visible={alertConfig.visible}
-        title={alertConfig.title}
-        message={alertConfig.message}
-        type={alertConfig.type}
-        onConfirm={alertConfig.onConfirm}
-        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
-      />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.surface} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-
           {/* Illustration */}
           <View style={styles.illustrationContainer}>
-            <IlluOnboarding width={160} height={140} />
+            <IlluOnboarding />
           </View>
 
+          {/* Content */}
           <View style={styles.content}>
-            <Text style={[styles.title, { color: colors.textPrimary }]}>Criar Conta 🚀</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Junte-se a nós para descobrir as melhores vagas.
-            </Text>
+            <Text style={styles.title}>Criar Conta 🎉</Text>
+            <Text style={styles.subtitle}>Junte-se a milhares de profissionais em busca de oportunidades.</Text>
 
-            {errorMessage ? (
-              <View style={[styles.errorContainer, { borderColor: colors.danger, backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2' }]}>
-                <FontAwesome name="exclamation-circle" size={16} color={colors.danger} style={{ marginRight: 8 }} />
-                <Text style={[styles.errorText, { color: colors.danger }]}>{errorMessage}</Text>
-              </View>
-            ) : null}
-
+            {/* Form */}
             <View style={styles.formContainer}>
-              <Input
+              <TextInputField
                 label="Nome Completo"
-                placeholder="Seu nome completo"
-                icon="user"
+                placeholder="Seu nome"
+                icon="person"
                 value={nome}
                 onChangeText={setNome}
-                autoCapitalize="words"
               />
 
-              <Input
+              <TextInputField
                 label="E-mail"
                 placeholder="seu@email.com"
-                icon="envelope"
+                icon="mail"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -148,38 +120,40 @@ export default function Register() {
               />
 
               <View style={styles.passwordContainer}>
-                <Input
+                <TextInputField
                   label="Senha"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="••••••••"
                   icon="lock"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
-                  onSubmitEditing={handleRegister}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
                   style={styles.eyeButton}
                 >
-                  <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={16} color={colors.secondary} />
+                  <MaterialIcons
+                    name={showPassword ? 'visibility' : 'visibility-off'}
+                    size={18}
+                    color={COLORS.accent}
+                  />
                 </TouchableOpacity>
               </View>
             </View>
 
-            <ButtonPrimary
-              label={loading ? '' : t('auth.register')}
+            {/* Register Button */}
+            <PrimaryButton
+              label={loading ? '' : 'Criar Conta'}
               onPress={handleRegister}
               disabled={loading}
-              style={styles.registerButton}
             />
-            {loading && (
-              <ActivityIndicator color={colors.primary} size="large" style={styles.loader} />
-            )}
+            {loading && <ActivityIndicator color={COLORS.primary} size="large" style={styles.loader} />}
 
+            {/* Login Link */}
             <View style={styles.footer}>
-              <Text style={[styles.footerText, { color: colors.textSecondary }]}>{t('auth.hasAccount')} </Text>
+              <Text style={styles.footerText}>Já tem uma conta? </Text>
               <TouchableOpacity onPress={() => router.push('/login')}>
-                <Text style={[styles.loginText, { color: colors.secondary }]}>{t('auth.loginHere')}</Text>
+                <Text style={styles.loginText}>Entre aqui</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -192,11 +166,13 @@ export default function Register() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.surface,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    paddingHorizontal: 24,
     paddingTop: 20,
+    paddingBottom: 40,
   },
   illustrationContainer: {
     alignItems: 'center',
@@ -209,25 +185,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '800',
+    color: COLORS.textMain,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    marginBottom: 24,
+    color: COLORS.textSecondary,
+    marginBottom: 32,
     lineHeight: 20,
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 20,
-    borderWidth: 1,
-  },
-  errorText: {
-    fontSize: 13,
-    fontWeight: '500',
-    flex: 1,
   },
   formContainer: {
     marginBottom: 24,
@@ -239,12 +204,9 @@ const styles = StyleSheet.create({
   eyeButton: {
     position: 'absolute',
     right: 14,
-    top: 38,
+    top: '50%',
+    transform: [{ translateY: -9 }],
     zIndex: 10,
-  },
-  registerButton: {
-    marginBottom: 24,
-    minHeight: 56,
   },
   loader: {
     marginVertical: 16,
@@ -253,12 +215,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 32,
+    gap: 4,
   },
   footerText: {
     fontSize: 13,
+    color: COLORS.textSecondary,
   },
   loginText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
+    color: COLORS.accent,
   },
 });
