@@ -33,9 +33,11 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleGoogleLogin = async () => {
     try {
+      setErrorMessage('');
       setLoading(true);
       const provider = new GoogleAuthProvider();
       
@@ -53,7 +55,9 @@ export default function Login() {
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error("ERRO FIREBASE POPUP:", error);
-      Alert.alert('Falha no Login', error.message || 'Ocorreu um erro ao fazer login com o Google.');
+      const msg = error.message || 'Ocorreu um erro ao fazer login com o Google.';
+      setErrorMessage(msg);
+      Alert.alert('Falha no Login', msg);
     } finally {
       setLoading(false);
     }
@@ -68,6 +72,7 @@ export default function Login() {
     }
 
     try {
+      setErrorMessage('');
       setLoading(true);
       const userCredential = await signInWithEmailAndPassword(
         auth,
@@ -78,9 +83,11 @@ export default function Login() {
       const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'ass.karenm@gmail.com';
       if (!userCredential.user.emailVerified && normalizedEmail !== adminEmail) {
         await signOut(auth);
+        const msg = 'Você precisa confirmar o seu e-mail antes de acessar.';
+        setErrorMessage(msg);
         Alert.alert(
           'E-mail não verificado',
-          'Você precisa confirmar o seu e-mail antes de acessar.',
+          msg,
           [
             { text: 'Cancelar', style: 'cancel' },
             {
@@ -111,10 +118,13 @@ export default function Login() {
           router.replace('/(tabs)');
           return;
         } catch (createError) {
+          setErrorMessage('Erro ao criar a conta admin automaticamente.');
           Alert.alert('Erro', 'Erro ao criar a conta admin automaticamente.');
         }
       } else {
-        Alert.alert('Erro', error.message || 'Ocorreu um erro ao fazer login.');
+        const msg = error.message || 'Ocorreu um erro ao fazer login.';
+        setErrorMessage(msg);
+        Alert.alert('Erro', msg);
       }
     } finally {
       setLoading(false);
@@ -139,6 +149,12 @@ export default function Login() {
           <View style={styles.content}>
             <Text style={styles.title}>Bem-vindo de volta 👋</Text>
             <Text style={styles.subtitle}>Conecte-se para continuar explorando oportunidades.</Text>
+
+            {errorMessage ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            ) : null}
 
             {/* Form */}
             <View style={styles.formContainer}>
@@ -241,6 +257,20 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: 32,
     lineHeight: 20,
+  },
+  errorContainer: {
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(220, 38, 38, 0.3)',
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   formContainer: {
     marginBottom: 24,
