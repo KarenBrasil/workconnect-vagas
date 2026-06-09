@@ -38,16 +38,16 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId:
-      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId:
+      process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
       '189326429321-kntm9qp3db45chg2ricg0ijov7rf8ilf.apps.googleusercontent.com',
   });
 
   useEffect(() => {
     if (response?.type === 'success') {
-      const { id_token, access_token } = response.params;
-      const credential = GoogleAuthProvider.credential(id_token, access_token);
+      const { id_token } = response.params;
+      const credential = GoogleAuthProvider.credential(id_token);
       setLoading(true);
       signInWithCredential(auth, credential)
         .then(async (userCred) => {
