@@ -190,13 +190,30 @@ export default function SearchScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Card style={styles.vagaItem}>
+              <View style={styles.vagaHeader}>
+                <View style={[styles.companyLogo, { backgroundColor: item.tipo === 'local' ? COLORS.primary : COLORS.accent }]}>
+                  <Text style={styles.companyLogoText}>{item.empresa ? item.empresa.charAt(0).toUpperCase() : 'C'}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => toggleFavorito(item)}
+                  disabled={salvandoFavId === item.id}
+                  style={styles.favoriteBtn}
+                >
+                  <MaterialIcons
+                    name={favoritosMap[item.id] ? 'favorite' : 'favorite-border'}
+                    size={22}
+                    color={favoritosMap[item.id] ? COLORS.accent : COLORS.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+
               <View style={styles.vagaContent}>
                 <View style={styles.vagaInfo}>
                   <Text style={styles.vagaTitle} numberOfLines={2}>
                     {item.titulo}
                   </Text>
                   <Text style={styles.vagaCompany} numberOfLines={1}>
-                    {item.empresa}
+                    {item.empresa || 'Confidencial'}
                   </Text>
                   <Text style={styles.vagaLocation}>{item.local || 'Localização não especificada'}</Text>
 
@@ -206,22 +223,11 @@ export default function SearchScreen() {
                     ))}
                   </View>
                 </View>
-
-                <TouchableOpacity
-                  onPress={() => toggleFavorito(item)}
-                  disabled={salvandoFavId === item.id}
-                >
-                  <MaterialIcons
-                    name={favoritosMap[item.id] ? 'favorite' : 'favorite-border'}
-                    size={24}
-                    color={favoritosMap[item.id] ? COLORS.accent : COLORS.textSecondary}
-                  />
-                </TouchableOpacity>
               </View>
 
               <View style={styles.vagaFooter}>
                 <Text style={styles.vagaTime}>{item.tempoPostagem || item.data}</Text>
-                {item.tipo === 'local' && <Tag label="Vaga Exclusiva" variant="purple" />}
+                {item.tipo === 'local' && <Tag label="⭐ Vaga Exclusiva" variant="purple" />}
               </View>
             </Card>
           )}
@@ -307,7 +313,30 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   vagaItem: {
-    paddingVertical: 12,
+    padding: 16,
+    marginBottom: 4,
+  },
+  vagaHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  companyLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  companyLogoText: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFF',
+    fontFamily: 'DMSans_800ExtraBold',
+  },
+  favoriteBtn: {
+    padding: 4,
   },
   vagaContent: {
     flexDirection: 'row',
@@ -316,38 +345,41 @@ const styles = StyleSheet.create({
   },
   vagaInfo: {
     flex: 1,
-    marginRight: 12,
   },
   vagaTitle: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: 'DMSans_800ExtraBold',
     color: COLORS.textMain,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   vagaCompany: {
-    fontSize: 12,
+    fontSize: 13,
+    fontFamily: 'DMSans_500Medium',
     color: COLORS.textSecondary,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   vagaLocation: {
-    fontSize: 11,
+    fontSize: 12,
+    fontFamily: 'DMSans_400Regular',
     color: COLORS.textSecondary,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   vagaTags: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
   },
   vagaFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 12,
+    paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
   vagaTime: {
-    fontSize: 10,
+    fontSize: 11,
+    fontFamily: 'DMSans_500Medium',
     color: COLORS.textSecondary,
   },
 });

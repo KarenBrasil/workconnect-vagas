@@ -189,10 +189,12 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 24,
     fontWeight: '800',
+    fontFamily: 'DMSans_800ExtraBold',
     color: COLORS.textMain,
   },
   subGreeting: {
     fontSize: 13,
+    fontFamily: 'DMSans_500Medium',
     color: COLORS.textSecondary,
     marginTop: 4,
   },
@@ -227,6 +229,7 @@ const styles = StyleSheet.create({
   searchPlaceholder: {
     flex: 1,
     fontSize: 14,
+    fontFamily: 'DMSans_500Medium',
     color: COLORS.textSecondary,
     marginHorizontal: 12,
   },
@@ -242,11 +245,13 @@ const styles = StyleSheet.create({
   bannerTitle: {
     fontSize: 16,
     fontWeight: '800',
+    fontFamily: 'DMSans_800ExtraBold',
     color: COLORS.primaryDark,
     marginBottom: 4,
   },
   bannerSub: {
     fontSize: 12,
+    fontFamily: 'DMSans_500Medium',
     color: COLORS.primaryDark,
     opacity: 0.8,
   },
@@ -258,12 +263,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontFamily: 'DMSans_800ExtraBold',
     color: COLORS.textMain,
   },
   viewAll: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: 'DMSans_600SemiBold',
     color: COLORS.accent,
   },
   vagasScroll: {
@@ -289,17 +296,20 @@ const styles = StyleSheet.create({
   },
   companyIcon: {
     color: COLORS.surface,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontFamily: 'DMSans_800ExtraBold',
     fontSize: 14,
   },
   vagaTitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontFamily: 'DMSans_800ExtraBold',
     color: COLORS.textMain,
     marginBottom: 4,
   },
   vagaCompany: {
     fontSize: 11,
+    fontFamily: 'DMSans_500Medium',
     color: COLORS.textSecondary,
     marginBottom: 8,
   },
@@ -326,12 +336,14 @@ const styles = StyleSheet.create({
   },
   vagaListTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '800',
+    fontFamily: 'DMSans_800ExtraBold',
     color: COLORS.textMain,
     marginBottom: 4,
   },
   vagaListCompany: {
     fontSize: 12,
+    fontFamily: 'DMSans_500Medium',
     color: COLORS.textSecondary,
   },
 });

@@ -7,6 +7,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { IlluResume } from '../../assets/illustrations';
+import { OutlineButton, PrimaryButton } from '../../components/ui';
 
 interface PerfilProfissional {
   nome: string;
@@ -127,40 +129,23 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.scrollContent}>
 
-      {/* Hero Header com Gradiente */}
+      {/* Header Centralizado */}
       <View style={styles.heroSection}>
-        <LinearGradient
-          colors={[colors.primary, colors.primaryDark]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={styles.heroBanner}
-        />
-        <View style={[styles.profileCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-          <View style={[styles.avatarCircle, { backgroundColor: colors.primary, borderColor: colors.cardBackground }]}>
-            <Text style={styles.avatarText}>{iniciais}</Text>
-          </View>
-          
-          <Text style={[styles.nomeText, { color: colors.textPrimary }]}>{nomeExibido}</Text>
-          {perfil.cargo ? <Text style={[styles.cargoText, { color: colors.primary }]}>{perfil.cargo}</Text> : null}
-          
-          <View style={styles.infoRow}>
-            {perfil.cidade ? (
-              <View style={styles.cidadeRow}>
-                <FontAwesome name="map-marker" size={12} color={colors.textSecondary} />
-                <Text style={[styles.cidadeText, { color: colors.textSecondary }]}>{perfil.cidade}</Text>
-              </View>
-            ) : null}
-            <Text style={[styles.emailText, { color: colors.textSecondary }]}>{userEmail}</Text>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.editarBtn, { borderColor: colors.primary, backgroundColor: colors.primaryLight }]}
-            onPress={() => setEditando(!editando)}
-            activeOpacity={0.7}
-          >
-            <FontAwesome name={editando ? 'times' : 'pencil'} size={14} color={colors.primary} />
-            <Text style={[styles.editarBtnText, { color: colors.primary }]}>{editando ? '  Cancelar' : '  Editar Perfil'}</Text>
-          </TouchableOpacity>
+        <View style={styles.avatarCircle}>
+          <Text style={styles.avatarText}>{iniciais}</Text>
         </View>
+        
+        <Text style={[styles.nomeText, { color: colors.textPrimary }]}>{nomeExibido}</Text>
+        <Text style={[styles.emailText, { color: colors.textSecondary }]}>{userEmail}</Text>
+
+        <TouchableOpacity
+          style={styles.editarBtn}
+          onPress={() => setEditando(!editando)}
+          activeOpacity={0.7}
+        >
+          <FontAwesome name={editando ? 'times' : 'pencil'} size={14} color="#111" />
+          <Text style={styles.editarBtnText}>{editando ? 'Cancelar' : 'Editar Perfil'}</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Links rápidos (exibidos quando não está editando) */}
@@ -213,10 +198,13 @@ export default function ProfileScreen() {
           ) : null}
 
           {!perfil.githubUrl && !perfil.linkedinUrl && !perfil.curriculo && !perfil.bio && (
-            <View style={[styles.emptyLinks, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-              <FontAwesome name="user-circle" size={48} color={colors.textSecondary + '40'} />
-              <Text style={[styles.emptyLinksText, { color: colors.textPrimary }]}>Seu perfil está incompleto</Text>
-              <Text style={[styles.emptyLinksSubText, { color: colors.textSecondary }]}>Destaque-se para os recrutadores adicionando suas informações profissionais.</Text>
+            <View style={styles.emptyLinks}>
+              <IlluResume />
+              <View style={styles.emptyLinksContent}>
+                <Text style={[styles.emptyLinksText, { color: colors.textPrimary }]}>Perfil incompleto</Text>
+                <Text style={[styles.emptyLinksSubText, { color: colors.textSecondary }]}>Destaque-se para os recrutadores adicionando suas informações profissionais.</Text>
+                <PrimaryButton label="Completar Perfil" onPress={() => setEditando(true)} style={{ marginTop: 12 }} />
+              </View>
             </View>
           )}
         </View>
@@ -365,49 +353,24 @@ const styles = StyleSheet.create({
   // Hero / Profile Card
   heroSection: {
     alignItems: 'center',
-    paddingTop: 0,
-    marginBottom: 20,
-    position: 'relative',
-  },
-  heroBanner: {
-    width: '100%',
-    height: 180,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  profileCard: {
-    width: '90%',
-    marginTop: 100,
-    borderRadius: 24,
-    borderWidth: 1,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
+    paddingTop: 40,
+    marginBottom: 32,
   },
   avatarCircle: {
-    width: 96, height: 96, borderRadius: 48,
+    width: 100, height: 100, borderRadius: 50,
     justifyContent: 'center', alignItems: 'center',
-    marginTop: -48, marginBottom: 16,
-    borderWidth: 4,
-    shadowColor: '#22C55E', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 8,
+    backgroundColor: '#7AE04A',
+    marginBottom: 16,
+    shadowColor: '#7AE04A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5,
   },
-  avatarText: { fontSize: 36, fontWeight: '900', color: '#FFFFFF', letterSpacing: -1 },
-  nomeText: { fontSize: 24, fontWeight: '800', textAlign: 'center', letterSpacing: -0.5 },
-  cargoText: { fontSize: 15, fontWeight: '700', marginTop: 6 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 12, marginTop: 10, marginBottom: 20 },
-  cidadeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  cidadeText: { fontSize: 13, fontWeight: '500' },
-  emailText: { fontSize: 13, fontWeight: '500' },
+  avatarText: { fontSize: 36, fontWeight: '800', fontFamily: 'DMSans_800ExtraBold', color: '#2B6010' },
+  nomeText: { fontSize: 24, fontWeight: '800', fontFamily: 'DMSans_800ExtraBold', textAlign: 'center', marginBottom: 4 },
+  emailText: { fontSize: 14, fontFamily: 'DMSans_500Medium', marginBottom: 20 },
   editarBtn: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 12,
-    borderRadius: 24, borderWidth: 1,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 10,
+    borderRadius: 100, borderWidth: 1.5, borderColor: '#E8E8EE', gap: 8,
   },
-  editarBtnText: { fontWeight: '800', fontSize: 14, letterSpacing: 0.5 },
+  editarBtnText: { fontWeight: '600', fontFamily: 'DMSans_600SemiBold', fontSize: 14, color: '#111' },
 
   // Links
   linksSection: { paddingHorizontal: 20 },
@@ -423,9 +386,10 @@ const styles = StyleSheet.create({
   bioCard: { borderRadius: 16, padding: 20, marginBottom: 12, borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
   bioLabel: { fontSize: 16, fontWeight: '800', marginBottom: 12 },
   bioText: { fontSize: 15, lineHeight: 24, fontWeight: '500' },
-  emptyLinks: { alignItems: 'center', padding: 40, gap: 12, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed' },
-  emptyLinksText: { fontSize: 18, fontWeight: '800', marginTop: 8 },
-  emptyLinksSubText: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  emptyLinks: { flexDirection: 'row', alignItems: 'center', padding: 20, gap: 16, borderRadius: 16, backgroundColor: '#FFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2 },
+  emptyLinksContent: { flex: 1 },
+  emptyLinksText: { fontSize: 18, fontWeight: '800', fontFamily: 'DMSans_800ExtraBold', marginBottom: 4 },
+  emptyLinksSubText: { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 18 },
 
   // Formulário
   formSection: { margin: 20, borderRadius: 20, padding: 24, borderWidth: 1 },

@@ -286,16 +286,17 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabActive: {
-    borderBottomColor: COLORS.primary,
+    borderBottomColor: COLORS.accent,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'DMSans_600SemiBold',
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
   tabTextActive: {
-    color: COLORS.primary,
+    color: COLORS.accent,
   },
   formContent: {
     paddingHorizontal: 16,
@@ -308,11 +309,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '800',
+    fontFamily: 'DMSans_800ExtraBold',
     color: COLORS.textMain,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
+    fontFamily: 'DMSans_400Regular',
     color: COLORS.textSecondary,
   },
   formContainer: {
@@ -328,6 +331,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 11,
     fontWeight: '600',
+    fontFamily: 'DMSans_600SemiBold',
     color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.04,
@@ -341,6 +345,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
+    fontFamily: 'DMSans_500Medium',
     color: COLORS.textMain,
     textAlignVertical: 'top',
   },
@@ -371,21 +376,25 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   vagaTitle: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: 'DMSans_800ExtraBold',
     color: COLORS.textMain,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   vagaCompany: {
-    fontSize: 12,
+    fontSize: 13,
+    fontFamily: 'DMSans_500Medium',
     color: COLORS.textSecondary,
   },
   vagaFooter: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
+    marginTop: 12,
   },
   vagaMeta: {
-    fontSize: 11,
+    fontSize: 12,
+    fontFamily: 'DMSans_400Regular',
     color: COLORS.textSecondary,
   },
 });
