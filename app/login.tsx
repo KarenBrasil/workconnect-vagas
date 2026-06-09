@@ -23,11 +23,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../src/services/firebaseConfig';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
 import { MaterialIcons } from '@expo/vector-icons';
-
-WebBrowser.maybeCompleteAuthSession();
 import { PrimaryButton, GoogleButton, TextInputField, COLORS } from '../components/ui';
 import { IlluRecruiter } from '../assets/illustrations';
 
@@ -38,63 +34,32 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId:
-      process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
-      '189326429321-kntm9qp3db45chg2ricg0ijov7rf8ilf.apps.googleusercontent.com',
-    webClientId:
-      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
-      '189326429321-kntm9qp3db45chg2ricg0ijov7rf8ilf.apps.googleusercontent.com',
-    redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
-  });
-
-  useEffect(() => {
-    console.log("GOOGLE AUTH RESPONSE TRIGGERED:", response);
-    if (response) {
-      if (response.type === 'success') {
-        const { id_token } = response.params;
-        console.log("ID TOKEN OBTIDO:", !!id_token);
-        
-        if (!id_token) {
-           Alert.alert('Erro', 'O Google não retornou o id_token. A configuração do cliente web pode estar incorreta no GCP.');
-           return;
-        }
-
-        const credential = GoogleAuthProvider.credential(id_token);
-        setLoading(true);
-        signInWithCredential(auth, credential)
-          .then(async (userCred) => {
-            console.log("USUÁRIO AUTENTICADO NO FIREBASE:", userCred.user.uid);
-            await setDoc(
-              doc(db, 'users', userCred.user.uid),
-              {
-                nome: userCred.user.displayName || 'Usuário Google',
-                email: userCred.user.email,
-                uid: userCred.user.uid,
-                criadoEm: new Date().toISOString(),
-              },
-              { merge: true }
-            );
-            router.replace('/(tabs)');
-          })
-          .catch((error) => {
-            console.error("ERRO FIREBASE CREDENTIAL:", error);
-            Alert.alert('Erro', 'Erro ao autenticar com Google: ' + error.message);
-          })
-          .finally(() => {
-            setLoading(false);
-          });
-      } else if (response.type === 'error') {
-        console.error("ERRO GOOGLE RESPONSE:", response.error);
-        Alert.alert('Erro', 'O Google retornou um erro: ' + response.error?.message);
-      } else {
-        console.log("TIPO DE RESPOSTA NÃO TRATADO:", response.type);
-      }
-    }
-  }, [response]);
-
   const handleGoogleLogin = async () => {
-    promptAsync();
+    try {
+      setLoading(true);
+      const provider = new GoogleAuthProvider();
+      
+      const { signInWithPopup } = await import('firebase/auth');
+      const userCred = await signInWithPopup(auth, provider);
+      
+      console.log("USUÁRIO AUTENTICADO COM GOOGLE (POPUP):", userCred.user.uid);
+      await setDoc(
+        doc(db, 'users', userCred.user.uid),
+        {
+          nome: userCred.user.displayName || 'Usuário Google',
+          email: userCred.user.email,
+          uid: userCred.user.uid,
+          criadoEm: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      console.error("ERRO FIREBASE POPUP:", error);
+      Alert.alert('Erro', 'Não foi possível entrar com Google: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogin = async () => {
