@@ -24,7 +24,10 @@ import {
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../src/services/firebaseConfig';
 import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import { MaterialIcons } from '@expo/vector-icons';
+
+WebBrowser.maybeCompleteAuthSession();
 import { PrimaryButton, GoogleButton, TextInputField, COLORS } from '../components/ui';
 import { IlluRecruiter } from '../assets/illustrations';
 
