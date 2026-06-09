@@ -70,30 +70,7 @@ export default function Login() {
   }, [response]);
 
   const handleGoogleLogin = async () => {
-    if (Platform.OS === 'web') {
-      try {
-        setLoading(true);
-        const provider = new GoogleAuthProvider();
-        const userCred = await signInWithPopup(auth, provider);
-        await setDoc(
-          doc(db, 'users', userCred.user.uid),
-          {
-            nome: userCred.user.displayName || 'Usuário Google',
-            email: userCred.user.email,
-            uid: userCred.user.uid,
-            criadoEm: new Date().toISOString(),
-          },
-          { merge: true }
-        );
-        router.replace('/(tabs)');
-      } catch (error: any) {
-        Alert.alert('Erro', 'Erro ao autenticar com Google.');
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      promptAsync();
-    }
+    promptAsync();
   };
 
   const handleLogin = async () => {
