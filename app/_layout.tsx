@@ -13,7 +13,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
+import { useColorScheme } from 'react-native';
 
 export const unstable_settings = {
   initialRouteName: 'index',
@@ -107,7 +107,6 @@ function ProtectedLayout() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="job/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="feedback" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }
