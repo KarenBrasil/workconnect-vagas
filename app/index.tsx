@@ -62,7 +62,7 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0C0C14', // Fundo escuro conforme spec
+    backgroundColor: '#FFFFFF', // Fundo claro conforme solicitado
     paddingTop: 60,
   },
   logoContainer: {
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   logoText: {
-    color: '#FFF',
+    color: '#111111',
     fontSize: 20,
     fontWeight: '800',
     fontFamily: 'DMSans_800ExtraBold',
@@ -100,10 +100,11 @@ const styles = StyleSheet.create({
   },
   textWrapper: {
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 32,
   },
   title: {
-    color: '#FFF',
+    color: '#111111',
     fontSize: 28,
     fontWeight: '800',
     fontFamily: 'DMSans_800ExtraBold',
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#E0E0E0',
   },
   dotActive: {
     width: 24,
@@ -140,13 +141,17 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 16,
+    alignItems: 'center',
+    width: '100%',
   },
   ghostButton: {
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 15,
+    width: '100%',
   },
   ghostButtonText: {
-    color: '#FFF',
+    color: '#111111',
     fontSize: 15,
     fontWeight: '600',
     fontFamily: 'DMSans_600SemiBold',

@@ -26,7 +26,7 @@ interface AvaliacaoData {
 export default function AdminDashboard() {
   const { colors, isDark } = useTheme();
   
-  const [abaAtiva, setAbaAtiva] = useState<'usuarios' | 'pesquisas' | 'respostas'>('pesquisas');
+  const [abaAtiva, setAbaAtiva] = useState<'feedbacks' | 'usuarios'>('feedbacks');
   
   // Dados de Usuários
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -66,7 +66,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (abaAtiva === 'usuarios' && usuarios.length === 0) carregarUsuarios();
-    if ((abaAtiva === 'pesquisas' || abaAtiva === 'respostas') && avaliacoes.length === 0) carregarPesquisas();
+    if (abaAtiva === 'feedbacks' && avaliacoes.length === 0) carregarPesquisas();
   }, [abaAtiva]);
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -137,30 +137,24 @@ export default function AdminDashboard() {
         {/* Toggle Abas */}
         <View style={[styles.toggleContainer, { backgroundColor: isDark ? '#1F2937' : '#F3F4F6' }]}>
           <TouchableOpacity 
-            style={[styles.toggleBtn, abaAtiva === 'pesquisas' && [styles.toggleBtnActive, { backgroundColor: isDark ? '#374151' : '#FFFFFF' }]]}
-            onPress={() => setAbaAtiva('pesquisas')}
+            style={[styles.toggleBtn, abaAtiva === 'feedbacks' && [styles.toggleBtnActive, { backgroundColor: isDark ? '#374151' : '#FFFFFF' }]]}
+            onPress={() => setAbaAtiva('feedbacks')}
           >
-            <Text style={[styles.toggleText, abaAtiva === 'pesquisas' && [styles.toggleTextActive, { color: colors.textPrimary }]]}>Dashboard</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.toggleBtn, abaAtiva === 'respostas' && [styles.toggleBtnActive, { backgroundColor: isDark ? '#374151' : '#FFFFFF' }]]}
-            onPress={() => setAbaAtiva('respostas')}
-          >
-            <Text style={[styles.toggleText, abaAtiva === 'respostas' && [styles.toggleTextActive, { color: colors.textPrimary }]]}>Feedbacks</Text>
+            <Text style={[styles.toggleText, abaAtiva === 'feedbacks' && [styles.toggleTextActive, { color: colors.textPrimary }]]}>Feedbacks (Métricas e Respostas)</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.toggleBtn, abaAtiva === 'usuarios' && [styles.toggleBtnActive, { backgroundColor: isDark ? '#374151' : '#FFFFFF' }]]}
             onPress={() => setAbaAtiva('usuarios')}
           >
-            <Text style={[styles.toggleText, abaAtiva === 'usuarios' && [styles.toggleTextActive, { color: colors.textPrimary }]]}>Usuários</Text>
+            <Text style={[styles.toggleText, abaAtiva === 'usuarios' && [styles.toggleTextActive, { color: colors.textPrimary }]]}>Usuários Cadastrados</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* ABA: DASHBOARD GERAL */}
-        {abaAtiva === 'pesquisas' && (
+        {/* ABA: FEEDBACKS GERAIS E MÉTRICAS */}
+        {abaAtiva === 'feedbacks' && (
           <View>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Métricas de Funil</Text>
@@ -207,45 +201,36 @@ export default function AdminDashboard() {
                     </View>
                   </>
                 )}
-              </>
-            )}
-          </View>
-        )}
 
-        {/* ABA: FEEDBACKS ABERTOS */}
-        {abaAtiva === 'respostas' && (
-          <View>
-             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Feedbacks Escritos</Text>
-              <TouchableOpacity onPress={carregarPesquisas}>
-                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600' }}>Atualizar</Text>
-              </TouchableOpacity>
-            </View>
-            
-            {loadingPesquisas ? (
-              <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
-            ) : (
-              <View>
+                {/* SEÇÃO DE FEEDBACKS ESCRITOS */}
+                <View style={[styles.sectionHeader, { marginTop: 40 }]}>
+                  <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Feedbacks Escritos</Text>
+                </View>
+
                 {getOpenComments(10).length === 0 ? (
                   <Text style={{ color: colors.textSecondary }}>Nenhum comentário final registrado.</Text>
                 ) : (
                   getOpenComments(10).map((comment, index) => (
-                    <View key={index} style={[styles.feedbackCard, { backgroundColor: isDark ? '#1F2937' : '#FFFFFF', borderColor: colors.border }]}>
+                    <View key={`fb-${index}`} style={[styles.feedbackCard, { backgroundColor: isDark ? '#1F2937' : '#FFFFFF', borderColor: colors.border }]}>
                       <FontAwesome name="quote-left" size={16} color={colors.primary} style={{ marginBottom: 12, opacity: 0.5 }} />
                       <Text style={[styles.commentText, { color: colors.textPrimary }]}>{comment}</Text>
                     </View>
                   ))
                 )}
 
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginTop: 32 }]}>Sugestões de Filtros</Text>
-                </View>
-                {getOpenComments(4).map((comment, index) => (
-                    <View key={index} style={[styles.feedbackCard, { backgroundColor: isDark ? '#1F2937' : '#FFFFFF', borderColor: colors.border }]}>
-                      <Text style={[styles.commentText, { color: colors.textPrimary }]}>{comment}</Text>
+                {getOpenComments(4).length > 0 && (
+                  <>
+                    <View style={styles.sectionHeader}>
+                      <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginTop: 32 }]}>Sugestões de Filtros</Text>
                     </View>
-                ))}
-              </View>
+                    {getOpenComments(4).map((comment, index) => (
+                      <View key={`sug-${index}`} style={[styles.feedbackCard, { backgroundColor: isDark ? '#1F2937' : '#FFFFFF', borderColor: colors.border }]}>
+                        <Text style={[styles.commentText, { color: colors.textPrimary }]}>{comment}</Text>
+                      </View>
+                    ))}
+                  </>
+                )}
+              </>
             )}
           </View>
         )}
@@ -262,20 +247,21 @@ export default function AdminDashboard() {
 
             {loadingUsers ? (
               <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
-            ) : usuarios.map((user) => (
-              <View key={user.id} style={[styles.userCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-                <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.avatarText}>{user.nome ? user.nome.slice(0, 2).toUpperCase() : 'US'}</Text>
+            ) : usuarios.map((user) => {
+              const dataCadastro = user.criadoEm ? new Date(user.criadoEm).toLocaleDateString('pt-BR') : 'Data Indisponível';
+              return (
+                <View key={user.id} style={[styles.userCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+                  <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                    <Text style={styles.avatarText}>{user.nome ? user.nome.slice(0, 2).toUpperCase() : 'US'}</Text>
+                  </View>
+                  <View style={styles.userInfo}>
+                    <Text style={[styles.userName, { color: colors.textPrimary }]} numberOfLines={1}>{user.nome || 'Sem Nome'}</Text>
+                    <Text style={[styles.userEmail, { color: colors.textSecondary }]} numberOfLines={1}>{user.email}</Text>
+                    <Text style={[styles.userDate, { color: colors.primary }]} numberOfLines={1}>Cadastrado em: {dataCadastro}</Text>
+                  </View>
                 </View>
-                <View style={styles.userInfo}>
-                  <Text style={[styles.userName, { color: colors.textPrimary }]} numberOfLines={1}>{user.nome || 'Sem Nome'}</Text>
-                  <Text style={[styles.userEmail, { color: colors.textSecondary }]} numberOfLines={1}>{user.email}</Text>
-                </View>
-                <TouchableOpacity style={styles.actionBtn}>
-                  <FontAwesome name="chevron-right" size={14} color={colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
 
@@ -334,6 +320,6 @@ const styles = StyleSheet.create({
   avatarText: { color: '#FFF', fontWeight: '800', fontSize: 16 },
   userInfo: { flex: 1, marginLeft: 16 },
   userName: { fontSize: 16, fontWeight: '800', marginBottom: 2 },
-  userEmail: { fontSize: 13 },
-  actionBtn: { padding: 8 },
+  userEmail: { fontSize: 13, marginBottom: 4 },
+  userDate: { fontSize: 11, fontWeight: '700' },
 });

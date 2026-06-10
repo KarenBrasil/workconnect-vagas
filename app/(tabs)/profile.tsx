@@ -340,7 +340,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingBottom: 60 },
+  scrollContent: { paddingBottom: 120, flexGrow: 1 },
 
   // Hero / Profile Card
   heroSection: {

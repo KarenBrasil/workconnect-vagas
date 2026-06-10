@@ -88,13 +88,54 @@ function extrairTagsContrato(texto: string, labelsBase: string[] = []): string[]
   return Array.from(tags).slice(0, 4);
 }
 
-function limparTitulo(titulo: string): string {
-  return titulo
-    .replace(/\[.*?\]/g, '')
-    .replace(/\(.*?\)/g, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+// ==========================================
+// MÓDULO DE TRADUÇÃO SIMPLES E RESUMO
+// ==========================================
+const DICIONARIO_BUSCA: Record<string, string> = {
+  'desenvolvedor': 'developer',
+  'engenheiro': 'engineer',
+  'dados': 'data',
+  'produto': 'product',
+  'gerente': 'manager',
+  'vendas': 'sales',
+};
+
+const DICIONARIO_TITULOS: Record<string, string> = {
+  'developer': 'Desenvolvedor',
+  'engineer': 'Engenheiro',
+  'manager': 'Gerente',
+  'data': 'Dados',
+  'designer': 'Designer',
+  'sales': 'Vendas',
+  'software': 'Software',
+  'product': 'Produto',
+};
+
+export function traduzirTermoDaBusca(termo: string): string {
+  let novo = termo.toLowerCase();
+  for (const [pt, en] of Object.entries(DICIONARIO_BUSCA)) {
+    novo = novo.replace(new RegExp(`\\b${pt}\\b`, 'g'), en);
+  }
+  return novo;
 }
+
+function traduzirEFormatarTitulo(titulo: string): string {
+  let novo = titulo.replace(/\[.*?\]/g, '').replace(/\(.*?\)/g, '').replace(/\s{2,}/g, ' ').trim();
+  for (const [en, pt] of Object.entries(DICIONARIO_TITULOS)) {
+    novo = novo.replace(new RegExp(`\\b${en}\\b`, 'gi'), pt);
+  }
+  return novo;
+}
+
+function resumirDescricaoHTML(html: string): string {
+  if (!html) return '';
+  const text = html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+  if (text.length > 180) {
+    return text.substring(0, 180) + '... \n\n📍 Veja os requisitos completos e candidate-se no site oficial da vaga.';
+  }
+  return text;
+}
+// ==========================================
 
 // ──────────────────────────────────────────────────────────────────────────
 // CACHE (AGORA COM ASYNCSTORAGE)
@@ -152,7 +193,8 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
   const todas: VagaExterna[] = [];
   const tresMesesAtras = new Date();
   tresMesesAtras.setMonth(tresMesesAtras.getMonth() - 3);
-  const termoBusca = termo.toLowerCase().trim();
+  const termoTraduzidoBusca = termo ? traduzirTermoDaBusca(termo) : '';
+  const termoBusca = termoTraduzidoBusca.toLowerCase().trim();
 
   // 1. GitHub BR
   for (const repo of reposGithub) {
@@ -180,12 +222,12 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
         const dataOriginal = new Date(item.created_at);
         return {
           id: `github-${item.id}`,
-          titulo: limparTitulo(item.title),
+          titulo: traduzirEFormatarTitulo(item.title),
           empresa,
           local: local || 'Brasil 🇧🇷',
           link: item.html_url,
           fonte: 'GitHub BR',
-          descricao: item.body || '',
+          descricao: resumirDescricaoHTML(item.body || ''),
           tempoPostagem: calcularTempoRelativo(dataOriginal),
           tags,
           dataOriginal,
@@ -211,12 +253,12 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
 
         return {
           id: `remotive-${item.id}`,
-          titulo: limparTitulo(item.title),
+          titulo: traduzirEFormatarTitulo(item.title),
           empresa: item.company_name || '',
           local,
           link: item.url,
           fonte: 'Remotive',
-          descricao: item.description || '',
+          descricao: resumirDescricaoHTML(item.description || ''),
           tempoPostagem: calcularTempoRelativo(dataOriginal),
           tags: tags.slice(0, 4),
           dataOriginal
@@ -239,12 +281,12 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
 
         return {
           id: `remoteok-${item.id}`,
-          titulo: limparTitulo(item.position || ''),
+          titulo: traduzirEFormatarTitulo(item.position || ''),
           empresa: item.company || '',
           local,
           link: item.url,
           fonte: 'RemoteOK',
-          descricao: item.description || '',
+          descricao: resumirDescricaoHTML(item.description || ''),
           tempoPostagem: calcularTempoRelativo(dataOriginal),
           tags: tags.slice(0, 4),
           dataOriginal
@@ -263,12 +305,12 @@ export const buscarVagasExternas = async (termo: string = ''): Promise<VagaExter
         const dataOriginal = item.created_at ? new Date(item.created_at * 1000) : new Date();
         return {
           id: `arbeit-${item.slug}`,
-          titulo: item.title,
+          titulo: traduzirEFormatarTitulo(item.title),
           empresa: item.company_name,
           local: validarLocal(item.location, 'Global 🌍'),
           link: item.url,
           fonte: 'Arbeitnow',
-          descricao: item.description || '',
+          descricao: resumirDescricaoHTML(item.description || ''),
           tempoPostagem: calcularTempoRelativo(dataOriginal),
           tags: item.tags ? item.tags.slice(0, 3) : ['Global'],
           dataOriginal

@@ -17,7 +17,9 @@ import { COLORS, Card, Tag, FilterChip } from '../../components/ui';
 export default function Home() {
   const router = useRouter();
   const [userName, setUserName] = useState('');
-  const [vagasAtivas, setVagasAtivas] = useState<any[]>([]);
+  const [vagasGlobais, setVagasGlobais] = useState<any[]>([]);
+  const [vagasLocais, setVagasLocais] = useState<any[]>([]);
+  const [totalVagas, setTotalVagas] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,7 +34,9 @@ export default function Home() {
     setLoading(true);
     try {
       const externas = await buscarVagasComCache();
-      const globais = externas.slice(0, 4).map((v) => ({
+      setTotalVagas(externas.length);
+
+      const globais = externas.slice(0, 5).map((v) => ({
         id: v.id,
         titulo: v.titulo,
         empresa: v.empresa,
@@ -41,7 +45,7 @@ export default function Home() {
         fonte: v.fonte,
       }));
 
-      const q = query(collection(db, 'vagas'), orderBy('criadoEm', 'desc'), limit(4));
+      const q = query(collection(db, 'vagas'), orderBy('criadoEm', 'desc'), limit(5));
       const snapInternas = await getDocs(q);
       const locais = snapInternas.docs.map((d) => {
         const data = d.data();
@@ -54,7 +58,8 @@ export default function Home() {
         };
       });
 
-      setVagasAtivas([...globais, ...locais]);
+      setVagasGlobais(globais);
+      setVagasLocais(locais);
     } catch (e) {
       console.log('Erro ao carregar dados da Home', e);
     } finally {
@@ -68,8 +73,8 @@ export default function Home() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Olá, {userName || 'Visitante'}! 👋</Text>
-            <Text style={styles.subGreeting}>Encontre suas próximas oportunidades</Text>
+            <Text style={styles.greeting}>Olá, {userName || 'Visitante'}!</Text>
+            <Text style={styles.subGreeting}>Pronta para dar o próximo passo?</Text>
           </View>
           <TouchableOpacity style={styles.headerIcon}>
             <MaterialIcons name="notifications-none" size={24} color={COLORS.textMain} />
@@ -88,83 +93,80 @@ export default function Home() {
           <MaterialIcons name="tune" size={18} color={COLORS.primary} />
         </TouchableOpacity>
 
-        {/* Featured Banner */}
+        {/* Featured Banner & Total */}
         <Card style={styles.banner}>
           <View style={styles.bannerContent}>
             <View>
-              <Text style={styles.bannerTitle}>🚀 Vagas em Destaque</Text>
-              <Text style={styles.bannerSub}>Explore oportunidades exclusivas hoje</Text>
+              <Text style={styles.bannerTitle}>🚀 {totalVagas}+ Vagas Globais</Text>
+              <Text style={styles.bannerSub}>Agregadas em tempo real para você</Text>
             </View>
-            <MaterialIcons name="arrow-forward" size={28} color={COLORS.primary} />
+            <MaterialIcons name="public" size={28} color={COLORS.primary} />
           </View>
         </Card>
-
-        {/* Featured Jobs Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Vagas Recentes</Text>
-          <TouchableOpacity onPress={() => router.push('/search')}>
-            <Text style={styles.viewAll}>Ver todas →</Text>
-          </TouchableOpacity>
-        </View>
 
         {loading ? (
           <ActivityIndicator color={COLORS.primary} size="large" style={{ marginVertical: 40 }} />
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.vagasScroll}>
-            {vagasAtivas.slice(0, 5).map((vaga) => (
-              <Card key={vaga.id} style={styles.vagaCard}>
-                <View style={styles.vagaHeader}>
-                  <View
-                    style={[
-                      styles.companylconBox,
-                      { backgroundColor: vaga.tipo === 'local' ? COLORS.primary : COLORS.accent },
-                    ]}
-                  >
-                    <Text style={styles.companyIcon}>{(vaga.empresa || 'C').charAt(0).toUpperCase()}</Text>
+          <>
+            {/* Vagas Globais Section */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Vagas Globais (Recentes)</Text>
+              <TouchableOpacity onPress={() => router.push('/search')}>
+                <Text style={styles.viewAll}>Ver todas →</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.vagasScroll}>
+              {vagasGlobais.map((vaga) => (
+                <Card key={vaga.id} style={styles.vagaCard}>
+                  <View style={styles.vagaHeader}>
+                    <View style={[styles.companylconBox, { backgroundColor: COLORS.accent }]}>
+                      <Text style={styles.companyIcon}>{(vaga.empresa || 'C').charAt(0).toUpperCase()}</Text>
+                    </View>
+                    <TouchableOpacity>
+                      <MaterialIcons name="favorite-border" size={20} color={COLORS.textSecondary} />
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity>
-                    <MaterialIcons name="favorite-border" size={20} color={COLORS.textSecondary} />
+
+                  <Text style={styles.vagaTitle} numberOfLines={2}>{vaga.titulo}</Text>
+                  <Text style={styles.vagaCompany}>{vaga.empresa || 'Confidencial'}</Text>
+
+                  <View style={styles.vagaFooter}>
+                    <Text style={styles.vagaTime}>{vaga.data}</Text>
+                    <Tag label="Global" variant="gray" />
+                  </View>
+                </Card>
+              ))}
+            </ScrollView>
+
+            {/* Vagas TechConnect Section */}
+            <View style={[styles.sectionHeader, { marginTop: 12 }]}>
+              <Text style={styles.sectionTitle}>Vagas TechConnect</Text>
+              <Tag label="Exclusivo" variant="green" />
+            </View>
+            <Text style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 16 }}>Publicadas pela nossa comunidade.</Text>
+
+            <View style={styles.vagasList}>
+              {vagasLocais.length === 0 ? (
+                <Text style={{ textAlign: 'center', color: COLORS.textSecondary, marginTop: 10 }}>Nenhuma vaga postada na comunidade ainda.</Text>
+              ) : (
+                vagasLocais.map((vaga) => (
+                  <TouchableOpacity key={vaga.id} onPress={() => router.push(`/job/${vaga.id}`)}>
+                    <Card style={styles.vagaListItem}>
+                      <View style={styles.vagaListContent}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.vagaListTitle} numberOfLines={1}>{vaga.titulo}</Text>
+                          <Text style={styles.vagaListCompany} numberOfLines={1}>{vaga.empresa || 'Confidencial'}</Text>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={24} color={COLORS.textSecondary} />
+                      </View>
+                    </Card>
                   </TouchableOpacity>
-                </View>
-
-                <Text style={styles.vagaTitle} numberOfLines={2}>
-                  {vaga.titulo}
-                </Text>
-                <Text style={styles.vagaCompany}>{vaga.empresa || 'Confidencial'}</Text>
-
-                <View style={styles.vagaFooter}>
-                  <Text style={styles.vagaTime}>{vaga.data}</Text>
-                  {vaga.tipo === 'local' && <Tag label="Local" variant="green" />}
-                </View>
-              </Card>
-            ))}
-          </ScrollView>
+                ))
+              )}
+            </View>
+          </>
         )}
-
-        {/* Recently Published Section */}
-        <View style={[styles.sectionHeader, { marginTop: 32 }]}>
-          <Text style={styles.sectionTitle}>Publicadas Recentemente</Text>
-        </View>
-
-        <View style={styles.vagasList}>
-          {vagasAtivas.slice(0, 3).map((vaga) => (
-            <TouchableOpacity key={vaga.id} onPress={() => router.push(`/job/${vaga.id}`)}>
-              <Card style={styles.vagaListItem}>
-                <View style={styles.vagaListContent}>
-                  <View>
-                    <Text style={styles.vagaListTitle} numberOfLines={1}>
-                      {vaga.titulo}
-                    </Text>
-                    <Text style={styles.vagaListCompany} numberOfLines={1}>
-                      {vaga.empresa || 'Confidencial'}
-                    </Text>
-                  </View>
-                  <MaterialIcons name="chevron-right" size={24} color={COLORS.textSecondary} />
-                </View>
-              </Card>
-            </TouchableOpacity>
-          ))}
-        </View>
       </ScrollView>
     </View>
   );

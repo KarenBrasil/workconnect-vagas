@@ -121,6 +121,8 @@ export default function SearchScreen() {
     return match && filtroMatch;
   });
 
+  const hasInteracted = searchText.trim().length > 0 || filtroAtivo !== 'Todos';
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -184,6 +186,11 @@ export default function SearchScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={COLORS.primary} size="large" />
         </View>
+      ) : !hasInteracted && abaAtiva === 'externas' ? (
+        <View style={styles.emptyStateContainer}>
+          <Text style={styles.emptyStateTitle}>Descubra o mundo 🌍</Text>
+          <Text style={styles.emptyStateDesc}>Digite um cargo ou escolha um filtro para carregar milhares de vagas globais em tempo real.</Text>
+        </View>
       ) : (
         <FlatList
           data={vagasFiltradas}
@@ -232,7 +239,7 @@ export default function SearchScreen() {
             </Card>
           )}
           contentContainerStyle={styles.listContent}
-          scrollEnabled={false}
+          showsVerticalScrollIndicator={false}
         />
       )}
     </View>
@@ -266,10 +273,11 @@ const styles = StyleSheet.create({
   chipsContainer: {
     paddingHorizontal: 16,
     marginBottom: 16,
-    height: 44,
   },
   chipsContent: {
     gap: 8,
+    alignItems: 'center',
+    paddingVertical: 4,
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -381,5 +389,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'DMSans_500Medium',
     color: COLORS.textSecondary,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    marginTop: 40,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.textMain,
+    marginBottom: 8,
+  },
+  emptyStateDesc: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

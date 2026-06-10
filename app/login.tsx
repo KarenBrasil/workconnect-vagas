@@ -187,10 +187,10 @@ export default function Login() {
               activeOpacity={0.8}
             >
               <Image 
-                source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png' }} 
-                style={{ width: 22, height: 22, marginRight: 12 }} 
+                source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png' }} 
+                style={{ width: 24, height: 18, marginRight: 12, resizeMode: 'contain' }} 
               />
-              <Text style={styles.googleButtonSolidText}>Continuar com o Google</Text>
+              <Text style={styles.googleButtonSolidText}>Continuar com o Gmail</Text>
             </TouchableOpacity>
 
             <View style={styles.dividerContainer}>
