@@ -5,6 +5,7 @@ import { buscarFavoritos, removerFavorito, Favorito } from '../../src/services/f
 import { auth } from '../../src/services/firebaseConfig';
 import { useIsFocused } from '@react-navigation/native';
 import { useTheme } from '../../src/theme/ThemeContext';
+import { IlluSavedJobs } from '../../assets/illustrations';
 
 export default function Favorites() {
   const { colors } = useTheme();
@@ -82,13 +83,13 @@ export default function Favorites() {
         <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 50 }} />
       ) : !userId ? (
         <View style={styles.emptyContainer}>
-          <FontAwesome name="lock" size={48} color="#EFEFEF" style={{ marginBottom: 16 }} />
+          <IlluSavedJobs width={160} height={140} style={{ marginBottom: 16 }} />
           <Text style={[styles.emptyText, { color: colors.textPrimary }]}>Login necessário</Text>
           <Text style={[styles.emptySubText, { color: colors.textSecondary }]}>Faça login para ver seus favoritos salvos.</Text>
         </View>
       ) : favoritos.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <FontAwesome name="heart-o" size={48} color="#EFEFEF" style={{ marginBottom: 16 }} />
+          <IlluSavedJobs width={160} height={140} style={{ marginBottom: 16 }} />
           <Text style={[styles.emptyText, { color: colors.textPrimary }]}>Nenhum favorito salvo</Text>
           <Text style={[styles.emptySubText, { color: colors.textSecondary }]}>Toque no 💜 em qualquer vaga para salvar aqui.</Text>
         </View>
