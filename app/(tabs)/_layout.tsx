@@ -24,63 +24,70 @@ export default function TabLayout() {
         headerShown: false,
         tabBarStyle: {
           position: 'absolute',
-          bottom: 14,
-          left: 14,
-          right: 14,
+          bottom: 20,
+          left: 20,
+          right: 20,
           backgroundColor: '#FFFFFF',
-          borderRadius: 24,
-          height: 66,
-          borderTopWidth: 0, // remover borda original
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.08,
+          borderRadius: 35,
+          height: 70,
+          borderTopWidth: 0,
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.1,
           shadowRadius: 20,
-          elevation: 8,
-          paddingBottom: 8,
-          paddingTop: 8,
+          elevation: 10,
+          paddingBottom: 0,
+          paddingTop: 0,
         },
-        tabBarActiveTintColor: '#2B6010', // Primária Escura
-        tabBarInactiveTintColor: '#AFAFBF',
+        tabBarActiveTintColor: '#2E9D4D',
+        tabBarInactiveTintColor: '#A0A0A0',
+        tabBarShowLabel: true,
         tabBarLabelStyle: {
-          fontSize: 9.5,
+          fontSize: 10,
           fontWeight: '600',
-          marginTop: 2,
+          marginBottom: 8,
         },
+        tabBarItemStyle: {
+          height: 70,
+          paddingTop: 8,
+        }
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Início',
-          tabBarIcon: ({ color }) => <FontAwesome name="home" size={19} color={color} />,
+          title: 'Home',
+          tabBarIcon: ({ color }) => <FontAwesome name="home" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
           title: 'Buscar',
-          tabBarIcon: ({ color }) => <FontAwesome name="search" size={19} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="search" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="post-job"
         options={{
-          title: '', // Remove title para botão circular
+          title: '',
           tabBarIcon: ({ focused }) => (
             <View style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              backgroundColor: '#7AE04A',
+              width: 58,
+              height: 58,
+              borderRadius: 29,
+              backgroundColor: '#2E9D4D',
               justifyContent: 'center',
               alignItems: 'center',
-              shadowColor: '#7AE04A',
-              shadowOffset: { width: 0, height: 4 },
+              shadowColor: '#2E9D4D',
+              shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.3,
               shadowRadius: 10,
-              elevation: 5,
-              marginTop: 10,
+              elevation: 8,
+              marginTop: -30,
+              borderWidth: 4,
+              borderColor: '#FFFFFF',
             }}>
-              <FontAwesome name="plus" size={18} color="#2B6010" />
+              <FontAwesome name="plus" size={20} color="#FFFFFF" />
             </View>
           ),
         }}

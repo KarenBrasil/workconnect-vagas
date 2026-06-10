@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -10,12 +10,13 @@ import {
   ScrollView,
   StatusBar,
   Alert,
+  Animated,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithCredential,
   signInWithPopup,
   createUserWithEmailAndPassword,
   signOut,
@@ -25,7 +26,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../src/services/firebaseConfig';
 import { MaterialIcons } from '@expo/vector-icons';
 import { PrimaryButton, GoogleButton, TextInputField, COLORS } from '../components/ui';
-import { IlluRecruiter } from '../assets/illustrations';
+import { IlluLogin } from '../assets/illustrations';
 
 export default function Login() {
   const router = useRouter();
@@ -35,7 +36,29 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Animação de Flutuação (Float Animation)
+  const floatAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: -15, // sobe 15px
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0, // desce de volta
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [floatAnim]);
+
   const handleGoogleLogin = async () => {
+    // ... mantido ...
+
     try {
       setErrorMessage('');
       setLoading(true);
@@ -140,21 +163,41 @@ export default function Login() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          {/* Illustration */}
-          <View style={styles.illustrationContainer}>
-            <IlluRecruiter />
-          </View>
+          {/* Illustration Animada */}
+          <Animated.View style={[styles.illustrationContainer, { transform: [{ translateY: floatAnim }] }]}>
+            <IlluLogin width={260} height={220} />
+          </Animated.View>
 
           {/* Content */}
           <View style={styles.content}>
-            <Text style={styles.title}>Bem-vindo de volta 👋</Text>
-            <Text style={styles.subtitle}>Conecte-se para continuar explorando oportunidades.</Text>
+            <Text style={styles.title}>Login</Text>
+            <Text style={styles.subtitle}>Conecte-se para continuar sua jornada.</Text>
 
             {errorMessage ? (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{errorMessage}</Text>
               </View>
             ) : null}
+
+            {/* Google Button */}
+            <TouchableOpacity 
+              style={styles.googleButtonSolid} 
+              onPress={handleGoogleLogin}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <Image 
+                source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png' }} 
+                style={{ width: 22, height: 22, marginRight: 12 }} 
+              />
+              <Text style={styles.googleButtonSolidText}>Continuar com o Google</Text>
+            </TouchableOpacity>
+
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>ou faça login com e-mail</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
             {/* Form */}
             <View style={styles.formContainer}>
@@ -203,21 +246,10 @@ export default function Login() {
             />
             {loading && <ActivityIndicator color={COLORS.primary} size="large" style={styles.loader} />}
 
-            {/* Divider */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OU</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Google Button */}
-            <GoogleButton onPress={handleGoogleLogin} />
-
-            {/* Register Link */}
             <View style={styles.footer}>
               <Text style={styles.footerText}>Não tem uma conta? </Text>
-              <TouchableOpacity onPress={() => router.push('/register')}>
-                <Text style={styles.registerText}>Registre-se aqui</Text>
+              <TouchableOpacity onPress={() => router.push('/register')} activeOpacity={0.7}>
+                <Text style={styles.registerText}>Cadastre-se aqui</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -296,21 +328,37 @@ const styles = StyleSheet.create({
   loader: {
     marginVertical: 16,
   },
+  googleButtonSolid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8F5E9',
+    paddingVertical: 16,
+    borderRadius: 30,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  googleButtonSolidText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2E9D4D',
+  },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    marginBottom: 24,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: COLORS.border,
+    backgroundColor: '#E0E0E0',
   },
   dividerText: {
-    marginHorizontal: 12,
-    fontWeight: '600',
-    fontSize: 12,
-    color: COLORS.textSecondary,
+    paddingHorizontal: 16,
+    fontSize: 14,
+    color: '#9E9E9E',
+    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',
