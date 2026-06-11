@@ -203,11 +203,11 @@ export default function ProfileScreen() {
 
           {!perfil.githubUrl && !perfil.linkedinUrl && !perfil.curriculo && !perfil.bio && (
             <View style={styles.emptyLinks}>
-              <IlluResume />
+              <IlluResume width={80} height={70} />
               <View style={styles.emptyLinksContent}>
                 <Text style={[styles.emptyLinksText, { color: colors.textPrimary }]}>Perfil incompleto</Text>
-                <Text style={[styles.emptyLinksSubText, { color: colors.textSecondary }]}>Destaque-se para os recrutadores adicionando suas informações profissionais.</Text>
-                <PrimaryButton label="Completar Perfil" onPress={() => setEditando(true)} style={{ marginTop: 12 }} />
+                <Text style={[styles.emptyLinksSubText, { color: colors.textSecondary }]}>Destaque-se adicionando informações.</Text>
+                <PrimaryButton label="Completar" onPress={() => setEditando(true)} style={{ marginTop: 8, paddingVertical: 8 }} />
               </View>
             </View>
           )}
@@ -385,10 +385,10 @@ const styles = StyleSheet.create({
   bioCard: { borderRadius: 16, padding: 20, marginBottom: 12, borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
   bioLabel: { fontSize: 16, fontWeight: '800', marginBottom: 12 },
   bioText: { fontSize: 15, lineHeight: 24, fontWeight: '500' },
-  emptyLinks: { flexDirection: 'row', alignItems: 'center', padding: 20, gap: 16, borderRadius: 16, backgroundColor: '#FFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2 },
+  emptyLinks: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12, borderRadius: 16, backgroundColor: '#FFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2 },
   emptyLinksContent: { flex: 1 },
-  emptyLinksText: { fontSize: 18, fontWeight: '800', fontFamily: 'DMSans_800ExtraBold', marginBottom: 4 },
-  emptyLinksSubText: { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 18 },
+  emptyLinksText: { fontSize: 16, fontWeight: '800', fontFamily: 'DMSans_800ExtraBold', marginBottom: 2 },
+  emptyLinksSubText: { fontSize: 12, fontFamily: 'DMSans_400Regular', lineHeight: 16 },
 
   // Formulário
   formSection: { margin: 20, borderRadius: 20, padding: 24, borderWidth: 1 },

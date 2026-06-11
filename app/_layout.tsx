@@ -47,6 +47,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
+      if (Platform.OS === 'web') {
+        document.body.style.backgroundColor = '#FAFAFC';
+      }
     }
   }, [loaded]);
 
