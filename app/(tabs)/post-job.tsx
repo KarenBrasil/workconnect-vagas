@@ -39,6 +39,8 @@ export default function PostJob() {
   const [salario, setSalario] = useState('');
   const [descricao, setDescricao] = useState('');
   const [contato, setContato] = useState('');
+  const [requisitos, setRequisitos] = useState('');
+  const [linguagens, setLinguagens] = useState('');
   const [loading, setLoading] = useState(false);
   const [minhasVagas, setMinhasVagas] = useState<VagaPublicada[]>([]);
   const [loadingVagas, setLoadingVagas] = useState(false);
@@ -84,6 +86,8 @@ export default function PostJob() {
         salario: salario || 'A combinar',
         descricao,
         contato: contato || '',
+        requisitos: requisitos ? requisitos.split(',').map(r => r.trim()).filter(Boolean) : [],
+        linguagens: linguagens ? linguagens.split(',').map(l => l.trim()).filter(Boolean) : [],
         criadoEm: new Date().toISOString(),
       });
 
@@ -216,6 +220,22 @@ export default function PostJob() {
                   placeholderTextColor={COLORS.textSecondary}
                 />
               </View>
+
+              <TextInputField
+                label="Requisitos (separados por vírgula)"
+                placeholder="Ex: Inglês avançado, React"
+                icon="check-circle"
+                value={requisitos}
+                onChangeText={setRequisitos}
+              />
+
+              <TextInputField
+                label="Linguagens e Ferramentas (separadas por vírgula)"
+                placeholder="Ex: JavaScript, Node, AWS"
+                icon="code"
+                value={linguagens}
+                onChangeText={setLinguagens}
+              />
 
               <TextInputField
                 label="Contato"

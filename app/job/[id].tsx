@@ -32,6 +32,8 @@ type VagaDetalhe = {
   local?: string;
   tags?: string[];
   tempoPostagem?: string;
+  requisitos?: string[];
+  linguagens?: string[];
   isExterna: boolean;
 };
 
@@ -103,6 +105,9 @@ export default function JobDetails() {
             salario: data.salario,
             tipo: data.tipo,
             contato: data.contato || '',
+            requisitos: data.requisitos || [],
+            linguagens: data.linguagens || [],
+            tempoPostagem: data.criadoEm ? new Date(data.criadoEm).toLocaleDateString('pt-BR') : undefined,
             isExterna: false,
           });
         }
@@ -279,6 +284,35 @@ export default function JobDetails() {
               + (vaga.descricao && vaga.descricao.length > 800 ? '...' : '')}
           </Text>
         </View>
+
+        {/* Linguagens */}
+        {vaga.linguagens && vaga.linguagens.length > 0 && (
+          <View style={[styles.descriptionContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border, marginTop: 16 }]}>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>💻 Linguagens & Ferramentas</Text>
+            <View style={styles.tagsContainer}>
+              {vaga.linguagens.map((lang, idx) => (
+                <View key={idx} style={[styles.tagBadge, { backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' }]}>
+                  <Text style={[styles.tagText, { color: '#374151', fontWeight: '600' }]}>{lang}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Requisitos */}
+        {vaga.requisitos && vaga.requisitos.length > 0 && (
+          <View style={[styles.descriptionContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border, marginTop: 16 }]}>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>✅ Requisitos / Diferenciais</Text>
+            <View style={{ marginTop: 8 }}>
+              {vaga.requisitos.map((req, idx) => (
+                <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <Text style={{ color: colors.primary, marginRight: 8, fontSize: 16 }}>•</Text>
+                  <Text style={{ color: colors.textSecondary, flex: 1, fontSize: 15, lineHeight: 22 }}>{req}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Card de Contato — só para vagas internas com contato cadastrado */}
         {!vaga.isExterna && vaga.contato ? (
