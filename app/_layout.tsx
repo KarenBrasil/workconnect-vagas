@@ -62,22 +62,25 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import { useRouter, useSegments } from 'expo-router';
 import { ThemeProvider as CustomThemeProvider } from '../src/theme/ThemeContext';
 import { LanguageProvider } from '../src/theme/LanguageContext';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <CustomThemeProvider>
-      <LanguageProvider>
-        <AuthProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <View style={styles.webContainer}>
-              <ProtectedLayout />
-            </View>
-          </ThemeProvider>
-        </AuthProvider>
-      </LanguageProvider>
-    </CustomThemeProvider>
+    <SafeAreaProvider>
+      <CustomThemeProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <View style={styles.webContainer}>
+                <ProtectedLayout />
+              </View>
+            </ThemeProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </CustomThemeProvider>
+    </SafeAreaProvider>
   );
 }
 
