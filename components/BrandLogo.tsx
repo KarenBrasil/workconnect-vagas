@@ -11,14 +11,14 @@ type BrandLogoProps = {
 export function BrandLogo({ compact = false, color, size }: BrandLogoProps) {
   const { colors } = useTheme();
 
-  const finalSize = size || (compact ? 28 : 42); 
+  const finalSize = size || 24; 
   const symbolColor = color || colors.textPrimary; 
 
   return (
     <View style={styles.container}>
       <Svg width={finalSize} height={finalSize} viewBox="0 0 100 100">
-        <Rect x="20" y="28" width="60" height="12" fill={symbolColor} />
-        <Path d="M 44 46 v 20 a 16 16 0 0 0 16 16 h 20 v -12 h -20 a 4 4 0 0 1 -4 -4 v -20 Z" fill={symbolColor} />
+        <Rect x="20" y="20" width="60" height="12" fill={symbolColor} />
+        <Path d="M 35 80 v -28 a 16 16 0 0 1 16 -16 h 29 v 12 h -29 a 4 4 0 0 0 -4 4 v 28 Z" fill={symbolColor} />
       </Svg>
       {!compact && (
         <Text style={[styles.logoText, { color: colors.textPrimary }]}>

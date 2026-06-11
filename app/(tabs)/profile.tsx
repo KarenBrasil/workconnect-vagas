@@ -9,6 +9,7 @@ import { useTheme } from '../../src/theme/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { IlluResume } from '../../assets/illustrations';
 import { OutlineButton, PrimaryButton } from '../../components/ui';
+import { BrandLogo } from '../../components/BrandLogo';
 
 interface PerfilProfissional {
   nome: string;
@@ -128,6 +129,10 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.scrollContent}>
+      {/* Brand Logo no Topo */}
+      <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
+        <BrandLogo />
+      </View>
 
       {/* Header Centralizado */}
       <View style={styles.heroSection}>

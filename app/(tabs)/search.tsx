@@ -19,6 +19,7 @@ import {
 import { salvarFavorito, removerFavorito, buscarFavoritos } from '../../src/services/favoritos';
 import { useRouter } from 'expo-router';
 import { COLORS, Card, Tag, FilterChip, TextInputField } from '../../components/ui';
+import { BrandLogo } from '../../components/BrandLogo';
 import { useTheme } from '../../src/theme/ThemeContext';
 
 interface VagaInterna {
@@ -142,6 +143,9 @@ export default function SearchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
+      <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
+        <BrandLogo />
+      </View>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.textMain }]}>Explorar Vagas</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Encontre a oportunidade perfeita</Text>

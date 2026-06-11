@@ -95,12 +95,14 @@ export default function Home() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header */}
+        <View style={{ alignItems: 'center', marginBottom: 20 }}>
+          <BrandLogo />
+        </View>
         <View style={[styles.header, { alignItems: 'center' }]}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.greeting, { color: colors.textMain }]}>Olá, {userName || 'Visitante'}!</Text>
             <Text style={[styles.subGreeting, { color: colors.textSecondary }]}>Pronta para dar o próximo passo?</Text>
           </View>
-          <BrandLogo compact={true} size={30} color={colors.textMain} />
         </View>
 
         {/* Search Bar */}
