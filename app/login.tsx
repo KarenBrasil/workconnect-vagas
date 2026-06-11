@@ -162,8 +162,15 @@ export default function Login() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          {/* Illustration Animada */}
+          <Animated.View style={[styles.illustrationContainer, { transform: [{ translateY: floatAnim }] }]}>
+            <IlluLogin width={260} height={220} />
+          </Animated.View>
+
           {/* Content */}
           <View style={styles.content}>
+            <Text style={styles.title}>Login</Text>
+
             {errorMessage ? (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{errorMessage}</Text>
@@ -276,7 +283,8 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '800',
     color: COLORS.textMain,
-    marginBottom: 8,
+    marginBottom: 24,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 14,
