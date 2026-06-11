@@ -175,46 +175,30 @@ export default function SearchScreen() {
             <MaterialIcons name="check" size={24} color={isDark ? colors.background : COLORS.surface} />
           </TouchableOpacity>
 
+          {/* Botão Check/Pesquisar mantido */}
           <TouchableOpacity 
-            style={{ width: 48, height: 48, backgroundColor: colors.cardBackground, borderRadius: 8, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center' }}
-            onPress={() => setModalFiltrosVisible(true)}
+            style={{ width: 48, height: 48, backgroundColor: colors.primary, borderRadius: 8, justifyContent: 'center', alignItems: 'center' }}
+            onPress={() => { /* feedback visual */ }}
           >
-            <MaterialIcons name="filter-list" size={24} color={colors.textMain} />
-            {filtroAtivo !== 'Todos' && (
-              <View style={{ position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent }} />
-            )}
+            <MaterialIcons name="check" size={24} color={isDark ? colors.background : COLORS.surface} />
           </TouchableOpacity>
         </View>
-        <Text style={[styles.searchHint, { color: colors.textSecondary, marginTop: 8 }]}>Dica: Pesquise por linguagens, cargos ou modelo.</Text>
-      </View>
+        <Text style={[styles.searchHint, { color: colors.textSecondary, marginTop: 8, marginBottom: 12 }]}>
+          Dica: Pesquise por linguagens, cargos ou modelo.
+        </Text>
 
-      <Modal
-        visible={modalFiltrosVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setModalFiltrosVisible(false)}
-      >
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.textMain }}>Filtrar Vagas</Text>
-              <TouchableOpacity onPress={() => setModalFiltrosVisible(false)}>
-                <MaterialIcons name="close" size={24} color={colors.textMain} />
-              </TouchableOpacity>
-            </View>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              {FILTROS.map((filtro) => (
-                <FilterChip
-                  key={filtro}
-                  label={filtro}
-                  active={filtroAtivo === filtro}
-                  onPress={() => { setFiltroAtivo(filtro); setModalFiltrosVisible(false); }}
-                />
-              ))}
-            </View>
-          </View>
+        {/* Filtros em linha (wrap) diretamente na tela */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {FILTROS.map((filtro) => (
+            <FilterChip
+              key={filtro}
+              label={filtro}
+              active={filtroAtivo === filtro}
+              onPress={() => setFiltroAtivo(filtro)}
+            />
+          ))}
         </View>
-      </Modal>
+      </View>
 
       {/* Tabs */}
       <View style={[styles.tabsContainer, { borderBottomColor: colors.border }]}>
