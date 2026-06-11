@@ -13,6 +13,7 @@ import { db, auth } from '../../src/services/firebaseConfig';
 import { buscarVagasComCache, calcularTempoRelativo } from '../../src/services/vagasExternas';
 import { useRouter } from 'expo-router';
 import { COLORS, Card, Tag, FilterChip } from '../../components/ui';
+import { BrandLogo } from '../../components/BrandLogo';
 
 export default function Home() {
   const router = useRouter();
@@ -92,15 +93,12 @@ export default function Home() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
-          <View>
+        <View style={[styles.header, { alignItems: 'center' }]}>
+          <View style={{ flex: 1 }}>
             <Text style={styles.greeting}>Olá, {userName || 'Visitante'}!</Text>
             <Text style={styles.subGreeting}>Pronta para dar o próximo passo?</Text>
           </View>
-          <TouchableOpacity style={styles.headerIcon}>
-            <MaterialIcons name="notifications-none" size={24} color={COLORS.textMain} />
-            <View style={styles.notificationDot} />
-          </TouchableOpacity>
+          <BrandLogo compact={true} size={30} color="#111111" />
         </View>
 
         {/* Search Bar */}

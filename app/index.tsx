@@ -12,11 +12,8 @@ export default function Index() {
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
       {/* Logo Topo */}
-      <View style={{ marginTop: 20, marginBottom: 30 }}>
-        <BrandLogo compact={true} />
-        <Text style={[styles.logoText, { textAlign: 'center', marginTop: 8 }]}>
-          Tech<Text style={{ color: COLORS.primary }}>Connect</Text>
-        </Text>
+      <View style={{ marginTop: 20, marginBottom: 30, alignItems: 'center' }}>
+        <BrandLogo />
       </View>
 
       {/* Ilustração */}

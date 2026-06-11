@@ -8,7 +8,7 @@ type BrandLogoProps = {
   size?: number;
 };
 
-export function BrandLogo({ compact = false, color = COLORS.primary, size }: BrandLogoProps) {
+export function BrandLogo({ compact = false, color = '#111111', size }: BrandLogoProps) {
   const finalSize = size || (compact ? 36 : 72);
   
   return (
@@ -42,6 +42,6 @@ const styles = StyleSheet.create({
     color: '#312651',
   },
   logoTextHighlight: {
-    color: COLORS.primary,
+    color: '#111111',
   },
 });
