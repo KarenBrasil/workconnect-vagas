@@ -185,7 +185,7 @@ export default function Login() {
               activeOpacity={0.8}
             >
               <Image 
-                source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1024px-Google_%22G%22_logo.svg.png' }} 
+                source={{ uri: 'https://img.icons8.com/color/48/google-logo.png' }} 
                 style={{ width: 22, height: 22, marginRight: 12, resizeMode: 'contain' }} 
               />
               <Text style={styles.googleButtonOutlineText}>Continuar com o Google</Text>
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     right: 20,
   },
   loginButton: {
-    backgroundColor: '#000',
+    backgroundColor: COLORS.primary,
     borderRadius: 30,
     paddingVertical: 18,
     alignItems: 'center',
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   loginButtonText: {
-    color: '#FFF',
+    color: '#000',
     fontSize: 16,
     fontWeight: '700',
   },
