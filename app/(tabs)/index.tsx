@@ -10,6 +10,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { collection, getDocs, limit, orderBy, query, addDoc } from 'firebase/firestore';
 import { db, auth } from '../../src/services/firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 import { buscarVagasComCache, calcularTempoRelativo } from '../../src/services/vagasExternas';
 import { useRouter } from 'expo-router';
 import { COLORS, Card, Tag, FilterChip } from '../../components/ui';
@@ -28,14 +29,16 @@ export default function Home() {
   const { colors, isDark } = useTheme();
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (user && user.displayName) {
-      setUserName(user.displayName.split(' ')[0]);
-    }
-    carregarDados();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && user.displayName) {
+        setUserName(user.displayName.split(' ')[0]);
+      }
+      carregarDados(user);
+    });
+    return () => unsubscribe();
   }, []);
 
-  const carregarDados = async () => {
+  const carregarDados = async (user: any) => {
     setLoading(true);
     try {
       const externas = await buscarVagasComCache();
@@ -63,7 +66,7 @@ export default function Home() {
         };
       });
 
-      if (locaisDb.length < 10 && auth.currentUser) {
+      if (locaisDb.length < 10 && user) {
         // Auto-seed: Injetar vagas no banco de dados para popular a área
         console.log("Poucas vagas detectadas. Auto-gerando vagas fictícias...");
         const seedVagas = [
