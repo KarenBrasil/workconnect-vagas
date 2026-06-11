@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { collection, getDocs, query, limit, orderBy, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, limit, orderBy, doc, getDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../src/services/firebaseConfig';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Alert } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -68,6 +69,162 @@ export default function AdminDashboard() {
     if (abaAtiva === 'usuarios' && usuarios.length === 0) carregarUsuarios();
     if (abaAtiva === 'feedbacks' && avaliacoes.length === 0) carregarPesquisas();
   }, [abaAtiva]);
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // GERADOR DE VAGAS FICTÍCIAS
+  // ──────────────────────────────────────────────────────────────────────────
+  const gerarVagasFicticias = async () => {
+    Alert.alert('Iniciando...', 'Gerando 15 vagas fictícias...');
+    const vagas = [
+      {
+        titulo: "Desenvolvedor Front-end React Pleno",
+        empresa: "TechSolutions BR",
+        contrato: "CLT",
+        salario: "R$ 6.000,00",
+        descricao: "Buscamos um desenvolvedor com experiência em ReactJS, TypeScript e Styled Components para atuar em projetos de grande escala. Trabalho 100% remoto.",
+        contato: "vagas@techsolutions.com.br",
+        fonte: "interna",
+      },
+      {
+        titulo: "Ofereço: Serviços de UI/UX Design",
+        empresa: "Profissional Autônomo (Camila S.)",
+        contrato: "Freelance",
+        salario: "A combinar",
+        descricao: "Sou designer UI/UX com 4 anos de experiência criando interfaces modernas e responsivas no Figma. Procuro projetos freelancer para aplicativos mobile ou web.",
+        contato: "camila.design@gmail.com",
+        fonte: "interna",
+      },
+      {
+        titulo: "Engenheiro de Dados Sênior",
+        empresa: "DataCorp",
+        contrato: "PJ",
+        salario: "R$ 14.000,00",
+        descricao: "Procuramos Engenheiro de Dados Sênior com forte conhecimento em AWS, Python, Spark e pipelines ETL robustos. Necessário inglês avançado.",
+        contato: "rh@datacorp.io",
+        fonte: "interna",
+      },
+      {
+        titulo: "Ofereço: Consultoria em Segurança da Informação",
+        empresa: "Profissional Autônomo (Ricardo P.)",
+        contrato: "PJ",
+        salario: "R$ 150/hora",
+        descricao: "Especialista em pentest e adequação à LGPD. Ajudo a sua startup a blindar as aplicações antes de ir para produção. Faça uma auditoria completa com meu serviço.",
+        contato: "ricardo.sec@protonmail.com",
+        fonte: "interna",
+      },
+      {
+        titulo: "Desenvolvedor Backend Node.js",
+        empresa: "Startup Inova",
+        contrato: "PJ",
+        salario: "R$ 8.500,00",
+        descricao: "Vaga para desenvolvedor Node.js com foco em APIs RESTful, microsserviços e bancos de dados relacionais e NoSQL (Postgres e MongoDB).",
+        contato: "talentos@inova.com",
+        fonte: "interna",
+      },
+      {
+        titulo: "Ofereço: Desenvolvimento Mobile (React Native)",
+        empresa: "Profissional Autônomo (João M.)",
+        contrato: "Freelance",
+        salario: "A combinar",
+        descricao: "Precisa de um app rápido e moderno para iOS e Android? Sou desenvolvedor React Native criando apps de alta performance com Expo. Entre em contato para orçamentos.",
+        contato: "joaom.dev@outlook.com",
+        fonte: "interna",
+      },
+      {
+        titulo: "Analista de Marketing Digital (Tech)",
+        empresa: "Agência Click",
+        contrato: "CLT",
+        salario: "R$ 4.500,00",
+        descricao: "Procuramos especialista em tráfego pago e SEO focado no nicho de tecnologia e SaaS. Trabalho híbrido em São Paulo.",
+        contato: "vagas@agenciaclick.com",
+        fonte: "interna",
+      },
+      {
+        titulo: "Ofereço: Gestão de Projetos Ágeis (Scrum Master)",
+        empresa: "Profissional Autônomo (Amanda F.)",
+        contrato: "PJ",
+        salario: "A combinar",
+        descricao: "Sou Scrum Master certificada, ajudo equipes de desenvolvimento a otimizarem suas entregas e melhorarem a comunicação interna.",
+        contato: "amanda.agile@gmail.com",
+        fonte: "interna",
+      },
+      {
+        titulo: "Desenvolvedor Python (Júnior)",
+        empresa: "CodeBase",
+        contrato: "CLT",
+        salario: "R$ 3.500,00",
+        descricao: "Vaga de entrada para desenvolvedores Python. Você trabalhará junto com nossos seniores na criação de bots e automações web. Ótima oportunidade de aprendizado.",
+        contato: "rh@codebase.tech",
+        fonte: "interna",
+      },
+      {
+        titulo: "Ofereço: Edição de Vídeo para YouTube/Reels",
+        empresa: "Profissional Autônomo (Lucas V.)",
+        contrato: "Freelance",
+        salario: "R$ 50/vídeo curto",
+        descricao: "Editor de vídeo especializado em formato curto (TikTok, Reels, Shorts) para criadores de conteúdo tech e programadores.",
+        contato: "lucas.edits@gmail.com",
+        fonte: "interna",
+      },
+      {
+        titulo: "Tech Lead",
+        empresa: "Fintech PayRight",
+        contrato: "PJ",
+        salario: "R$ 18.000,00",
+        descricao: "Buscamos líder técnico para guiar o esquadrão principal de pagamentos. Necessário experiência prévia em fintechs e liderança de times.",
+        contato: "vagas@payright.com.br",
+        fonte: "interna",
+      },
+      {
+        titulo: "Ofereço: Criação de Landing Pages Alta Conversão",
+        empresa: "Profissional Autônomo (Fernanda L.)",
+        contrato: "Freelance",
+        salario: "R$ 1.500/projeto",
+        descricao: "Desenvolvo landing pages em Next.js super rápidas com SEO otimizado, ideais para o lançamento de produtos de tecnologia e infoprodutos.",
+        contato: "fernanda.web@gmail.com",
+        fonte: "interna",
+      },
+      {
+        titulo: "Especialista em Cloud AWS",
+        empresa: "CloudSec BR",
+        contrato: "PJ",
+        salario: "R$ 12.000,00",
+        descricao: "Precisa-se de profissional certificado AWS para atuar na migração de servidores legados para arquitetura serverless.",
+        contato: "recrutamento@cloudsec.com",
+        fonte: "interna",
+      },
+      {
+        titulo: "Ofereço: Testes de QA Manuais e Automatizados",
+        empresa: "Profissional Autônomo (Bruno T.)",
+        contrato: "Freelance",
+        salario: "A combinar",
+        descricao: "Sou analista de testes (QA) com experiência em Cypress e Selenium. Ofereço serviço de caça a bugs antes de você lançar a sua aplicação no mercado.",
+        contato: "bruno.qa@gmail.com",
+        fonte: "interna",
+      },
+      {
+        titulo: "Suporte Técnico Nível 2",
+        empresa: "HelpDesk TI",
+        contrato: "CLT",
+        salario: "R$ 2.800,00",
+        descricao: "Atendimento técnico a clientes B2B via chat e telefone. Necessário conhecimentos básicos em redes, Linux e resolução de problemas de software.",
+        contato: "suporte.vagas@helpdesk.com",
+        fonte: "interna",
+      }
+    ];
+
+    try {
+      for (let i = 0; i < vagas.length; i++) {
+        await addDoc(collection(db, 'vagas'), {
+          ...vagas[i],
+          criadoEm: new Date(Date.now() - i * 3600000).toISOString(),
+        });
+      }
+      Alert.alert('Sucesso!', 'As 15 vagas fictícias foram publicadas no banco de dados.');
+    } catch (error: any) {
+      Alert.alert('Erro', 'Houve um erro ao gerar vagas: ' + error.message);
+    }
+  };
 
   // ──────────────────────────────────────────────────────────────────────────
   // ANÁLISE DE DADOS (PESQUISAS) - APENAS FINALIZADAS
@@ -152,6 +309,14 @@ export default function AdminDashboard() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* BOTÃO GERAR VAGAS (TEMPORÁRIO) */}
+        <TouchableOpacity 
+          style={{ backgroundColor: colors.primary, padding: 16, borderRadius: 12, marginBottom: 20, alignItems: 'center' }}
+          onPress={gerarVagasFicticias}
+        >
+          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>Gerar 15 Vagas Fictícias (Base de Mostruário)</Text>
+        </TouchableOpacity>
         
         {/* ABA: FEEDBACKS GERAIS E MÉTRICAS */}
         {abaAtiva === 'feedbacks' && (
