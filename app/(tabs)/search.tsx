@@ -155,16 +155,14 @@ export default function SearchScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
-        <BrandLogo />
-      </View>
-      <View style={{ alignItems: 'center', marginBottom: 10 }}>
-        <IlluSearch width={140} height={120} />
-      </View>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.textMain }]}>Explorar Vagas</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Encontre a oportunidade perfeita</Text>
+      {/* Header Row */}
+      <View style={[styles.header, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+        <View style={{ flex: 1, paddingRight: 16 }}>
+          <BrandLogo />
+          <Text style={[styles.title, { color: colors.textMain, marginTop: 12 }]}>Explorar Vagas</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Encontre a oportunidade perfeita</Text>
+        </View>
+        <IlluSearch width={100} height={90} />
       </View>
 
       {/* Search & Filter */}
@@ -179,12 +177,12 @@ export default function SearchScreen() {
       </View>
 
       {/* Filter Chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.chipsContainer}
-        contentContainerStyle={styles.chipsContent}
-      >
+      <View style={styles.chipsContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsContent}
+        >
         {FILTROS.map((filtro) => (
           <FilterChip
             key={filtro}
@@ -193,7 +191,8 @@ export default function SearchScreen() {
             onPress={() => setFiltroAtivo(filtro)}
           />
         ))}
-      </ScrollView>
+        </ScrollView>
+      </View>
 
       {/* Tabs */}
       <View style={[styles.tabsContainer, { borderBottomColor: colors.border }]}>
@@ -319,7 +318,7 @@ const styles = StyleSheet.create({
   chipsContainer: {
     paddingHorizontal: 16,
     marginBottom: 16,
-    height: 48,
+    maxHeight: 50,
   },
   chipsContent: {
     gap: 8,
