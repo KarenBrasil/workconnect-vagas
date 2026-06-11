@@ -62,32 +62,7 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF', // Fundo claro conforme solicitado
     paddingTop: 60,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 40,
-  },
-  logoBox: {
-    width: 36,
-    height: 36,
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  logoIcon: {
-    fontSize: 18,
-  },
-  logoText: {
-    color: '#111111',
-    fontSize: 20,
-    fontWeight: '800',
-    fontFamily: 'DMSans_800ExtraBold',
   },
   illustrationWrapper: {
     alignItems: 'center',
