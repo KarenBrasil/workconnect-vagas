@@ -47,7 +47,7 @@ export default function Home() {
 
       const q = query(collection(db, 'vagas'), orderBy('criadoEm', 'desc'), limit(5));
       const snapInternas = await getDocs(q);
-      const locais = snapInternas.docs.map((d) => {
+      const locaisDb = snapInternas.docs.map((d) => {
         const data = d.data();
         return {
           id: d.id,
@@ -58,8 +58,29 @@ export default function Home() {
         };
       });
 
+      const VAGAS_FICTICIAS = [
+        { id: 'fict1', titulo: 'Desenvolvedor Frontend Sênior', empresa: 'TechCorp', contrato: 'CLT', salario: 'R$ 12.000', descricao: 'Vaga para atuar com React Native e Node.js.', tipo: 'local', criadoEm: new Date().toISOString() },
+        { id: 'fict2', titulo: 'Ofereço serviços de UI/UX Designer', empresa: 'Freelancer', contrato: 'PJ', salario: 'A combinar', descricao: 'Sou designer com 5 anos de experiência.', tipo: 'local', criadoEm: new Date().toISOString() },
+        { id: 'fict3', titulo: 'Engenheiro de Dados', empresa: 'DataBank', contrato: 'CLT', salario: 'R$ 15.000', descricao: 'Experiência com Spark, Hadoop e Python.', tipo: 'local', criadoEm: new Date().toISOString() },
+        { id: 'fict4', titulo: 'Desenvolvedor Backend (Java)', empresa: 'Fintech X', contrato: 'PJ', salario: 'R$ 14.000', descricao: 'Vaga para atuar em sistema bancário.', tipo: 'local', criadoEm: new Date().toISOString() },
+        { id: 'fict5', titulo: 'Consultoria em Marketing Digital', empresa: 'Freelancer', contrato: 'PJ', salario: 'A combinar', descricao: 'Ofereço gestão de tráfego e redes.', tipo: 'local', criadoEm: new Date().toISOString() },
+        { id: 'fict6', titulo: 'Product Manager Pleno', empresa: 'InovaApp', contrato: 'CLT', salario: 'R$ 11.500', descricao: 'Liderar esquadrões de produto.', tipo: 'local', criadoEm: new Date().toISOString() },
+        { id: 'fict7', titulo: 'Ofereço serviços de Redator SEO', empresa: 'Freelancer', contrato: 'PJ', salario: 'R$ 5.000', descricao: 'Crio artigos otimizados para blogs.', tipo: 'local', criadoEm: new Date().toISOString() },
+        { id: 'fict8', titulo: 'Analista de Segurança', empresa: 'CyberTech', contrato: 'CLT', salario: 'R$ 13.000', descricao: 'Proteção e resposta a incidentes.', tipo: 'local', criadoEm: new Date().toISOString() },
+        { id: 'fict9', titulo: 'Desenvolvedor Full Stack Júnior', empresa: 'StartUp Z', contrato: 'CLT', salario: 'R$ 4.500', descricao: 'Vaga para atuar com Vue.js e PHP.', tipo: 'local', criadoEm: new Date().toISOString() },
+        { id: 'fict10', titulo: 'Desenvolvimento de Apps', empresa: 'Agência Digital', contrato: 'PJ', salario: 'A combinar', descricao: 'Equipe para criar seu app.', tipo: 'local', criadoEm: new Date().toISOString() },
+      ];
+
+      const locaisFicticias = VAGAS_FICTICIAS.map((v) => ({
+        id: v.id,
+        titulo: v.titulo,
+        empresa: v.empresa,
+        data: 'Hoje',
+        tipo: 'local',
+      }));
+
       setVagasGlobais(globais);
-      setVagasLocais(locais);
+      setVagasLocais([...locaisDb, ...locaisFicticias].slice(0, 10));
     } catch (e) {
       console.log('Erro ao carregar dados da Home', e);
     } finally {
@@ -110,34 +131,27 @@ export default function Home() {
           <>
             {/* Vagas Globais Section */}
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Vagas Globais (Recentes)</Text>
+              <Text style={styles.sectionTitle}>Vagas Globais</Text>
               <TouchableOpacity onPress={() => router.push('/search')}>
                 <Text style={styles.viewAll}>Ver todas →</Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.vagasScroll}>
+            <View style={styles.vagasList}>
               {vagasGlobais.map((vaga) => (
-                <Card key={vaga.id} style={styles.vagaCard}>
-                  <View style={styles.vagaHeader}>
-                    <View style={[styles.companylconBox, { backgroundColor: COLORS.accent }]}>
-                      <Text style={styles.companyIcon}>{(vaga.empresa || 'C').charAt(0).toUpperCase()}</Text>
+                <TouchableOpacity key={vaga.id} onPress={() => router.push(`/job/${vaga.id}?fonte=${vaga.fonte || ''}`)}>
+                  <Card style={styles.vagaListItem}>
+                    <View style={styles.vagaListContent}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.vagaListTitle} numberOfLines={1}>{vaga.titulo}</Text>
+                        <Text style={styles.vagaListCompany} numberOfLines={1}>{vaga.empresa || 'Confidencial'}</Text>
+                      </View>
+                      <MaterialIcons name="chevron-right" size={24} color={COLORS.textSecondary} />
                     </View>
-                    <TouchableOpacity>
-                      <MaterialIcons name="favorite-border" size={20} color={COLORS.textSecondary} />
-                    </TouchableOpacity>
-                  </View>
-
-                  <Text style={styles.vagaTitle} numberOfLines={2}>{vaga.titulo}</Text>
-                  <Text style={styles.vagaCompany}>{vaga.empresa || 'Confidencial'}</Text>
-
-                  <View style={styles.vagaFooter}>
-                    <Text style={styles.vagaTime}>{vaga.data}</Text>
-                    <Tag label="Global" variant="gray" />
-                  </View>
-                </Card>
+                  </Card>
+                </TouchableOpacity>
               ))}
-            </ScrollView>
+            </View>
 
             {/* Vagas TechConnect Section */}
             <View style={[styles.sectionHeader, { marginTop: 12 }]}>
@@ -146,25 +160,28 @@ export default function Home() {
             </View>
             <Text style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 16 }}>Publicadas pela nossa comunidade.</Text>
 
-            <View style={styles.vagasList}>
-              {vagasLocais.length === 0 ? (
-                <Text style={{ textAlign: 'center', color: COLORS.textSecondary, marginTop: 10 }}>Nenhuma vaga postada na comunidade ainda.</Text>
-              ) : (
-                vagasLocais.map((vaga) => (
-                  <TouchableOpacity key={vaga.id} onPress={() => router.push(`/job/${vaga.id}`)}>
-                    <Card style={styles.vagaListItem}>
-                      <View style={styles.vagaListContent}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.vagaListTitle} numberOfLines={1}>{vaga.titulo}</Text>
-                          <Text style={styles.vagaListCompany} numberOfLines={1}>{vaga.empresa || 'Confidencial'}</Text>
-                        </View>
-                        <MaterialIcons name="chevron-right" size={24} color={COLORS.textSecondary} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.vagasScroll}>
+              {vagasLocais.map((vaga) => (
+                <TouchableOpacity key={vaga.id} onPress={() => router.push(`/job/${vaga.id}`)} activeOpacity={0.8}>
+                  <Card style={styles.vagaCard}>
+                    <View style={styles.vagaHeader}>
+                      <View style={[styles.companylconBox, { backgroundColor: COLORS.primary }]}>
+                        <Text style={styles.companyIcon}>{(vaga.empresa || 'C').charAt(0).toUpperCase()}</Text>
                       </View>
-                    </Card>
-                  </TouchableOpacity>
-                ))
-              )}
-            </View>
+                      <MaterialIcons name="favorite-border" size={20} color={COLORS.textSecondary} />
+                    </View>
+
+                    <Text style={styles.vagaTitle} numberOfLines={2}>{vaga.titulo}</Text>
+                    <Text style={styles.vagaCompany}>{vaga.empresa || 'Confidencial'}</Text>
+
+                    <View style={styles.vagaFooter}>
+                      <Text style={styles.vagaTime}>{vaga.data}</Text>
+                      <Tag label="Comunidade" variant="gray" />
+                    </View>
+                  </Card>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </>
         )}
       </ScrollView>

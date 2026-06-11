@@ -17,7 +17,7 @@ import { useRouter } from 'expo-router';
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithCredential,
   createUserWithEmailAndPassword,
   signOut,
   sendEmailVerification,
@@ -27,6 +27,10 @@ import { auth, db } from '../src/services/firebaseConfig';
 import { MaterialIcons } from '@expo/vector-icons';
 import { PrimaryButton, GoogleButton, TextInputField, COLORS } from '../components/ui';
 import { IlluLogin } from '../assets/illustrations';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function Login() {
   const router = useRouter();
@@ -56,33 +60,51 @@ export default function Login() {
     ).start();
   }, [floatAnim]);
 
-  const handleGoogleLogin = async () => {
-    // ... mantido ...
+  // Configuração do Google Auth Session
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '189326429321-kntm9qp3db45chg2ricg0ijov7rf8ilf.apps.googleusercontent.com',
+  });
 
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      const credential = GoogleAuthProvider.credential(id_token);
+      
+      setLoading(true);
+      signInWithCredential(auth, credential).then(async (userCred) => {
+        await setDoc(
+          doc(db, 'users', userCred.user.uid),
+          {
+            nome: userCred.user.displayName || 'Usuário Google',
+            email: userCred.user.email,
+            uid: userCred.user.uid,
+            criadoEm: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+        router.replace('/(tabs)');
+      }).catch((error) => {
+        console.error("ERRO FIREBASE CREDENTIAL:", error);
+        setErrorMessage(error.message || 'Erro ao autenticar');
+        Alert.alert('Falha no Login', error.message || 'Erro ao autenticar com o Google.');
+      }).finally(() => {
+        setLoading(false);
+      });
+    } else if (response?.type === 'error') {
+      setErrorMessage('Erro ao autenticar com o Google.');
+      Alert.alert('Falha no Login', 'Erro ao autenticar com o Google.');
+    }
+  }, [response]);
+
+  const handleGoogleLogin = async () => {
     try {
       setErrorMessage('');
-      setLoading(true);
-      const provider = new GoogleAuthProvider();
-      
-      const userCred = await signInWithPopup(auth, provider);
-      await setDoc(
-        doc(db, 'users', userCred.user.uid),
-        {
-          nome: userCred.user.displayName || 'Usuário Google',
-          email: userCred.user.email,
-          uid: userCred.user.uid,
-          criadoEm: new Date().toISOString(),
-        },
-        { merge: true }
-      );
-      router.replace('/(tabs)');
+      promptAsync();
     } catch (error: any) {
-      console.error("ERRO FIREBASE POPUP:", error);
-      const msg = error.message || 'Ocorreu um erro ao fazer login com o Google.';
+      console.error("ERRO AUTH SESSION:", error);
+      const msg = error.message || 'Ocorreu um erro ao iniciar o login com o Google.';
       setErrorMessage(msg);
-      Alert.alert('Falha no Login', msg);
-    } finally {
-      setLoading(false);
+      Alert.alert('Falha', msg);
     }
   };
 
@@ -179,23 +201,9 @@ export default function Login() {
               </View>
             ) : null}
 
-            {/* Google Button */}
-            <TouchableOpacity 
-              style={styles.googleButtonSolid} 
-              onPress={handleGoogleLogin}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              <Image 
-                source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png' }} 
-                style={{ width: 24, height: 18, marginRight: 12, resizeMode: 'contain' }} 
-              />
-              <Text style={styles.googleButtonSolidText}>Continuar com o Gmail</Text>
-            </TouchableOpacity>
-
             <View style={styles.dividerContainer}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>ou faça login com e-mail</Text>
+              <Text style={styles.dividerText}>ou</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -245,6 +253,19 @@ export default function Login() {
               disabled={loading}
             />
             {loading && <ActivityIndicator color={COLORS.primary} size="large" style={styles.loader} />}
+
+            <TouchableOpacity 
+              style={[styles.googleButtonSolid, { marginTop: 16 }]} 
+              onPress={handleGoogleLogin}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <Image 
+                source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png' }} 
+                style={{ width: 20, height: 16, marginRight: 8, resizeMode: 'contain' }} 
+              />
+              <Text style={styles.googleButtonSolidText}>Gmail</Text>
+            </TouchableOpacity>
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Não tem uma conta? </Text>
