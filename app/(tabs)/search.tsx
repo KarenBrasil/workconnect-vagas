@@ -218,10 +218,36 @@ export default function SearchScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }: { item: any }) => (
             <Card style={styles.vagaItem}>
-              <View style={styles.vagaHeader}>
+              <View style={styles.vagaMainRow}>
+                {/* Logo na esquerda */}
                 <View style={[styles.companyLogo, { backgroundColor: item.tipo === 'local' ? colors.primary : colors.accent }]}>
-                  <Text style={[styles.companyLogoText, { color: isDark && item.tipo === 'local' ? colors.background : '#FFF' }]}>{item.empresa ? item.empresa.charAt(0).toUpperCase() : 'C'}</Text>
+                  <Text style={[styles.companyLogoText, { color: isDark && item.tipo === 'local' ? colors.background : '#FFF' }]}>
+                    {item.empresa ? item.empresa.charAt(0).toUpperCase() : 'C'}
+                  </Text>
                 </View>
+
+                {/* Info no meio */}
+                <View style={styles.vagaInfo}>
+                  <Text style={[styles.vagaTitle, { color: colors.textMain }]} numberOfLines={2}>
+                    {item.titulo}
+                  </Text>
+                  <Text style={[styles.vagaCompany, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {item.empresa || 'Confidencial'}
+                  </Text>
+                  <Text style={[styles.vagaLocation, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {item.local || 'Não especificada'}
+                  </Text>
+                  
+                  {item.tags && item.tags.length > 0 && (
+                    <View style={styles.vagaTags}>
+                      {item.tags.slice(0, 2).map((tag: string, i: number) => (
+                        <Tag key={i} label={tag} variant="gray" />
+                      ))}
+                    </View>
+                  )}
+                </View>
+
+                {/* Botão Favorito na direita */}
                 <TouchableOpacity
                   onPress={() => toggleFavorito(item)}
                   disabled={salvandoFavId === item.id}
@@ -233,24 +259,6 @@ export default function SearchScreen() {
                     color={favoritosMap[item.id] ? colors.accent : colors.textSecondary}
                   />
                 </TouchableOpacity>
-              </View>
-
-              <View style={styles.vagaContent}>
-                <View style={styles.vagaInfo}>
-                  <Text style={[styles.vagaTitle, { color: colors.textMain }]} numberOfLines={2}>
-                    {item.titulo}
-                  </Text>
-                  <Text style={[styles.vagaCompany, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {item.empresa || 'Confidencial'}
-                  </Text>
-                  <Text style={[styles.vagaLocation, { color: colors.textSecondary }]}>{item.local || 'Localização não especificada'}</Text>
-
-                  <View style={styles.vagaTags}>
-                    {item.tags && item.tags.slice(0, 2).map((tag: string, i: number) => (
-                      <Tag key={i} label={tag} variant="gray" />
-                    ))}
-                  </View>
-                </View>
               </View>
 
               <View style={[styles.vagaFooter, { borderTopColor: colors.border }]}>
@@ -300,11 +308,12 @@ const styles = StyleSheet.create({
   chipsContainer: {
     paddingHorizontal: 16,
     marginBottom: 16,
+    height: 48,
   },
   chipsContent: {
     gap: 8,
-    alignItems: 'center',
-    paddingVertical: 4,
+    alignItems: 'flex-start',
+    paddingVertical: 2,
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -347,67 +356,65 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   vagaItem: {
-    padding: 16,
-    marginBottom: 4,
+    padding: 14,
+    marginBottom: 8,
   },
-  vagaHeader: {
+  vagaMainRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   companyLogo: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
   companyLogoText: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '800',
     color: '#FFF',
     fontFamily: 'DMSans_800ExtraBold',
   },
   favoriteBtn: {
     padding: 4,
-  },
-  vagaContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+    marginLeft: 8,
   },
   vagaInfo: {
     flex: 1,
+    justifyContent: 'center',
   },
   vagaTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     fontFamily: 'DMSans_800ExtraBold',
     color: COLORS.textMain,
-    marginBottom: 6,
+    marginBottom: 2,
   },
   vagaCompany: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'DMSans_500Medium',
     color: COLORS.textSecondary,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   vagaLocation: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'DMSans_400Regular',
     color: COLORS.textSecondary,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   vagaTags: {
     flexDirection: 'row',
-    gap: 8,
+    flexWrap: 'wrap',
+    gap: 6,
   },
   vagaFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 14,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
