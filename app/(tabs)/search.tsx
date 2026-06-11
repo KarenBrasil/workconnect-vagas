@@ -59,7 +59,21 @@ export default function SearchScreen() {
       try {
         const snap = await getDocs(collection(db, 'vagas'));
         const internas = snap.docs.map((d) => ({ id: d.id, ...d.data() } as VagaInterna));
-        setVagasInternas(internas.sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || '')));
+        
+        const VAGAS_FICTICIAS: VagaInterna[] = [
+          { id: 'fict1', titulo: 'Desenvolvedor Frontend Sênior', empresa: 'TechCorp', contrato: 'CLT', salario: 'R$ 12.000', descricao: 'Vaga para atuar com React Native e Node.js.', tipo: 'local', criadoEm: new Date().toISOString() },
+          { id: 'fict2', titulo: 'Ofereço serviços de UI/UX Designer', empresa: 'Freelancer', contrato: 'PJ', salario: 'A combinar', descricao: 'Sou designer com 5 anos de experiência.', tipo: 'local', criadoEm: new Date().toISOString() },
+          { id: 'fict3', titulo: 'Engenheiro de Dados', empresa: 'DataBank', contrato: 'CLT', salario: 'R$ 15.000', descricao: 'Experiência com Spark, Hadoop e Python.', tipo: 'local', criadoEm: new Date().toISOString() },
+          { id: 'fict4', titulo: 'Desenvolvedor Backend (Java)', empresa: 'Fintech X', contrato: 'PJ', salario: 'R$ 14.000', descricao: 'Vaga para atuar em sistema bancário.', tipo: 'local', criadoEm: new Date().toISOString() },
+          { id: 'fict5', titulo: 'Consultoria em Marketing Digital', empresa: 'Freelancer', contrato: 'PJ', salario: 'A combinar', descricao: 'Ofereço gestão de tráfego e redes.', tipo: 'local', criadoEm: new Date().toISOString() },
+          { id: 'fict6', titulo: 'Product Manager Pleno', empresa: 'InovaApp', contrato: 'CLT', salario: 'R$ 11.500', descricao: 'Liderar esquadrões de produto.', tipo: 'local', criadoEm: new Date().toISOString() },
+          { id: 'fict7', titulo: 'Ofereço serviços de Redator SEO', empresa: 'Freelancer', contrato: 'PJ', salario: 'R$ 5.000', descricao: 'Crio artigos otimizados para blogs.', tipo: 'local', criadoEm: new Date().toISOString() },
+          { id: 'fict8', titulo: 'Analista de Segurança', empresa: 'CyberTech', contrato: 'CLT', salario: 'R$ 13.000', descricao: 'Proteção e resposta a incidentes.', tipo: 'local', criadoEm: new Date().toISOString() },
+          { id: 'fict9', titulo: 'Desenvolvedor Full Stack Júnior', empresa: 'StartUp Z', contrato: 'CLT', salario: 'R$ 4.500', descricao: 'Vaga para atuar com Vue.js e PHP.', tipo: 'local', criadoEm: new Date().toISOString() },
+          { id: 'fict10', titulo: 'Desenvolvimento de Apps', empresa: 'Agência Digital', contrato: 'PJ', salario: 'A combinar', descricao: 'Equipe para criar seu app.', tipo: 'local', criadoEm: new Date().toISOString() },
+        ];
+
+        setVagasInternas([...internas, ...VAGAS_FICTICIAS].sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || '')));
       } catch (e) {
         console.log('Erro vagas internas:', e);
       }
@@ -134,11 +148,12 @@ export default function SearchScreen() {
       {/* Search & Filter */}
       <View style={styles.searchContainer}>
         <TextInputField
-          placeholder="Buscar vagas..."
+          placeholder="Ex: React, Designer, Remoto, Marketing..."
           icon="search"
           value={searchText}
           onChangeText={setSearchText}
         />
+        <Text style={styles.searchHint}>Dica: Pesquise por linguagens, cargos ou modelo de trabalho.</Text>
       </View>
 
       {/* Filter Chips */}
@@ -186,10 +201,10 @@ export default function SearchScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={COLORS.primary} size="large" />
         </View>
-      ) : !hasInteracted && abaAtiva === 'externas' ? (
+      ) : vagasFiltradas.length === 0 ? (
         <View style={styles.emptyStateContainer}>
-          <Text style={styles.emptyStateTitle}>Descubra o mundo 🌍</Text>
-          <Text style={styles.emptyStateDesc}>Digite um cargo ou escolha um filtro para carregar milhares de vagas globais em tempo real.</Text>
+          <Text style={styles.emptyStateTitle}>Nenhuma vaga encontrada 🌍</Text>
+          <Text style={styles.emptyStateDesc}>Tente pesquisar usando outras palavras-chave ou altere os filtros.</Text>
         </View>
       ) : (
         <FlatList
@@ -269,6 +284,12 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 16,
     marginBottom: 16,
+  },
+  searchHint: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 6,
+    marginLeft: 4,
   },
   chipsContainer: {
     paddingHorizontal: 16,
