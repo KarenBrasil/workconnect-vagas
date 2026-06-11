@@ -19,6 +19,7 @@ import {
 import { salvarFavorito, removerFavorito, buscarFavoritos } from '../../src/services/favoritos';
 import { useRouter } from 'expo-router';
 import { COLORS, Card, Tag, FilterChip, TextInputField } from '../../components/ui';
+import { useTheme } from '../../src/theme/ThemeContext';
 
 interface VagaInterna {
   id: string;
@@ -44,6 +45,7 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(true);
   const [favoritosMap, setFavoritosMap] = useState<Record<string, string>>({});
   const [salvandoFavId, setSalvandoFavId] = useState<string | null>(null);
+  const { colors, isDark } = useTheme();
 
   const userId = auth.currentUser?.uid;
 
@@ -138,11 +140,11 @@ export default function SearchScreen() {
   const hasInteracted = searchText.trim().length > 0 || filtroAtivo !== 'Todos';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Explorar Vagas</Text>
-        <Text style={styles.subtitle}>Encontre a oportunidade perfeita</Text>
+        <Text style={[styles.title, { color: colors.textMain }]}>Explorar Vagas</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Encontre a oportunidade perfeita</Text>
       </View>
 
       {/* Search & Filter */}
@@ -153,7 +155,7 @@ export default function SearchScreen() {
           value={searchText}
           onChangeText={setSearchText}
         />
-        <Text style={styles.searchHint}>Dica: Pesquise por linguagens, cargos ou modelo de trabalho.</Text>
+        <Text style={[styles.searchHint, { color: colors.textSecondary }]}>Dica: Pesquise por linguagens, cargos ou modelo de trabalho.</Text>
       </View>
 
       {/* Filter Chips */}
@@ -174,37 +176,37 @@ export default function SearchScreen() {
       </ScrollView>
 
       {/* Tabs */}
-      <View style={styles.tabsContainer}>
+      <View style={[styles.tabsContainer, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.tab, abaAtiva === 'externas' && styles.tabActive]}
+          style={[styles.tab, abaAtiva === 'externas' && { borderBottomColor: colors.accent }]}
           onPress={() => setAbaAtiva('externas')}
         >
-          <Text style={[styles.tabText, abaAtiva === 'externas' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, abaAtiva === 'externas' && { color: colors.accent }]}>
             Globais
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, abaAtiva === 'internas' && styles.tabActive]}
+          style={[styles.tab, abaAtiva === 'internas' && { borderBottomColor: colors.accent }]}
           onPress={() => setAbaAtiva('internas')}
         >
-          <Text style={[styles.tabText, abaAtiva === 'internas' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, abaAtiva === 'internas' && { color: colors.accent }]}>
             TechConnect
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Counter */}
-      <Text style={styles.counter}>{vagasFiltradas.length} oportunidades encontradas</Text>
+      <Text style={[styles.counter, { color: colors.textSecondary }]}>{vagasFiltradas.length} oportunidades encontradas</Text>
 
       {/* Vagas List */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator color={COLORS.primary} size="large" />
+          <ActivityIndicator color={colors.primary} size="large" />
         </View>
       ) : vagasFiltradas.length === 0 ? (
         <View style={styles.emptyStateContainer}>
-          <Text style={styles.emptyStateTitle}>Nenhuma vaga encontrada 🌍</Text>
-          <Text style={styles.emptyStateDesc}>Tente pesquisar usando outras palavras-chave ou altere os filtros.</Text>
+          <Text style={[styles.emptyStateTitle, { color: colors.textMain }]}>Nenhuma vaga encontrada 🌍</Text>
+          <Text style={[styles.emptyStateDesc, { color: colors.textSecondary }]}>Tente pesquisar usando outras palavras-chave ou altere os filtros.</Text>
         </View>
       ) : (
         <FlatList
@@ -213,8 +215,8 @@ export default function SearchScreen() {
           renderItem={({ item }: { item: any }) => (
             <Card style={styles.vagaItem}>
               <View style={styles.vagaHeader}>
-                <View style={[styles.companyLogo, { backgroundColor: item.tipo === 'local' ? COLORS.primary : COLORS.accent }]}>
-                  <Text style={styles.companyLogoText}>{item.empresa ? item.empresa.charAt(0).toUpperCase() : 'C'}</Text>
+                <View style={[styles.companyLogo, { backgroundColor: item.tipo === 'local' ? colors.primary : colors.accent }]}>
+                  <Text style={[styles.companyLogoText, { color: isDark && item.tipo === 'local' ? colors.background : '#FFF' }]}>{item.empresa ? item.empresa.charAt(0).toUpperCase() : 'C'}</Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => toggleFavorito(item)}
@@ -224,20 +226,20 @@ export default function SearchScreen() {
                   <MaterialIcons
                     name={favoritosMap[item.id] ? 'favorite' : 'favorite-border'}
                     size={22}
-                    color={favoritosMap[item.id] ? COLORS.accent : COLORS.textSecondary}
+                    color={favoritosMap[item.id] ? colors.accent : colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.vagaContent}>
                 <View style={styles.vagaInfo}>
-                  <Text style={styles.vagaTitle} numberOfLines={2}>
+                  <Text style={[styles.vagaTitle, { color: colors.textMain }]} numberOfLines={2}>
                     {item.titulo}
                   </Text>
-                  <Text style={styles.vagaCompany} numberOfLines={1}>
+                  <Text style={[styles.vagaCompany, { color: colors.textSecondary }]} numberOfLines={1}>
                     {item.empresa || 'Confidencial'}
                   </Text>
-                  <Text style={styles.vagaLocation}>{item.local || 'Localização não especificada'}</Text>
+                  <Text style={[styles.vagaLocation, { color: colors.textSecondary }]}>{item.local || 'Localização não especificada'}</Text>
 
                   <View style={styles.vagaTags}>
                     {item.tags && item.tags.slice(0, 2).map((tag: string, i: number) => (
@@ -247,8 +249,8 @@ export default function SearchScreen() {
                 </View>
               </View>
 
-              <View style={styles.vagaFooter}>
-                <Text style={styles.vagaTime}>{item.tempoPostagem || item.data}</Text>
+              <View style={[styles.vagaFooter, { borderTopColor: colors.border }]}>
+                <Text style={[styles.vagaTime, { color: colors.textSecondary }]}>{item.tempoPostagem || item.data}</Text>
                 {item.tipo === 'local' && <Tag label="⭐ Vaga Exclusiva" variant="purple" />}
               </View>
             </Card>
@@ -327,7 +329,6 @@ const styles = StyleSheet.create({
   },
   counter: {
     fontSize: 12,
-    color: COLORS.textSecondary,
     marginHorizontal: 16,
     marginBottom: 12,
   },

@@ -14,6 +14,7 @@ import { buscarVagasComCache, calcularTempoRelativo } from '../../src/services/v
 import { useRouter } from 'expo-router';
 import { COLORS, Card, Tag, FilterChip } from '../../components/ui';
 import { BrandLogo } from '../../components/BrandLogo';
+import { useTheme } from '../../src/theme/ThemeContext';
 
 export default function Home() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function Home() {
   const [vagasLocais, setVagasLocais] = useState<any[]>([]);
   const [totalVagas, setTotalVagas] = useState(0);
   const [loading, setLoading] = useState(true);
+  const { colors, isDark } = useTheme();
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -90,48 +92,48 @@ export default function Home() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={[styles.header, { alignItems: 'center' }]}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.greeting}>Olá, {userName || 'Visitante'}!</Text>
-            <Text style={styles.subGreeting}>Pronta para dar o próximo passo?</Text>
+            <Text style={[styles.greeting, { color: colors.textMain }]}>Olá, {userName || 'Visitante'}!</Text>
+            <Text style={[styles.subGreeting, { color: colors.textSecondary }]}>Pronta para dar o próximo passo?</Text>
           </View>
-          <BrandLogo compact={true} size={30} color="#111111" />
+          <BrandLogo compact={true} size={30} color={colors.textMain} />
         </View>
 
         {/* Search Bar */}
         <TouchableOpacity
-          style={styles.searchBar}
+          style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => router.push('/search')}
           activeOpacity={0.7}
         >
-          <MaterialIcons name="search" size={18} color={COLORS.textSecondary} />
-          <Text style={styles.searchPlaceholder}>Buscar vagas...</Text>
-          <MaterialIcons name="tune" size={18} color={COLORS.primary} />
+          <MaterialIcons name="search" size={18} color={colors.textSecondary} />
+          <Text style={[styles.searchPlaceholder, { color: colors.textSecondary }]}>Buscar vagas...</Text>
+          <MaterialIcons name="tune" size={18} color={colors.primary} />
         </TouchableOpacity>
 
         {/* Featured Banner & Total */}
-        <Card style={styles.banner}>
+        <Card style={[styles.banner, { backgroundColor: colors.primary }]}>
           <View style={styles.bannerContent}>
             <View>
-              <Text style={styles.bannerTitle}>🚀 {totalVagas}+ Vagas Globais</Text>
-              <Text style={styles.bannerSub}>Agregadas em tempo real para você</Text>
+              <Text style={[styles.bannerTitle, { color: colors.primaryDark }]}>🚀 {totalVagas}+ Vagas Globais</Text>
+              <Text style={[styles.bannerSub, { color: colors.primaryDark }]}>Agregadas em tempo real para você</Text>
             </View>
-            <MaterialIcons name="public" size={28} color={COLORS.primary} />
+            <MaterialIcons name="public" size={28} color={isDark ? colors.background : COLORS.surface} />
           </View>
         </Card>
 
         {loading ? (
-          <ActivityIndicator color={COLORS.primary} size="large" style={{ marginVertical: 40 }} />
+          <ActivityIndicator color={colors.primary} size="large" style={{ marginVertical: 40 }} />
         ) : (
           <>
             {/* Vagas Globais Section */}
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Vagas Globais</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textMain }]}>Vagas Globais</Text>
               <TouchableOpacity onPress={() => router.push('/search')}>
-                <Text style={styles.viewAll}>Ver todas →</Text>
+                <Text style={[styles.viewAll, { color: colors.accent }]}>Ver todas →</Text>
               </TouchableOpacity>
             </View>
 
@@ -141,10 +143,10 @@ export default function Home() {
                   <Card style={styles.vagaListItem}>
                     <View style={styles.vagaListContent}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.vagaListTitle} numberOfLines={1}>{vaga.titulo}</Text>
-                        <Text style={styles.vagaListCompany} numberOfLines={1}>{vaga.empresa || 'Confidencial'}</Text>
+                        <Text style={[styles.vagaListTitle, { color: colors.textMain }]} numberOfLines={1}>{vaga.titulo}</Text>
+                        <Text style={[styles.vagaListCompany, { color: colors.textSecondary }]} numberOfLines={1}>{vaga.empresa || 'Confidencial'}</Text>
                       </View>
-                      <MaterialIcons name="chevron-right" size={24} color={COLORS.textSecondary} />
+                      <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
                     </View>
                   </Card>
                 </TouchableOpacity>
@@ -153,27 +155,27 @@ export default function Home() {
 
             {/* Vagas TechConnect Section */}
             <View style={[styles.sectionHeader, { marginTop: 12 }]}>
-              <Text style={styles.sectionTitle}>Vagas TechConnect</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textMain }]}>Vagas TechConnect</Text>
               <Tag label="Exclusivo" variant="green" />
             </View>
-            <Text style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 16 }}>Publicadas pela nossa comunidade.</Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 16 }}>Publicadas pela nossa comunidade.</Text>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.vagasScroll}>
               {vagasLocais.map((vaga) => (
                 <TouchableOpacity key={vaga.id} onPress={() => router.push(`/job/${vaga.id}`)} activeOpacity={0.8}>
                   <Card style={styles.vagaCard}>
                     <View style={styles.vagaHeader}>
-                      <View style={[styles.companylconBox, { backgroundColor: COLORS.primary }]}>
-                        <Text style={styles.companyIcon}>{(vaga.empresa || 'C').charAt(0).toUpperCase()}</Text>
+                      <View style={[styles.companylconBox, { backgroundColor: colors.primary }]}>
+                        <Text style={[styles.companyIcon, { color: isDark ? colors.background : COLORS.surface }]}>{(vaga.empresa || 'C').charAt(0).toUpperCase()}</Text>
                       </View>
-                      <MaterialIcons name="favorite-border" size={20} color={COLORS.textSecondary} />
+                      <MaterialIcons name="favorite-border" size={20} color={colors.textSecondary} />
                     </View>
 
-                    <Text style={styles.vagaTitle} numberOfLines={2}>{vaga.titulo}</Text>
-                    <Text style={styles.vagaCompany}>{vaga.empresa || 'Confidencial'}</Text>
+                    <Text style={[styles.vagaTitle, { color: colors.textMain }]} numberOfLines={2}>{vaga.titulo}</Text>
+                    <Text style={[styles.vagaCompany, { color: colors.textSecondary }]}>{vaga.empresa || 'Confidencial'}</Text>
 
                     <View style={styles.vagaFooter}>
-                      <Text style={styles.vagaTime}>{vaga.data}</Text>
+                      <Text style={[styles.vagaTime, { color: colors.textSecondary }]}>{vaga.data}</Text>
                       <Tag label="Comunidade" variant="gray" />
                     </View>
                   </Card>
@@ -247,11 +249,9 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontFamily: 'DMSans_500Medium',
-    color: COLORS.textSecondary,
     marginHorizontal: 12,
   },
   banner: {
-    backgroundColor: COLORS.primary,
     marginBottom: 28,
   },
   bannerContent: {

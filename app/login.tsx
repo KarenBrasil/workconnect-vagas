@@ -28,6 +28,7 @@ import { auth, db } from '../src/services/firebaseConfig';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS } from '../components/ui';
 import { IlluLogin } from '../assets/illustrations';
+import { useTheme } from '../src/theme/ThemeContext';
 
 export default function Login() {
   const router = useRouter();
@@ -36,6 +37,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const { colors, isDark } = useTheme();
 
   // Animação de Flutuação (Float Animation)
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -154,8 +156,8 @@ export default function Login() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.surface} />
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -169,7 +171,7 @@ export default function Login() {
 
           {/* Content */}
           <View style={styles.content}>
-            <Text style={styles.title}>Login</Text>
+            <Text style={[styles.title, { color: colors.textMain }]}>Login</Text>
 
             {errorMessage ? (
               <View style={styles.errorContainer}>
@@ -179,7 +181,7 @@ export default function Login() {
 
             {/* Google Button */}
             <TouchableOpacity 
-              style={styles.googleButtonOutline} 
+              style={[styles.googleButtonOutline, { backgroundColor: isDark ? colors.background : '#FFF', borderColor: colors.border }]} 
               onPress={handleGoogleLogin}
               disabled={loading}
               activeOpacity={0.8}
@@ -188,19 +190,19 @@ export default function Login() {
                 source={{ uri: 'https://img.icons8.com/color/48/google-logo.png' }} 
                 style={{ width: 22, height: 22, marginRight: 12, resizeMode: 'contain' }} 
               />
-              <Text style={styles.googleButtonOutlineText}>Continuar com o Google</Text>
+              <Text style={[styles.googleButtonOutlineText, { color: colors.textMain }]}>Continuar com o Google</Text>
             </TouchableOpacity>
 
             <View style={styles.dividerContainer}>
-              <Text style={styles.dividerText}>ou</Text>
+              <Text style={[styles.dividerText, { color: colors.textSecondary }]}>ou</Text>
             </View>
 
             {/* Form */}
             <View style={styles.formContainer}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: isDark ? colors.background : '#F5F5F5', color: colors.textMain }]}
                 placeholder="E-mail"
-                placeholderTextColor="#9E9E9E"
+                placeholderTextColor={colors.textSecondary}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -209,9 +211,9 @@ export default function Login() {
 
               <View style={styles.passwordContainer}>
                 <TextInput
-                  style={[styles.input, { paddingRight: 50 }]}
+                  style={[styles.input, { paddingRight: 50, backgroundColor: isDark ? colors.background : '#F5F5F5', color: colors.textMain }]}
                   placeholder="Senha"
-                  placeholderTextColor="#9E9E9E"
+                  placeholderTextColor={colors.textSecondary}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -223,7 +225,7 @@ export default function Login() {
                   <MaterialIcons
                     name={showPassword ? 'visibility' : 'visibility-off'}
                     size={20}
-                    color="#9E9E9E"
+                    color={colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
@@ -231,26 +233,26 @@ export default function Login() {
 
             {/* Login Button */}
             <TouchableOpacity 
-              style={styles.loginButton} 
+              style={[styles.loginButton, { backgroundColor: colors.primary }]} 
               onPress={handleLogin}
               disabled={loading}
               activeOpacity={0.8}
             >
               {loading ? (
-                <ActivityIndicator color="#FFF" />
+                <ActivityIndicator color={colors.primaryDark} />
               ) : (
-                <Text style={styles.loginButtonText}>Entrar</Text>
+                <Text style={[styles.loginButtonText, { color: colors.primaryDark }]}>Entrar</Text>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => router.push('/forgot-password')} style={styles.forgotLink}>
-              <Text style={styles.forgotText}>Esqueceu a senha?</Text>
+              <Text style={[styles.forgotText, { color: colors.textSecondary }]}>Esqueceu a senha?</Text>
             </TouchableOpacity>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Não tem uma conta? </Text>
+              <Text style={[styles.footerText, { color: colors.textMain }]}>Não tem uma conta? </Text>
               <TouchableOpacity onPress={() => router.push('/register')} activeOpacity={0.7}>
-                <Text style={styles.registerText}>Cadastre-se aqui</Text>
+                <Text style={[styles.registerText, { color: colors.textMain }]}>Cadastre-se aqui</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -5,6 +5,7 @@ import { collection, addDoc, serverTimestamp, doc, setDoc, increment } from 'fir
 import { db } from '../src/services/firebaseConfig';
 import { useRouter } from 'expo-router';
 import { BrandLogo } from '../components/BrandLogo';
+import { useTheme } from '../src/theme/ThemeContext';
 
 type RespostaType = any; 
 
@@ -164,6 +165,7 @@ export default function PesquisaWizardScreen() {
   const [enviando, setEnviando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
   const [docId, setDocId] = useState<string | null>(null);
+  const { colors, isDark } = useTheme();
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -297,13 +299,13 @@ export default function PesquisaWizardScreen() {
           return (
             <TouchableOpacity 
               key={i} 
-              style={[styles.boxOption, isSelected && styles.boxOptionSelected]}
+              style={[styles.boxOption, { backgroundColor: colors.background, borderColor: colors.border }, isSelected && { borderColor: colors.accent, backgroundColor: colors.accent + '15' }]}
               onPress={() => {
                 if (isSelected) setAnswer(selecoes.filter((s: number) => s !== i));
                 else setAnswer([...selecoes, i]);
               }}
             >
-              <Text style={[styles.boxOptionLabel, isSelected && styles.boxOptionLabelSelected]}>{opt.label}</Text>
+              <Text style={[styles.boxOptionLabel, { color: colors.textSecondary }, isSelected && { color: colors.textPrimary, fontWeight: '700' }]}>{opt.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -319,13 +321,13 @@ export default function PesquisaWizardScreen() {
           return (
             <TouchableOpacity 
               key={i} 
-              style={[styles.boxOption, isSelected && styles.boxOptionSelected]}
+              style={[styles.boxOption, { backgroundColor: colors.background, borderColor: colors.border }, isSelected && { borderColor: colors.accent, backgroundColor: colors.accent + '15' }]}
               onPress={() => setAnswer(i)}
             >
-              <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
-                {isSelected && <View style={styles.radioDot} />}
+              <View style={[styles.radioCircle, { borderColor: colors.textSecondary }, isSelected && { borderColor: colors.accent }]}>
+                {isSelected && <View style={[styles.radioDot, { backgroundColor: colors.accent }]} />}
               </View>
-              <Text style={[styles.boxOptionLabel, isSelected && styles.boxOptionLabelSelected]}>{opt.label}</Text>
+              <Text style={[styles.boxOptionLabel, { color: colors.textSecondary }, isSelected && { color: colors.textPrimary, fontWeight: '700' }]}>{opt.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -344,10 +346,10 @@ export default function PesquisaWizardScreen() {
             return (
               <TouchableOpacity
                 key={idx}
-                style={[styles.scaleBox, isSelected && styles.scaleBoxSelected]}
+                style={[styles.scaleBox, { backgroundColor: colors.background, borderColor: colors.border }, isSelected && { backgroundColor: colors.accent, borderColor: colors.accent }]}
                 onPress={() => setAnswer({ ...ans, scale: idx })}
               >
-                <Text style={[styles.scaleText, isSelected && styles.scaleTextSelected]}>{idx + 1}</Text>
+                <Text style={[styles.scaleText, { color: colors.textSecondary }, isSelected && { color: isDark ? '#111827' : '#FFFFFF' }]}>{idx + 1}</Text>
               </TouchableOpacity>
             );
           })}
@@ -366,21 +368,21 @@ export default function PesquisaWizardScreen() {
                 return (
                   <TouchableOpacity
                     key={i}
-                    style={[styles.chip, isSelected && styles.chipSelected]}
+                    style={[styles.chip, { backgroundColor: colors.background, borderColor: colors.border }, isSelected && { backgroundColor: colors.accent + '15', borderColor: colors.accent }]}
                     onPress={() => {
                       if (isSelected) setAnswer({ ...ans, reasons: ans.reasons.filter((r: number) => r !== i) });
                       else setAnswer({ ...ans, reasons: [...ans.reasons, i] });
                     }}
                   >
-                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{reason}</Text>
+                    <Text style={[styles.chipText, { color: colors.textSecondary }, isSelected && { color: colors.accent, fontWeight: '700' }]}>{reason}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
             <TextInput
-              style={styles.textInputArea}
+              style={[styles.textInputArea, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
               placeholder={currentQ.open}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textSecondary}
               multiline
               value={ans.openText}
               onChangeText={(t) => setAnswer({ ...ans, openText: t })}
@@ -398,19 +400,19 @@ export default function PesquisaWizardScreen() {
         <View style={styles.npsRow}>
           {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => {
             const isSelected = ans.score === val;
-            let bgColor = '#111827';
+            let bgColor = colors.background;
             if (isSelected) {
-              if (val <= 6) bgColor = '#EF4444'; 
-              else if (val <= 8) bgColor = '#F59E0B'; 
-              else bgColor = '#10B981'; 
+              if (val <= 6) bgColor = colors.danger; 
+              else if (val <= 8) bgColor = colors.warning; 
+              else bgColor = colors.success; 
             }
             return (
               <TouchableOpacity
                 key={val}
-                style={[styles.npsBox, { backgroundColor: bgColor }, isSelected && styles.npsBoxSelected]}
+                style={[styles.npsBox, { backgroundColor: bgColor, borderColor: colors.border }, isSelected && { borderColor: isDark ? '#FFFFFF' : '#111827', borderWidth: 2 }]}
                 onPress={() => setAnswer({ ...ans, score: val })}
               >
-                <Text style={[styles.npsText, isSelected && { color: '#FFF' }]}>{val}</Text>
+                <Text style={[styles.npsText, { color: colors.textSecondary }, isSelected && { color: '#FFF' }]}>{val}</Text>
               </TouchableOpacity>
             );
           })}
@@ -423,9 +425,9 @@ export default function PesquisaWizardScreen() {
         {typeof ans.score === 'number' && (
           <View style={styles.reasonsFadeIn}>
             <TextInput
-              style={styles.textInputArea}
+              style={[styles.textInputArea, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
               placeholder={currentQ.open}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textSecondary}
               multiline
               value={ans.openText}
               onChangeText={(t) => setAnswer({ ...ans, openText: t })}
@@ -442,14 +444,14 @@ export default function PesquisaWizardScreen() {
 
   if (sucesso) {
     return (
-      <View style={styles.successContainer}>
-        <FontAwesome name="check-circle" size={80} color="#CDFE00" style={{ marginBottom: 20 }} />
-        <Text style={styles.successTitle}>Muito Obrigado!</Text>
-        <Text style={styles.successText}>
+      <View style={[styles.successContainer, { backgroundColor: colors.background }]}>
+        <FontAwesome name="check-circle" size={80} color={colors.accent} style={{ marginBottom: 20 }} />
+        <Text style={[styles.successTitle, { color: colors.textPrimary }]}>Muito Obrigado!</Text>
+        <Text style={[styles.successText, { color: colors.textSecondary }]}>
           Seus feedbacks foram enviados com sucesso e nos ajudarão a criar uma plataforma incrível.
         </Text>
-        <TouchableOpacity style={styles.buttonContinueDark} onPress={() => router.replace('/')}>
-          <Text style={styles.buttonTextBlack}>Voltar ao App</Text>
+        <TouchableOpacity style={[styles.buttonContinueDark, { backgroundColor: colors.accent }]} onPress={() => router.replace('/')}>
+          <Text style={[styles.buttonTextBlack, { color: isDark ? '#111827' : '#FFFFFF' }]}>Voltar ao App</Text>
         </TouchableOpacity>
       </View>
     );
@@ -457,80 +459,80 @@ export default function PesquisaWizardScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={styles.mainContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.mainContainer, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
         
-        <View style={styles.glowBg} />
+        <View style={[styles.glowBg, { backgroundColor: colors.accent + '10' }]} />
 
-        <View style={styles.cardContainer}>
+        <View style={[styles.cardContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
           <View style={styles.headerLogoRow}>
-            <BrandLogo compact={true} size={36} color="#CDFE00" />
-            <Text style={styles.logoText}>TECHCONNECT</Text>
+            <BrandLogo compact={true} size={36} color={colors.accent} />
+            <Text style={[styles.logoText, { color: colors.textSecondary }]}>TECHCONNECT</Text>
           </View>
 
           {!iniciado ? (
             <View>
-              <Text style={styles.introTitle}>Avaliação de Experiência do Usuário</Text>
-              <Text style={styles.introDesc}>
+              <Text style={[styles.introTitle, { color: colors.textPrimary }]}>Avaliação de Experiência do Usuário</Text>
+              <Text style={[styles.introDesc, { color: colors.textSecondary }]}>
                 Você foi convidado a testar um aplicativo em fase de validação. Responda com base na sua experiência real de uso, sem certo ou errado.
               </Text>
 
               <View style={styles.tagsRow}>
                 {["10 perguntas", "4 minutos", "Anônimo"].map(tag => (
-                  <View key={tag} style={styles.tagBadge}>
-                    <Text style={styles.tagBadgeText}>{tag}</Text>
+                  <View key={tag} style={[styles.tagBadge, { borderColor: colors.border }]}>
+                    <Text style={[styles.tagBadgeText, { color: colors.textSecondary }]}>{tag}</Text>
                   </View>
                 ))}
               </View>
 
-              <View style={styles.instructionsBoxDark}>
-                <Text style={styles.instLabel}>ANTES DE RESPONDER</Text>
+              <View style={[styles.instructionsBoxDark, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Text style={[styles.instLabel, { color: colors.accent }]}>ANTES DE RESPONDER</Text>
                 
                 <View style={styles.stepRow}>
-                  <View style={styles.stepIconBox}><FontAwesome name="search" size={14} color="#CDFE00" /></View>
-                  <Text style={styles.stepText}>Acesse o app pelo link abaixo</Text>
+                  <View style={[styles.stepIconBox, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '30' }]}><FontAwesome name="search" size={14} color={colors.accent} /></View>
+                  <Text style={[styles.stepText, { color: colors.textPrimary }]}>Acesse o app pelo link abaixo</Text>
                 </View>
                 <View style={styles.stepRow}>
-                   <View style={styles.stepIconBox}><FontAwesome name="user-plus" size={14} color="#CDFE00" /></View>
-                   <Text style={styles.stepText}>Crie uma conta gratuita</Text>
+                   <View style={[styles.stepIconBox, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '30' }]}><FontAwesome name="user-plus" size={14} color={colors.accent} /></View>
+                   <Text style={[styles.stepText, { color: colors.textPrimary }]}>Crie uma conta gratuita</Text>
                 </View>
                 <View style={styles.stepRow}>
-                   <View style={styles.stepIconBox}><FontAwesome name="filter" size={14} color="#CDFE00" /></View>
-                   <Text style={styles.stepText}>Use a busca e aplique os filtros disponíveis</Text>
+                   <View style={[styles.stepIconBox, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '30' }]}><FontAwesome name="filter" size={14} color={colors.accent} /></View>
+                   <Text style={[styles.stepText, { color: colors.textPrimary }]}>Use a busca e aplique os filtros disponíveis</Text>
                 </View>
                 <View style={styles.stepRow}>
-                   <View style={styles.stepIconBox}><FontAwesome name="heart-o" size={14} color="#CDFE00" /></View>
-                   <Text style={styles.stepText}>Salve ao menos uma vaga como favorita</Text>
+                   <View style={[styles.stepIconBox, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '30' }]}><FontAwesome name="heart-o" size={14} color={colors.accent} /></View>
+                   <Text style={[styles.stepText, { color: colors.textPrimary }]}>Salve ao menos uma vaga como favorita</Text>
                 </View>
                 <View style={styles.stepRow}>
-                   <View style={styles.stepIconBox}><FontAwesome name="check-square-o" size={14} color="#CDFE00" /></View>
-                   <Text style={styles.stepText}>Volte aqui e responda as perguntas</Text>
+                   <View style={[styles.stepIconBox, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '30' }]}><FontAwesome name="check-square-o" size={14} color={colors.accent} /></View>
+                   <Text style={[styles.stepText, { color: colors.textPrimary }]}>Volte aqui e responda as perguntas</Text>
                 </View>
               </View>
 
-              <TouchableOpacity style={styles.testAppBtnDark} onPress={handleTestarApp}>
+              <TouchableOpacity style={[styles.testAppBtnDark, { backgroundColor: colors.accent + '10', borderColor: colors.accent + '40' }]} onPress={handleTestarApp}>
                  <View>
-                   <Text style={styles.testAppLabel}>ACESSAR O APP</Text>
-                   <Text style={styles.testAppUrl}>TechConnect App</Text>
+                   <Text style={[styles.testAppLabel, { color: colors.accent }]}>ACESSAR O APP</Text>
+                   <Text style={[styles.testAppUrl, { color: colors.textPrimary }]}>TechConnect App</Text>
                  </View>
-                 <FontAwesome name="external-link" size={20} color="#CDFE00" />
+                 <FontAwesome name="external-link" size={20} color={colors.accent} />
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.buttonContinueDark} onPress={iniciarAvaliacao}>
-                <Text style={styles.buttonTextBlack}>Já explorei o app, quero responder →</Text>
+              <TouchableOpacity style={[styles.buttonContinueDark, { backgroundColor: colors.accent }]} onPress={iniciarAvaliacao}>
+                <Text style={[styles.buttonTextBlack, { color: isDark ? '#111827' : '#FFFFFF' }]}>Já explorei o app, quero responder →</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View>
-              <View style={styles.progressBarWrapper}>
-                <View style={[styles.progressBarFillDark, { width: `${progress}%` }]} />
+              <View style={[styles.progressBarWrapper, { backgroundColor: colors.border }]}>
+                <View style={[styles.progressBarFillDark, { width: `${progress}%`, backgroundColor: colors.accent }]} />
               </View>
               
               <Animated.View style={{ opacity: fadeAnim }}>
-                <View style={styles.tagWrapperDark}>
-                  <Text style={styles.tagTextDark}>{currentQ.tag}</Text>
+                <View style={[styles.tagWrapperDark, { backgroundColor: colors.accent + '20' }]}>
+                  <Text style={[styles.tagTextDark, { color: colors.accent }]}>{currentQ.tag}</Text>
                 </View>
-                <Text style={styles.qTitleDark}>{currentQ.title}</Text>
-                <Text style={styles.qSubtitleDark}>{currentQ.subtitle}</Text>
+                <Text style={[styles.qTitleDark, { color: colors.textPrimary }]}>{currentQ.title}</Text>
+                <Text style={[styles.qSubtitleDark, { color: colors.textSecondary }]}>{currentQ.subtitle}</Text>
 
                 <View style={{ marginTop: 24, marginBottom: 32 }}>
                   {currentQ.type === 'multi' && renderMulti()}
@@ -541,18 +543,18 @@ export default function PesquisaWizardScreen() {
               </Animated.View>
 
               <View style={styles.footerRow}>
-                <TouchableOpacity style={styles.buttonBackDark} onPress={handleBack}>
-                  <Text style={styles.buttonTextGray}>← Voltar</Text>
+                <TouchableOpacity style={[styles.buttonBackDark, { borderColor: colors.border }]} onPress={handleBack}>
+                  <Text style={[styles.buttonTextGray, { color: colors.textSecondary }]}>← Voltar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={[styles.buttonContinueDark, { flex: 2 }, !checkPodeContinuar() && styles.buttonDisabledDark]} 
+                  style={[styles.buttonContinueDark, { flex: 2, backgroundColor: colors.accent }, !checkPodeContinuar() && { backgroundColor: colors.border, opacity: 0.5 }]} 
                   onPress={handleNext}
                   disabled={!checkPodeContinuar() || enviando}
                 >
                   {enviando ? (
-                    <ActivityIndicator color="#111827" />
+                    <ActivityIndicator color={isDark ? "#111827" : "#FFFFFF"} />
                   ) : (
-                    <Text style={[styles.buttonTextBlack, !checkPodeContinuar() && { color: '#9CA3AF' }]}>
+                    <Text style={[styles.buttonTextBlack, { color: isDark ? '#111827' : '#FFFFFF' }, !checkPodeContinuar() && { color: colors.textSecondary }]}>
                       {currentStep === totalSteps - 1 ? 'Enviar avaliação ✓' : 'Próxima →'}
                     </Text>
                   )}
@@ -562,93 +564,84 @@ export default function PesquisaWizardScreen() {
           )}
 
         </View>
-        <Text style={styles.footerInfo}>PROJETO DE EXTENSÃO UNIVERSITÁRIA · 2026</Text>
+        <Text style={[styles.footerInfo, { color: colors.textSecondary }]}>PROJETO DE EXTENSÃO UNIVERSITÁRIA · 2026</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flexGrow: 1, backgroundColor: '#111827', padding: 20, paddingTop: 40, paddingBottom: 60, alignItems: 'center' },
-  glowBg: { position: 'absolute', top: 0, width: 600, height: 300, borderRadius: 300, backgroundColor: 'rgba(205,254,0,0.08)' },
-  cardContainer: { width: '100%', maxWidth: 560, backgroundColor: '#1F2937', borderRadius: 20, borderWidth: 1.5, borderColor: '#374151', padding: 32, zIndex: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 10 },
+  mainContainer: { flexGrow: 1, padding: 20, paddingTop: 40, paddingBottom: 60, alignItems: 'center' },
+  glowBg: { position: 'absolute', top: 0, width: 600, height: 300, borderRadius: 300 },
+  cardContainer: { width: '100%', maxWidth: 560, borderRadius: 20, borderWidth: 1.5, padding: 32, zIndex: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 5 },
   
   headerLogoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 32 },
-  logoBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#CDFE00', justifyContent: 'center', alignItems: 'center' },
-  logoLetter: { color: '#111827', fontSize: 16, fontWeight: '900' },
-  logoText: { color: '#9CA3AF', fontSize: 13, letterSpacing: 1.5, fontWeight: '700' },
+  logoBox: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  logoLetter: { fontSize: 16, fontWeight: '900' },
+  logoText: { fontSize: 13, letterSpacing: 1.5, fontWeight: '700' },
 
-  introTitle: { fontSize: 26, fontWeight: '700', color: '#FFFFFF', marginBottom: 10, lineHeight: 34 },
-  introDesc: { fontSize: 14, color: '#9CA3AF', lineHeight: 24, marginBottom: 28 },
+  introTitle: { fontSize: 26, fontWeight: '700', marginBottom: 10, lineHeight: 34 },
+  introDesc: { fontSize: 14, lineHeight: 24, marginBottom: 28 },
   
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 32 },
-  tagBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 99, borderWidth: 1, borderColor: '#374151' },
-  tagBadgeText: { fontSize: 11, color: '#9CA3AF', letterSpacing: 0.8, fontWeight: '700' },
+  tagBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 99, borderWidth: 1 },
+  tagBadgeText: { fontSize: 11, letterSpacing: 0.8, fontWeight: '700' },
 
-  instructionsBoxDark: { backgroundColor: '#111827', borderWidth: 1.5, borderColor: '#374151', borderRadius: 16, padding: 24, marginBottom: 28 },
-  instLabel: { fontSize: 11, color: '#CDFE00', letterSpacing: 1, fontWeight: '700', marginBottom: 16 },
+  instructionsBoxDark: { borderWidth: 1.5, borderRadius: 16, padding: 24, marginBottom: 28 },
+  instLabel: { fontSize: 11, letterSpacing: 1, fontWeight: '700', marginBottom: 16 },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
-  stepIconBox: { width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(205,254,0,0.1)', borderWidth: 1, borderColor: 'rgba(205,254,0,0.2)', justifyContent: 'center', alignItems: 'center' },
-  stepText: { fontSize: 13, color: '#D1D5DB', lineHeight: 20, flex: 1 },
-  stepNum: { color: '#9CA3AF', fontWeight: '700', fontSize: 11 },
+  stepIconBox: { width: 32, height: 32, borderRadius: 8, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
+  stepText: { fontSize: 13, lineHeight: 20, flex: 1 },
+  stepNum: { fontWeight: '700', fontSize: 11 },
 
-  testAppBtnDark: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderRadius: 14, backgroundColor: 'rgba(205,254,0,0.08)', borderWidth: 1.5, borderColor: 'rgba(205,254,0,0.3)', marginBottom: 24 },
-  testAppLabel: { fontSize: 11, color: '#CDFE00', letterSpacing: 0.8, fontWeight: '700', marginBottom: 4 },
-  testAppUrl: { fontSize: 14, color: '#FFFFFF', fontWeight: '600' },
+  testAppBtnDark: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderRadius: 14, borderWidth: 1.5, marginBottom: 24 },
+  testAppLabel: { fontSize: 11, letterSpacing: 0.8, fontWeight: '700', marginBottom: 4 },
+  testAppUrl: { fontSize: 14, fontWeight: '600' },
 
-  buttonContinueDark: { width: '100%', padding: 16, borderRadius: 12, backgroundColor: '#CDFE00', alignItems: 'center', justifyContent: 'center' },
-  buttonTextBlack: { color: '#111827', fontSize: 15, fontWeight: '800', letterSpacing: 0.5 },
+  buttonContinueDark: { width: '100%', padding: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  buttonTextBlack: { fontSize: 15, fontWeight: '800', letterSpacing: 0.5 },
   
-  footerInfo: { textAlign: 'center', fontSize: 11, color: '#4B5563', marginTop: 24, fontWeight: '700', letterSpacing: 0.5 },
+  footerInfo: { textAlign: 'center', fontSize: 11, marginTop: 24, fontWeight: '700', letterSpacing: 0.5 },
 
   /* WIZARD STYLES */
-  progressBarWrapper: { height: 4, backgroundColor: '#374151', borderRadius: 2, marginBottom: 32 },
-  progressBarFillDark: { height: '100%', backgroundColor: '#CDFE00', borderRadius: 2 },
+  progressBarWrapper: { height: 4, borderRadius: 2, marginBottom: 32 },
+  progressBarFillDark: { height: '100%', borderRadius: 2 },
   
-  tagWrapperDark: { backgroundColor: 'rgba(205,254,0,0.15)', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 16 },
-  tagTextDark: { color: '#CDFE00', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-  qTitleDark: { fontSize: 22, fontWeight: '700', color: '#FFFFFF', marginBottom: 8, lineHeight: 30 },
-  qSubtitleDark: { fontSize: 14, color: '#9CA3AF', lineHeight: 22 },
+  tagWrapperDark: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 16 },
+  tagTextDark: { fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  qTitleDark: { fontSize: 22, fontWeight: '700', marginBottom: 8, lineHeight: 30 },
+  qSubtitleDark: { fontSize: 14, lineHeight: 22 },
 
   optionsContainer: { gap: 12 },
-  boxOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111827', padding: 16, borderRadius: 14, borderWidth: 1.5, borderColor: '#374151' },
-  boxOptionSelected: { borderColor: '#CDFE00', backgroundColor: 'rgba(205,254,0,0.08)' },
-  radioCircle: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#4B5563', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  radioCircleSelected: { borderColor: '#CDFE00' },
-  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#CDFE00' },
+  boxOption: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 14, borderWidth: 1.5 },
+  radioCircle: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  radioDot: { width: 10, height: 10, borderRadius: 5 },
   emojiText: { fontSize: 20, marginRight: 12 },
-  boxOptionLabel: { flex: 1, fontSize: 15, color: '#D1D5DB', fontWeight: '500' },
-  boxOptionLabelSelected: { color: '#FFFFFF', fontWeight: '700' },
+  boxOptionLabel: { flex: 1, fontSize: 15, fontWeight: '500' },
 
-  inputSectionLabel: { fontSize: 13, fontWeight: '700', color: '#9CA3AF', marginBottom: 12, marginTop: 24 },
+  inputSectionLabel: { fontSize: 13, fontWeight: '700', marginBottom: 12, marginTop: 24 },
   scaleRow: { flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
-  scaleBox: { flex: 1, aspectRatio: 1, backgroundColor: '#111827', borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#374151' },
-  scaleBoxSelected: { backgroundColor: '#CDFE00', borderColor: '#CDFE00' },
-  scaleText: { fontSize: 16, fontWeight: '700', color: '#9CA3AF' },
-  scaleTextSelected: { color: '#111827' },
+  scaleBox: { flex: 1, aspectRatio: 1, borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5 },
+  scaleText: { fontSize: 16, fontWeight: '700' },
   scaleLabelsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  scaleLabelLimit: { fontSize: 11, color: '#6B7280', fontWeight: '500' },
+  scaleLabelLimit: { fontSize: 11, fontWeight: '500' },
 
   reasonsFadeIn: { marginTop: 16 },
   chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  chip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, backgroundColor: '#111827', borderWidth: 1, borderColor: '#374151' },
-  chipSelected: { backgroundColor: 'rgba(205,254,0,0.15)', borderColor: '#CDFE00' },
-  chipText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
-  chipTextSelected: { color: '#CDFE00', fontWeight: '700' },
+  chip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, borderWidth: 1 },
+  chipText: { fontSize: 13, fontWeight: '500' },
 
-  textInputArea: { backgroundColor: '#111827', borderWidth: 1.5, borderColor: '#374151', borderRadius: 14, padding: 16, paddingTop: 16, marginTop: 20, minHeight: 100, fontSize: 15, color: '#FFFFFF', textAlignVertical: 'top' },
+  textInputArea: { borderWidth: 1.5, borderRadius: 14, padding: 16, paddingTop: 16, marginTop: 20, minHeight: 100, fontSize: 15, textAlignVertical: 'top' },
 
   npsRow: { flexDirection: 'row', gap: 4, justifyContent: 'space-between', flexWrap: 'wrap' },
-  npsBox: { width: '8%', minWidth: 30, aspectRatio: 1, borderRadius: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#374151' },
-  npsBoxSelected: { borderWidth: 2, borderColor: '#FFFFFF' },
-  npsText: { fontSize: 13, fontWeight: '700', color: '#9CA3AF' },
+  npsBox: { width: '8%', minWidth: 30, aspectRatio: 1, borderRadius: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+  npsText: { fontSize: 13, fontWeight: '700' },
 
   footerRow: { flexDirection: 'row', gap: 12 },
-  buttonBackDark: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1.5, borderColor: '#374151', alignItems: 'center', justifyContent: 'center' },
-  buttonTextGray: { color: '#9CA3AF', fontSize: 14, fontWeight: '600' },
-  buttonDisabledDark: { backgroundColor: '#374151', opacity: 0.5 },
+  buttonBackDark: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  buttonTextGray: { fontSize: 14, fontWeight: '600' },
 
-  successContainer: { flex: 1, backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  successTitle: { fontSize: 32, fontWeight: '800', color: '#FFFFFF', marginBottom: 12 },
-  successText: { fontSize: 15, color: '#D1D5DB', textAlign: 'center', lineHeight: 24, marginBottom: 40, maxWidth: 400 },
+  successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  successTitle: { fontSize: 32, fontWeight: '800', marginBottom: 12 },
+  successText: { fontSize: 15, textAlign: 'center', lineHeight: 24, marginBottom: 40, maxWidth: 400 },
 });

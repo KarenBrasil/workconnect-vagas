@@ -33,6 +33,17 @@ export const lightColors = {
   // Navigation
   tabActive: '#7AE04A',
   tabInactive: '#AFAFBF',
+
+  // Aliases for compatibility
+  bg: '#F4F4F7',
+  surface: '#FFFFFF',
+  textMain: '#111111',
+  textLight: '#FFFFFF',
+  accent: '#7C3AED',
+  error: '#EF4444',
+  warning: '#F59E0B',
+  white: '#FFFFFF',
+  black: '#000000',
 };
 
 export const darkColors = {
@@ -60,6 +71,17 @@ export const darkColors = {
 
   tabActive: '#7AE04A',
   tabInactive: '#475569',
+
+  // Aliases for compatibility
+  bg: '#0F172A',
+  surface: '#1E293B',
+  textMain: '#F8FAFC',
+  textLight: '#FFFFFF',
+  accent: '#A78BFA',
+  error: '#F87171',
+  warning: '#FBBF24',
+  white: '#FFFFFF',
+  black: '#000000',
 };
 
 export type ThemeColors = typeof lightColors;

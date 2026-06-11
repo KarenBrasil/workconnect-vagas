@@ -1,19 +1,21 @@
 import { View, Text, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { IlluOnboarding } from '../assets/illustrations';
-import { PrimaryButton, OutlineButton, COLORS } from '../components/ui';
+import { PrimaryButton, OutlineButton } from '../components/ui';
 import { BrandLogo } from '../components/BrandLogo';
+import { useTheme } from '../src/theme/ThemeContext';
 
 export default function Index() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
 
   return (
-    <View style={styles.container}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Logo Topo */}
       <View style={{ marginTop: 20, marginBottom: 30, alignItems: 'center' }}>
-        <BrandLogo />
+        <BrandLogo color={colors.textPrimary} />
       </View>
 
       {/* Ilustração */}
@@ -24,19 +26,19 @@ export default function Index() {
       {/* Conteúdo inferior */}
       <View style={styles.bottomContent}>
         <View style={styles.textWrapper}>
-          <Text style={styles.title}>
-            Sua porta de entrada para o <Text style={styles.highlight}>sucesso</Text>.
+          <Text style={[styles.title, { color: colors.textPrimary }]}>
+            Sua porta de entrada para o <Text style={{ color: colors.primary }}>sucesso</Text>.
           </Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Conectamos você com as melhores oportunidades de trabalho ao redor do mundo.
           </Text>
         </View>
 
         {/* Paginação */}
         <View style={styles.pagination}>
-          <View style={[styles.dot, styles.dotActive]} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
+          <View style={[styles.dot, styles.dotActive, { backgroundColor: colors.primary }]} />
+          <View style={[styles.dot, { backgroundColor: isDark ? colors.border : '#E0E0E0' }]} />
+          <View style={[styles.dot, { backgroundColor: isDark ? colors.border : '#E0E0E0' }]} />
         </View>
 
         {/* Botões */}
@@ -49,7 +51,7 @@ export default function Index() {
             style={styles.ghostButton}
             onPress={() => router.push('/login')}
           >
-            <Text style={styles.ghostButtonText}>Já tenho uma conta</Text>
+            <Text style={[styles.ghostButtonText, { color: colors.textPrimary }]}>Já tenho uma conta</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -102,7 +104,6 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   title: {
-    color: '#111111',
     fontSize: 28,
     fontWeight: '800',
     fontFamily: 'DMSans_800ExtraBold',
@@ -110,11 +111,7 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     marginBottom: 12,
   },
-  highlight: {
-    color: COLORS.primary,
-  },
   subtitle: {
-    color: COLORS.textSecondary,
     fontSize: 15,
     fontFamily: 'DMSans_500Medium',
     textAlign: 'center',
@@ -131,11 +128,9 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#E0E0E0',
   },
   dotActive: {
     width: 24,
-    backgroundColor: COLORS.primary,
   },
   actions: {
     gap: 16,
@@ -149,7 +144,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   ghostButtonText: {
-    color: '#111111',
     fontSize: 15,
     fontWeight: '600',
     fontFamily: 'DMSans_600SemiBold',

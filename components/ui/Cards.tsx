@@ -1,14 +1,12 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, ViewStyle, TextInputProps } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import COLORS from './Colors';
+import { useTheme } from '../../src/theme/ThemeContext';
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.surface,
     borderRadius: 18,
     padding: 14,
-    shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
@@ -20,7 +18,6 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.04,
     marginBottom: 8,
@@ -28,9 +25,7 @@ const styles = StyleSheet.create({
   inputField: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9F9FC',
     borderWidth: 1.5,
-    borderColor: COLORS.border,
     borderRadius: 12,
   },
   inputIcon: {
@@ -42,7 +37,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     fontSize: 14,
-    color: COLORS.textMain,
   },
 });
 
@@ -52,11 +46,13 @@ export const Card = ({
 }: {
   children: React.ReactNode;
   style?: ViewStyle;
-}) => (
-  <View style={[styles.card, style]}>
+}) => {
+  const { colors } = useTheme();
+  return (
+  <View style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.black }, style]}>
     {children}
   </View>
-);
+)};
 
 export const TextInputField = ({
   placeholder,
@@ -75,15 +71,17 @@ export const TextInputField = ({
   secureTextEntry?: boolean;
   label?: string;
   style?: ViewStyle;
-} & TextInputProps) => (
+} & TextInputProps) => {
+  const { colors, isDark } = useTheme();
+  return (
   <View style={[styles.inputContainer, style]}>
-    {label && <Text style={styles.inputLabel}>{label}</Text>}
-    <View style={styles.inputField}>
+    {label && <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{label}</Text>}
+    <View style={[styles.inputField, { backgroundColor: isDark ? colors.background : '#F9F9FC', borderColor: colors.border }]}>
       {icon && (
         <MaterialIcons
           name={icon as any}
           size={16}
-          color={COLORS.textSecondary}
+          color={colors.textSecondary}
           style={styles.inputIcon}
         />
       )}
@@ -92,10 +90,10 @@ export const TextInputField = ({
         value={value}
         onChangeText={onChangeText}
         secureTextEntry={secureTextEntry}
-        style={[styles.input, { paddingLeft: icon ? 40 : 14 }]}
-        placeholderTextColor={COLORS.textSecondary}
+        style={[styles.input, { paddingLeft: icon ? 40 : 14, color: colors.textMain }]}
+        placeholderTextColor={colors.textSecondary}
         {...props}
       />
     </View>
   </View>
-);
+)};

@@ -18,6 +18,7 @@ import { auth, db } from '../src/services/firebaseConfig';
 import { MaterialIcons } from '@expo/vector-icons';
 import { PrimaryButton, TextInputField, COLORS } from '../components/ui';
 import { IlluOnboarding } from '../assets/illustrations';
+import { useTheme } from '../src/theme/ThemeContext';
 
 export default function Register() {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { colors, isDark } = useTheme();
 
   const handleRegister = async () => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -81,8 +83,8 @@ export default function Register() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.surface} />
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -96,8 +98,8 @@ export default function Register() {
 
           {/* Content */}
           <View style={styles.content}>
-            <Text style={styles.title}>Criar Conta 🎉</Text>
-            <Text style={styles.subtitle}>Junte-se a milhares de profissionais em busca de oportunidades.</Text>
+            <Text style={[styles.title, { color: colors.textMain }]}>Criar Conta 🎉</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Junte-se a milhares de profissionais em busca de oportunidades.</Text>
 
             {/* Form */}
             <View style={styles.formContainer}>
@@ -135,7 +137,7 @@ export default function Register() {
                   <MaterialIcons
                     name={showPassword ? 'visibility' : 'visibility-off'}
                     size={18}
-                    color={COLORS.accent}
+                    color={colors.accent}
                   />
                 </TouchableOpacity>
               </View>
@@ -147,13 +149,13 @@ export default function Register() {
               onPress={handleRegister}
               disabled={loading}
             />
-            {loading && <ActivityIndicator color={COLORS.primary} size="large" style={styles.loader} />}
+            {loading && <ActivityIndicator color={colors.primary} size="large" style={styles.loader} />}
 
             {/* Login Link */}
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Já tem uma conta? </Text>
+              <Text style={[styles.footerText, { color: colors.textSecondary }]}>Já tem uma conta? </Text>
               <TouchableOpacity onPress={() => router.push('/login')}>
-                <Text style={styles.loginText}>Entre aqui</Text>
+                <Text style={[styles.loginText, { color: colors.accent }]}>Entre aqui</Text>
               </TouchableOpacity>
             </View>
           </View>

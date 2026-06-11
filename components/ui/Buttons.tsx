@@ -1,17 +1,15 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import COLORS from './Colors';
+import { useTheme } from '../../src/theme/ThemeContext';
 
 const styles = StyleSheet.create({
   primaryButton: {
-    backgroundColor: COLORS.primary,
     borderRadius: 100,
     paddingVertical: 15,
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -20,12 +18,10 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 15,
     fontWeight: '700',
-    color: COLORS.primaryDark,
   },
   outlineButton: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: COLORS.border,
     borderRadius: 100,
     paddingVertical: 15,
     paddingHorizontal: 20,
@@ -35,12 +31,10 @@ const styles = StyleSheet.create({
   outlineButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.textMain,
   },
   googleButton: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: COLORS.border,
     borderRadius: 100,
     paddingVertical: 15,
     paddingHorizontal: 20,
@@ -51,7 +45,6 @@ const styles = StyleSheet.create({
   googleButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.textMain,
     marginLeft: 8,
   },
 });
@@ -68,19 +61,26 @@ export const PrimaryButton = ({
   style?: ViewStyle;
   disabled?: boolean;
   icon?: keyof typeof MaterialIcons.glyphMap;
-}) => (
+}) => {
+  const { colors } = useTheme();
+  return (
   <TouchableOpacity
-    style={[styles.primaryButton, style, disabled && { opacity: 0.5 }]}
+    style={[
+      styles.primaryButton, 
+      { backgroundColor: colors.primary, shadowColor: colors.primary },
+      style, 
+      disabled && { opacity: 0.5 }
+    ]}
     onPress={onPress}
     disabled={disabled}
     activeOpacity={0.8}
   >
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-      {icon && <MaterialIcons name={icon} size={18} color={COLORS.primaryDark} style={{ marginRight: 8 }} />}
-      <Text style={styles.primaryButtonText}>{label}</Text>
+      {icon && <MaterialIcons name={icon} size={18} color={colors.primaryDark} style={{ marginRight: 8 }} />}
+      <Text style={[styles.primaryButtonText, { color: colors.primaryDark }]}>{label}</Text>
     </View>
   </TouchableOpacity>
-);
+)};
 
 export const OutlineButton = ({
   label,
@@ -92,30 +92,34 @@ export const OutlineButton = ({
   onPress: () => void;
   style?: ViewStyle;
   icon?: keyof typeof MaterialIcons.glyphMap;
-}) => (
+}) => {
+  const { colors } = useTheme();
+  return (
   <TouchableOpacity
-    style={[styles.outlineButton, style]}
+    style={[styles.outlineButton, { borderColor: colors.border }, style]}
     onPress={onPress}
     activeOpacity={0.8}
   >
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-      {icon && <MaterialIcons name={icon} size={18} color={COLORS.textMain} style={{ marginRight: 8 }} />}
-      <Text style={styles.outlineButtonText}>{label}</Text>
+      {icon && <MaterialIcons name={icon} size={18} color={colors.textMain} style={{ marginRight: 8 }} />}
+      <Text style={[styles.outlineButtonText, { color: colors.textMain }]}>{label}</Text>
     </View>
   </TouchableOpacity>
-);
+)};
 
 export const GoogleButton = ({
   onPress,
 }: {
   onPress: () => void;
-}) => (
+}) => {
+  const { colors } = useTheme();
+  return (
   <TouchableOpacity
-    style={styles.googleButton}
+    style={[styles.googleButton, { borderColor: colors.border }]}
     onPress={onPress}
     activeOpacity={0.8}
   >
-    <MaterialIcons name="language" size={18} color={COLORS.textMain} />
-    <Text style={styles.googleButtonText}>Entrar com Google</Text>
+    <MaterialIcons name="language" size={18} color={colors.textMain} />
+    <Text style={[styles.googleButtonText, { color: colors.textMain }]}>Entrar com Google</Text>
   </TouchableOpacity>
-);
+)};

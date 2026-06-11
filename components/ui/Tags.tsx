@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import COLORS from './Colors';
+import { useTheme } from '../../src/theme/ThemeContext';
 
 const styles = StyleSheet.create({
   tag: {
@@ -16,20 +16,16 @@ const styles = StyleSheet.create({
   chip: {
     borderRadius: 100,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: COLORS.surface,
     marginRight: 8,
     marginBottom: 8,
   },
   chipText: {
     fontSize: 12.5,
     fontWeight: '600',
-    color: COLORS.textSecondary,
   },
   chipActiveText: {
-    color: COLORS.primaryDark,
     fontWeight: '700',
   },
 });
@@ -47,7 +43,17 @@ export const Tag = ({
   label: string;
   variant?: 'green' | 'purple' | 'gray';
 }) => {
-  const colors = TAG_COLORS[variant];
+  const { isDark, colors: themeColors } = useTheme();
+  
+  // Adapt tag colors for dark mode
+  const getTagColors = () => {
+    if (variant === 'green') return { bg: isDark ? 'rgba(30, 94, 6, 0.2)' : '#EDFBE3', text: isDark ? '#4ADE80' : '#1E5E06' };
+    if (variant === 'purple') return { bg: isDark ? 'rgba(124, 58, 237, 0.2)' : '#EDE9FE', text: isDark ? '#A78BFA' : '#7C3AED' };
+    return { bg: isDark ? 'rgba(85, 85, 102, 0.2)' : '#F0F0F5', text: isDark ? '#94A3B8' : '#555566' };
+  };
+  
+  const colors = getTagColors();
+
   return (
     <View style={[styles.tag, { backgroundColor: colors.bg }]}>
       <Text style={[styles.tagText, { color: colors.text }]}>{label}</Text>
@@ -63,20 +69,23 @@ export const FilterChip = ({
   label: string;
   active: boolean;
   onPress: () => void;
-}) => (
+}) => {
+  const { colors, isDark } = useTheme();
+  return (
   <TouchableOpacity
     style={[
       styles.chip,
+      { backgroundColor: colors.surface, borderColor: colors.border },
       active && {
-        backgroundColor: COLORS.primary,
-        borderColor: COLORS.primary,
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
       },
     ]}
     onPress={onPress}
     activeOpacity={0.7}
   >
-    <Text style={[styles.chipText, active && styles.chipActiveText]}>
+    <Text style={[styles.chipText, { color: active ? colors.primaryDark : colors.textSecondary }, active && styles.chipActiveText]}>
       {label}
     </Text>
   </TouchableOpacity>
-);
+)};
