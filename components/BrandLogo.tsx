@@ -17,8 +17,8 @@ export function BrandLogo({ compact = false, color, size }: BrandLogoProps) {
   return (
     <View style={styles.container}>
       <Svg width={finalSize} height={finalSize} viewBox="0 0 100 100">
-        <Rect x="25" y="28" width="55" height="12" fill={symbolColor} />
-        <Path d="M35 46 h45 v12 h-25 q-8 0 -8 8 v24 h-12 z" fill={symbolColor} />
+        <Rect x="20" y="28" width="60" height="12" fill={symbolColor} />
+        <Path d="M 44 46 v 20 a 16 16 0 0 0 16 16 h 20 v -12 h -20 a 4 4 0 0 1 -4 -4 v -20 Z" fill={symbolColor} />
       </Svg>
       {!compact && (
         <Text style={[styles.logoText, { color: colors.textPrimary }]}>
