@@ -12,6 +12,7 @@ import {
   Alert,
   Animated,
   Image,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -25,7 +26,7 @@ import {
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../src/services/firebaseConfig';
 import { MaterialIcons } from '@expo/vector-icons';
-import { PrimaryButton, GoogleButton, TextInputField, COLORS } from '../components/ui';
+import { COLORS } from '../components/ui';
 import { IlluLogin } from '../assets/illustrations';
 
 export default function Login() {
@@ -161,28 +162,38 @@ export default function Login() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          {/* Illustration Animada */}
-          <Animated.View style={[styles.illustrationContainer, { transform: [{ translateY: floatAnim }] }]}>
-            <IlluLogin width={260} height={220} />
-          </Animated.View>
-
           {/* Content */}
           <View style={styles.content}>
-            <Text style={styles.title}>Login</Text>
-            <Text style={styles.subtitle}>Conecte-se para continuar sua jornada.</Text>
-
             {errorMessage ? (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{errorMessage}</Text>
               </View>
             ) : null}
 
+            {/* Google Button */}
+            <TouchableOpacity 
+              style={styles.googleButtonOutline} 
+              onPress={handleGoogleLogin}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <Image 
+                source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1024px-Google_%22G%22_logo.svg.png' }} 
+                style={{ width: 22, height: 22, marginRight: 12, resizeMode: 'contain' }} 
+              />
+              <Text style={styles.googleButtonOutlineText}>Continuar com o Google</Text>
+            </TouchableOpacity>
+
+            <View style={styles.dividerContainer}>
+              <Text style={styles.dividerText}>ou</Text>
+            </View>
+
             {/* Form */}
             <View style={styles.formContainer}>
-              <TextInputField
-                label="E-mail"
-                placeholder="seu@email.com"
-                icon="mail"
+              <TextInput
+                style={styles.input}
+                placeholder="E-mail"
+                placeholderTextColor="#9E9E9E"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -190,10 +201,10 @@ export default function Login() {
               />
 
               <View style={styles.passwordContainer}>
-                <TextInputField
-                  label="Senha"
-                  placeholder="••••••••"
-                  icon="lock"
+                <TextInput
+                  style={[styles.input, { paddingRight: 50 }]}
+                  placeholder="Senha"
+                  placeholderTextColor="#9E9E9E"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -204,45 +215,30 @@ export default function Login() {
                 >
                   <MaterialIcons
                     name={showPassword ? 'visibility' : 'visibility-off'}
-                    size={18}
-                    color={COLORS.accent}
+                    size={20}
+                    color="#9E9E9E"
                   />
                 </TouchableOpacity>
               </View>
-
-              {/* Forgot Password Link */}
-              <TouchableOpacity onPress={() => router.push('/forgot-password')}>
-                <Text style={styles.forgotText}>Esqueceu a senha?</Text>
-              </TouchableOpacity>
             </View>
 
             {/* Login Button */}
-            <PrimaryButton
-              label={loading ? '' : 'Entrar'}
+            <TouchableOpacity 
+              style={styles.loginButton} 
               onPress={handleLogin}
               disabled={loading}
-            />
-            {loading && <ActivityIndicator color={COLORS.primary} size="large" style={styles.loader} />}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.loginButtonText}>Entrar</Text>
+              )}
+            </TouchableOpacity>
 
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>ou</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <View style={{ alignItems: 'center', marginTop: 8 }}>
-              <TouchableOpacity 
-                style={styles.googleIconBtn} 
-                onPress={handleGoogleLogin}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                <Image 
-                  source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png' }} 
-                  style={{ width: 28, height: 28, resizeMode: 'contain' }} 
-                />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity onPress={() => router.push('/forgot-password')} style={styles.forgotLink}>
+              <Text style={styles.forgotText}>Esqueceu a senha?</Text>
+            </TouchableOpacity>
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Não tem uma conta? </Text>
@@ -302,74 +298,85 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
-  formContainer: {
-    marginBottom: 24,
-    gap: 16,
+  input: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 30,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: '#000',
   },
   passwordContainer: {
     position: 'relative',
+    justifyContent: 'center',
   },
   eyeButton: {
     position: 'absolute',
-    right: 14,
-    top: '50%',
-    transform: [{ translateY: -9 }],
-    zIndex: 10,
+    right: 20,
   },
-  forgotText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.accent,
-    alignSelf: 'flex-end',
+  loginButton: {
+    backgroundColor: '#000',
+    borderRadius: 30,
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 8,
   },
-  loader: {
-    marginVertical: 16,
+  loginButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
-  googleIconBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
+  forgotLink: {
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    marginTop: 24,
   },
-  dividerContainer: {
+  forgotText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#757575',
+    textDecorationLine: 'underline',
+  },
+  googleButtonOutline: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+    paddingVertical: 14,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    marginTop: 40,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E0E0E0',
+  googleButtonOutlineText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  dividerContainer: {
+    alignItems: 'center',
+    marginVertical: 24,
   },
   dividerText: {
-    paddingHorizontal: 16,
     fontSize: 14,
-    color: '#9E9E9E',
+    color: '#757575',
     fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 32,
+    marginTop: 40,
     gap: 4,
   },
   footerText: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
   },
   registerText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: COLORS.accent,
+    color: '#333',
+    textDecorationLine: 'underline',
   },
 });
