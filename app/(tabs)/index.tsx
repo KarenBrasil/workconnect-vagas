@@ -105,17 +105,6 @@ export default function Home() {
           </View>
         </View>
 
-        {/* Search Bar */}
-        <TouchableOpacity
-          style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() => router.push('/search')}
-          activeOpacity={0.7}
-        >
-          <MaterialIcons name="search" size={18} color={colors.textSecondary} />
-          <Text style={[styles.searchPlaceholder, { color: colors.textSecondary }]}>Buscar vagas...</Text>
-          <MaterialIcons name="tune" size={18} color={colors.primary} />
-        </TouchableOpacity>
-
         {/* Featured Banner & Total */}
         <Card style={[styles.banner, { backgroundColor: colors.primary }]}>
           <View style={styles.bannerContent}>

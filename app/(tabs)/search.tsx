@@ -20,6 +20,7 @@ import { salvarFavorito, removerFavorito, buscarFavoritos } from '../../src/serv
 import { useRouter } from 'expo-router';
 import { COLORS, Card, Tag, FilterChip, TextInputField } from '../../components/ui';
 import { BrandLogo } from '../../components/BrandLogo';
+import { IlluSearch } from '../../assets/illustrations';
 import { useTheme } from '../../src/theme/ThemeContext';
 
 interface VagaInterna {
@@ -155,6 +156,9 @@ export default function SearchScreen() {
       {/* Header */}
       <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
         <BrandLogo />
+      </View>
+      <View style={{ alignItems: 'center', marginBottom: 10 }}>
+        <IlluSearch width={140} height={120} />
       </View>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.textMain }]}>Explorar Vagas</Text>

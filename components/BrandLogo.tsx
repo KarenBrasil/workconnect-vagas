@@ -11,7 +11,7 @@ type BrandLogoProps = {
 export function BrandLogo({ compact = false, color, size }: BrandLogoProps) {
   const { colors } = useTheme();
 
-  const finalSize = size || 24; 
+  const finalSize = size || 15;
   const symbolColor = color || colors.textPrimary; 
 
   return (
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   logoText: {
-    fontSize: 28, 
+    fontSize: 15, 
     fontWeight: '800',
     fontFamily: 'DMSans_800ExtraBold',
     letterSpacing: -0.5,
