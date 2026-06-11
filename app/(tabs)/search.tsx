@@ -156,26 +156,36 @@ export default function SearchScreen() {
         <IlluSearch width={110} height={100} style={{ marginLeft: 'auto' }} />
       </View>
 
-      {/* Search & Filter */}
-      <View style={styles.searchContainer}>
-        <TextInputField
-          placeholder="Ex: React, Designer, Remoto, Marketing..."
-          icon="search"
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-        <Text style={[styles.searchHint, { color: colors.textSecondary }]}>Dica: Pesquise por linguagens, cargos ou modelo de trabalho.</Text>
-      </View>
-
-      {/* Filter Button */}
+      {/* Search & Filter Row */}
       <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-        <TouchableOpacity 
-          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBackground, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}
-          onPress={() => setModalFiltrosVisible(true)}
-        >
-          <MaterialIcons name="filter-list" size={20} color={colors.textMain} style={{ marginRight: 8 }} />
-          <Text style={{ color: colors.textMain, fontWeight: 'bold' }}>Filtro Atual: {filtroAtivo}</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flex: 1 }}>
+            <TextInputField
+              placeholder="Ex: React, Designer, Remoto..."
+              icon="search"
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+          </View>
+          
+          <TouchableOpacity 
+            style={{ width: 48, height: 48, backgroundColor: colors.primary, borderRadius: 8, justifyContent: 'center', alignItems: 'center' }}
+            onPress={() => { /* Apenas feedback visual, busca já é realtime */ }}
+          >
+            <MaterialIcons name="check" size={24} color={isDark ? colors.background : COLORS.surface} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={{ width: 48, height: 48, backgroundColor: colors.cardBackground, borderRadius: 8, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center' }}
+            onPress={() => setModalFiltrosVisible(true)}
+          >
+            <MaterialIcons name="filter-list" size={24} color={colors.textMain} />
+            {filtroAtivo !== 'Todos' && (
+              <View style={{ position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent }} />
+            )}
+          </TouchableOpacity>
+        </View>
+        <Text style={[styles.searchHint, { color: colors.textSecondary, marginTop: 8 }]}>Dica: Pesquise por linguagens, cargos ou modelo.</Text>
       </View>
 
       <Modal
