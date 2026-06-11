@@ -109,6 +109,38 @@ const DICIONARIO_TITULOS: Record<string, string> = {
   'sales': 'Vendas',
   'software': 'Software',
   'product': 'Produto',
+  'backend': 'Backend',
+  'frontend': 'Frontend',
+  'fullstack': 'Full Stack',
+  'full-stack': 'Full Stack',
+  'full stack': 'Full Stack',
+  'lead': 'Líder',
+  'remote': 'Remoto',
+  'marketing': 'Marketing',
+  'analyst': 'Analista',
+  'specialist': 'Especialista',
+  'support': 'Suporte',
+  'architect': 'Arquiteto',
+};
+
+const DICIONARIO_DESCRICAO: Record<string, string> = {
+  'we are looking for': 'Estamos procurando por',
+  'experience': 'experiência',
+  'skills': 'Habilidades',
+  'requirements': 'Requisitos',
+  'about the role': 'Sobre a vaga',
+  'about the job': 'Sobre a vaga',
+  'responsibilities': 'Responsabilidades',
+  'you will': 'Você irá',
+  'working': 'trabalhando',
+  'team': 'equipe',
+  'company': 'empresa',
+  'join us': 'Junte-se a nós',
+  'benefits': 'Benefícios',
+  'what you will do': 'O que você vai fazer',
+  'who we are': 'Quem somos',
+  'about us': 'Sobre nós',
+  'what we offer': 'O que oferecemos',
 };
 
 export function traduzirTermoDaBusca(termo: string): string {
@@ -129,7 +161,12 @@ function traduzirEFormatarTitulo(titulo: string): string {
 
 function resumirDescricaoHTML(html: string): string {
   if (!html) return '';
-  const text = html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+  let text = html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+  
+  for (const [en, pt] of Object.entries(DICIONARIO_DESCRICAO)) {
+    text = text.replace(new RegExp(`\\b${en}\\b`, 'gi'), pt);
+  }
+
   if (text.length > 180) {
     return text.substring(0, 180) + '... \n\n📍 Veja os requisitos completos e candidate-se no site oficial da vaga.';
   }

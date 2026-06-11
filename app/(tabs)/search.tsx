@@ -33,7 +33,7 @@ interface VagaInterna {
   criadoEm: string;
 }
 
-const FILTROS = ['Todos', 'Remoto', 'Híbrido', 'PJ', 'CLT'];
+const FILTROS = ['Todos', 'Nacionais', 'Internacionais', 'Remoto', 'Híbrido', 'PJ', 'CLT'];
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -133,8 +133,18 @@ export default function SearchScreen() {
   const vagasParaMostrar = abaAtiva === 'externas' ? vagasExternas : vagasInternas;
   const vagasFiltradas = vagasParaMostrar.filter((v: any) => {
     const match = `${v.titulo} ${v.empresa}`.toLowerCase().includes(searchText.toLowerCase());
-    const filtroMatch =
-      filtroAtivo === 'Todos' || (v.tags && v.tags.some((t: string) => t.includes(filtroAtivo)));
+    
+    let filtroMatch = true;
+    if (filtroAtivo !== 'Todos') {
+      if (filtroAtivo === 'Nacionais') {
+        filtroMatch = v.local?.toLowerCase().includes('brasil') || v.local?.toLowerCase().includes('br');
+      } else if (filtroAtivo === 'Internacionais') {
+        filtroMatch = !(v.local?.toLowerCase().includes('brasil') || v.local?.toLowerCase().includes('br'));
+      } else {
+        filtroMatch = v.tags && v.tags.some((t: string) => t.toLowerCase() === filtroAtivo.toLowerCase());
+      }
+    }
+
     return match && filtroMatch;
   });
 
@@ -217,55 +227,50 @@ export default function SearchScreen() {
           data={vagasFiltradas}
           keyExtractor={(item) => item.id}
           renderItem={({ item }: { item: any }) => (
-            <Card style={styles.vagaItem}>
-              <View style={styles.vagaMainRow}>
-                {/* Logo na esquerda */}
-                <View style={[styles.companyLogo, { backgroundColor: item.tipo === 'local' ? colors.primary : colors.accent }]}>
-                  <Text style={[styles.companyLogoText, { color: isDark && item.tipo === 'local' ? colors.background : '#FFF' }]}>
-                    {item.empresa ? item.empresa.charAt(0).toUpperCase() : 'C'}
-                  </Text>
-                </View>
+            <TouchableOpacity onPress={() => router.push(`/job/${item.id}?fonte=${item.fonte || ''}`)} activeOpacity={0.8}>
+              <Card style={styles.vagaItem}>
+                <View style={styles.vagaMainRow}>
+                  {/* Info na esquerda */}
+                  <View style={styles.vagaInfo}>
+                    <Text style={[styles.vagaTitle, { color: colors.textMain }]} numberOfLines={2}>
+                      {item.titulo}
+                    </Text>
+                    <Text style={[styles.vagaCompany, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {item.empresa || 'Confidencial'}
+                    </Text>
+                    <Text style={[styles.vagaLocation, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {item.local || 'Não especificada'}
+                    </Text>
+                    
+                    {item.tags && item.tags.length > 0 && (
+                      <View style={styles.vagaTags}>
+                        {item.tags.slice(0, 2).map((tag: string, i: number) => (
+                          <Tag key={i} label={tag} variant="gray" />
+                        ))}
+                      </View>
+                    )}
+                  </View>
 
-                {/* Info no meio */}
-                <View style={styles.vagaInfo}>
-                  <Text style={[styles.vagaTitle, { color: colors.textMain }]} numberOfLines={2}>
-                    {item.titulo}
-                  </Text>
-                  <Text style={[styles.vagaCompany, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {item.empresa || 'Confidencial'}
-                  </Text>
-                  <Text style={[styles.vagaLocation, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {item.local || 'Não especificada'}
-                  </Text>
-                  
-                  {item.tags && item.tags.length > 0 && (
-                    <View style={styles.vagaTags}>
-                      {item.tags.slice(0, 2).map((tag: string, i: number) => (
-                        <Tag key={i} label={tag} variant="gray" />
-                      ))}
-                    </View>
-                  )}
+                  {/* Botão Favorito na direita */}
+                  <TouchableOpacity
+                    onPress={() => toggleFavorito(item)}
+                    disabled={salvandoFavId === item.id}
+                    style={styles.favoriteBtn}
+                  >
+                    <MaterialIcons
+                      name={favoritosMap[item.id] ? 'favorite' : 'favorite-border'}
+                      size={22}
+                      color={favoritosMap[item.id] ? colors.accent : colors.textSecondary}
+                    />
+                  </TouchableOpacity>
                 </View>
-
-                {/* Botão Favorito na direita */}
-                <TouchableOpacity
-                  onPress={() => toggleFavorito(item)}
-                  disabled={salvandoFavId === item.id}
-                  style={styles.favoriteBtn}
-                >
-                  <MaterialIcons
-                    name={favoritosMap[item.id] ? 'favorite' : 'favorite-border'}
-                    size={22}
-                    color={favoritosMap[item.id] ? colors.accent : colors.textSecondary}
-                  />
-                </TouchableOpacity>
-              </View>
 
               <View style={[styles.vagaFooter, { borderTopColor: colors.border }]}>
                 <Text style={[styles.vagaTime, { color: colors.textSecondary }]}>{item.tempoPostagem || item.data}</Text>
                 {item.tipo === 'local' && <Tag label="⭐ Vaga Exclusiva" variant="purple" />}
               </View>
             </Card>
+          </TouchableOpacity>
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
