@@ -76,7 +76,7 @@ export default function Favorites() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border, paddingTop: insets.top + 20 }]}>
+      <View style={[styles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border, paddingTop: insets.top + 44 }]}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>Meus Favoritos</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Vagas que você salvou</Text>
       </View>

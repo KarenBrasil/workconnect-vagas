@@ -130,7 +130,7 @@ export default function ProfileScreen() {
   const iniciais = nomeExibido.slice(0, 2).toUpperCase();
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]} contentContainerStyle={styles.scrollContent}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 24 }]} contentContainerStyle={styles.scrollContent}>
       {/* Brand Logo no Topo */}
       <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
         <BrandLogo />

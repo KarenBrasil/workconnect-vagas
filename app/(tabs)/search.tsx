@@ -154,15 +154,17 @@ export default function SearchScreen() {
   const hasInteracted = searchText.trim().length > 0 || filtroAtivo !== 'Todos';
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 24 }]}>
       {/* Header Row */}
-      <View style={[styles.header, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
-        <View style={{ flex: 1, paddingRight: 16 }}>
-          <BrandLogo />
-          <Text style={[styles.title, { color: colors.textMain, marginTop: 12 }]}>Explorar Vagas</Text>
+      <View style={[styles.header, { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', paddingHorizontal: 16, marginBottom: 12 }]}>
+        <View style={{ flexShrink: 1, paddingRight: 16 }}>
+          <View style={{ marginBottom: 12, alignSelf: 'flex-start' }}>
+            <BrandLogo />
+          </View>
+          <Text style={[styles.title, { color: colors.textMain }]}>Explorar Vagas</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Encontre a oportunidade perfeita</Text>
         </View>
-        <IlluSearch width={100} height={90} />
+        <IlluSearch width={110} height={100} style={{ marginLeft: 'auto' }} />
       </View>
 
       {/* Search & Filter */}
@@ -292,8 +294,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   title: {
     fontSize: 24,

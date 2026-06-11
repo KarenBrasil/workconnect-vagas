@@ -124,7 +124,7 @@ export default function PostJob() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 24 }]}>
       {/* Tabs */}
       <View style={styles.tabsContainer}>
         <TouchableOpacity
