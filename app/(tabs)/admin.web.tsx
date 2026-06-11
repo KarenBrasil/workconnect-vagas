@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
   PieChart, Pie
 } from "recharts";
-import { collection, getDocs, query, limit, orderBy } from 'firebase/firestore';
+import { collection, query, limit, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../src/services/firebaseConfig';
 import { ActivityIndicator } from 'react-native';
 
@@ -274,26 +274,42 @@ export default function AdminScreenWeb() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const [userSnap, avSnap] = await Promise.all([
-          getDocs(query(collection(db, 'users'), orderBy('criadoEm', 'desc'), limit(100))),
-          getDocs(query(collection(db, 'avaliacoes'), orderBy('criadoEm', 'desc')))
-        ]);
+    setLoading(true);
 
-        const usersList = userSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const avList = avSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        
-        setUsuarios(usersList);
-        setAvaliacoes(avList);
-      } catch(e) {
-        console.error("Erro ao carregar dados admin:", e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
+    const qUsers = query(collection(db, 'users'), orderBy('criadoEm', 'desc'), limit(100));
+    const qAvaliacoes = query(collection(db, 'avaliacoes'), orderBy('criadoEm', 'desc'));
+
+    let usersLoaded = false;
+    let avLoaded = false;
+
+    const checkLoading = () => {
+      if (usersLoaded && avLoaded) setLoading(false);
+    };
+
+    const unsubUsers = onSnapshot(qUsers, (snap) => {
+      setUsuarios(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      usersLoaded = true;
+      checkLoading();
+    }, (error) => {
+      console.error("Erro users:", error);
+      usersLoaded = true;
+      checkLoading();
+    });
+
+    const unsubAv = onSnapshot(qAvaliacoes, (snap) => {
+      setAvaliacoes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      avLoaded = true;
+      checkLoading();
+    }, (error) => {
+      console.error("Erro avaliacoes:", error);
+      avLoaded = true;
+      checkLoading();
+    });
+
+    return () => {
+      unsubUsers();
+      unsubAv();
+    };
   }, []);
 
   // Process data
@@ -417,8 +433,8 @@ export default function AdminScreenWeb() {
                 <div className="kpi-card">
                   <div className="kpi-icon" style={{ background: T.greenBg }}>📋</div>
                   <div className="kpi-label">Pesquisas</div>
-                  <div className="kpi-value">{totalSurveys}</div>
-                  <div className="kpi-sub">Finalizadas</div>
+                  <div className="kpi-value">{avaliacoes.length}</div>
+                  <div className="kpi-sub">Iniciadas</div>
                 </div>
                 <div className="kpi-card">
                   <div className="kpi-icon" style={{ background: T.purpleBg }}>⭐</div>
