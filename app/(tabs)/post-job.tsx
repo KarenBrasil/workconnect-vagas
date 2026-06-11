@@ -11,7 +11,7 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
-import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../../src/services/firebaseConfig';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -45,6 +45,7 @@ export default function PostJob() {
   const [minhasVagas, setMinhasVagas] = useState<VagaPublicada[]>([]);
   const [loadingVagas, setLoadingVagas] = useState(false);
   const [deletandoId, setDeletandoId] = useState<string | null>(null);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
 
   const carregarMinhasVagas = async () => {
     setLoadingVagas(true);
@@ -70,6 +71,22 @@ export default function PostJob() {
     setSalario('');
     setDescricao('');
     setContato('');
+    setRequisitos('');
+    setLinguagens('');
+    setEditandoId(null);
+  };
+
+  const handleEditVaga = (vaga: any) => {
+    setTitulo(vaga.titulo);
+    setEmpresa(vaga.empresa === 'Não informado' ? '' : vaga.empresa);
+    setContrato(vaga.contrato === 'Não informado' ? '' : vaga.contrato);
+    setSalario(vaga.salario === 'A combinar' ? '' : vaga.salario);
+    setDescricao(vaga.descricao);
+    setContato(vaga.contato);
+    setRequisitos((vaga.requisitos || []).join(', '));
+    setLinguagens((vaga.linguagens || []).join(', '));
+    setEditandoId(vaga.id);
+    setAbaAtiva('nova');
   };
 
   const handlePublicar = async () => {
@@ -79,7 +96,7 @@ export default function PostJob() {
     }
     setLoading(true);
     try {
-      await addDoc(collection(db, 'vagas'), {
+      const dataToSave = {
         titulo,
         empresa: empresa || 'Não informado',
         contrato: contrato || 'Não informado',
@@ -88,14 +105,25 @@ export default function PostJob() {
         contato: contato || '',
         requisitos: requisitos ? requisitos.split(',').map(r => r.trim()).filter(Boolean) : [],
         linguagens: linguagens ? linguagens.split(',').map(l => l.trim()).filter(Boolean) : [],
-        criadoEm: new Date().toISOString(),
-      });
+        atualizadoEm: new Date().toISOString(),
+      };
 
-      Alert.alert('Sucesso', 'Vaga publicada com sucesso!', [
-        { text: 'OK', onPress: () => { resetForm(); setAbaAtiva('gerenciar'); } },
-      ]);
+      if (editandoId) {
+        await updateDoc(doc(db, 'vagas', editandoId), dataToSave);
+        Alert.alert('Sucesso', 'Vaga atualizada com sucesso!', [
+          { text: 'OK', onPress: () => { resetForm(); setAbaAtiva('gerenciar'); } },
+        ]);
+      } else {
+        await addDoc(collection(db, 'vagas'), {
+          ...dataToSave,
+          criadoEm: new Date().toISOString(),
+        });
+        Alert.alert('Sucesso', 'Vaga publicada com sucesso!', [
+          { text: 'OK', onPress: () => { resetForm(); setAbaAtiva('gerenciar'); } },
+        ]);
+      }
     } catch (error: any) {
-      Alert.alert('Erro', error.message || 'Erro ao publicar vaga.');
+      Alert.alert('Erro', error.message || 'Erro ao salvar vaga.');
     } finally {
       setLoading(false);
     }
@@ -164,8 +192,8 @@ export default function PostJob() {
             </View>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>Publicar Vaga</Text>
-              <Text style={styles.subtitle}>Preencha os dados da oportunidade</Text>
+              <Text style={styles.title}>{editandoId ? 'Editar Vaga' : 'Publicar Vaga'}</Text>
+              <Text style={styles.subtitle}>{editandoId ? 'Altere os dados da oportunidade' : 'Preencha os dados da oportunidade'}</Text>
             </View>
 
             {/* Form */}
@@ -246,9 +274,14 @@ export default function PostJob() {
               />
 
               {/* Publish Button */}
-              <PrimaryButton label={loading ? '' : 'Publicar Vaga'} onPress={handlePublicar} />
+              <PrimaryButton label={loading ? '' : (editandoId ? 'Atualizar Vaga' : 'Publicar Vaga')} onPress={handlePublicar} />
               {loading && (
                 <ActivityIndicator color={COLORS.primary} size="large" style={{ marginVertical: 16 }} />
+              )}
+              {editandoId && (
+                <TouchableOpacity onPress={resetForm} style={{ marginTop: 12, alignItems: 'center' }}>
+                  <Text style={{ color: COLORS.textSecondary }}>Cancelar edição</Text>
+                </TouchableOpacity>
               )}
             </View>
           </ScrollView>
@@ -268,22 +301,27 @@ export default function PostJob() {
             minhasVagas.map((vaga) => (
               <Card key={vaga.id} style={styles.vagaItem}>
                 <View style={styles.vagaHeader}>
-                  <View style={{ flex: 1 }}>
+                  <TouchableOpacity onPress={() => router.push(`/job/${vaga.id}`)} style={{ flex: 1 }}>
                     <Text style={styles.vagaTitle} numberOfLines={2}>
                       {vaga.titulo}
                     </Text>
                     <Text style={styles.vagaCompany}>{vaga.empresa}</Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => handleDeleteVaga(vaga.id)}
-                    disabled={deletandoId === vaga.id}
-                  >
-                    <MaterialIcons
-                      name="delete-outline"
-                      size={22}
-                      color={deletandoId === vaga.id ? COLORS.textSecondary : '#EF4444'}
-                    />
                   </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <TouchableOpacity onPress={() => handleEditVaga(vaga)}>
+                      <MaterialIcons name="edit" size={22} color={COLORS.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleDeleteVaga(vaga.id)}
+                      disabled={deletandoId === vaga.id}
+                    >
+                      <MaterialIcons
+                        name="delete-outline"
+                        size={22}
+                        color={deletandoId === vaga.id ? COLORS.textSecondary : '#EF4444'}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 <View style={styles.vagaFooter}>
                   <Text style={styles.vagaMeta}>{vaga.contrato}</Text>

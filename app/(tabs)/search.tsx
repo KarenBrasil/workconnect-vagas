@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   FlatList,
+  Modal,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { collection, getDocs } from 'firebase/firestore';
@@ -49,6 +50,7 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(true);
   const [favoritosMap, setFavoritosMap] = useState<Record<string, string>>({});
   const [salvandoFavId, setSalvandoFavId] = useState<string | null>(null);
+  const [modalFiltrosVisible, setModalFiltrosVisible] = useState(false);
   const { colors, isDark } = useTheme();
 
   const userId = auth.currentUser?.uid;
@@ -66,20 +68,7 @@ export default function SearchScreen() {
         const snap = await getDocs(collection(db, 'vagas'));
         const internas = snap.docs.map((d) => ({ id: d.id, ...d.data() } as VagaInterna));
         
-        const VAGAS_FICTICIAS: VagaInterna[] = [
-          { id: 'fict1', titulo: 'Desenvolvedor Frontend Sênior', empresa: 'TechCorp', contrato: 'CLT', salario: 'R$ 12.000', descricao: 'Vaga para atuar com React Native e Node.js.', tipo: 'local', criadoEm: new Date().toISOString() },
-          { id: 'fict2', titulo: 'Ofereço serviços de UI/UX Designer', empresa: 'Freelancer', contrato: 'PJ', salario: 'A combinar', descricao: 'Sou designer com 5 anos de experiência.', tipo: 'local', criadoEm: new Date().toISOString() },
-          { id: 'fict3', titulo: 'Engenheiro de Dados', empresa: 'DataBank', contrato: 'CLT', salario: 'R$ 15.000', descricao: 'Experiência com Spark, Hadoop e Python.', tipo: 'local', criadoEm: new Date().toISOString() },
-          { id: 'fict4', titulo: 'Desenvolvedor Backend (Java)', empresa: 'Fintech X', contrato: 'PJ', salario: 'R$ 14.000', descricao: 'Vaga para atuar em sistema bancário.', tipo: 'local', criadoEm: new Date().toISOString() },
-          { id: 'fict5', titulo: 'Consultoria em Marketing Digital', empresa: 'Freelancer', contrato: 'PJ', salario: 'A combinar', descricao: 'Ofereço gestão de tráfego e redes.', tipo: 'local', criadoEm: new Date().toISOString() },
-          { id: 'fict6', titulo: 'Product Manager Pleno', empresa: 'InovaApp', contrato: 'CLT', salario: 'R$ 11.500', descricao: 'Liderar esquadrões de produto.', tipo: 'local', criadoEm: new Date().toISOString() },
-          { id: 'fict7', titulo: 'Ofereço serviços de Redator SEO', empresa: 'Freelancer', contrato: 'PJ', salario: 'R$ 5.000', descricao: 'Crio artigos otimizados para blogs.', tipo: 'local', criadoEm: new Date().toISOString() },
-          { id: 'fict8', titulo: 'Analista de Segurança', empresa: 'CyberTech', contrato: 'CLT', salario: 'R$ 13.000', descricao: 'Proteção e resposta a incidentes.', tipo: 'local', criadoEm: new Date().toISOString() },
-          { id: 'fict9', titulo: 'Desenvolvedor Full Stack Júnior', empresa: 'StartUp Z', contrato: 'CLT', salario: 'R$ 4.500', descricao: 'Vaga para atuar com Vue.js e PHP.', tipo: 'local', criadoEm: new Date().toISOString() },
-          { id: 'fict10', titulo: 'Desenvolvimento de Apps', empresa: 'Agência Digital', contrato: 'PJ', salario: 'A combinar', descricao: 'Equipe para criar seu app.', tipo: 'local', criadoEm: new Date().toISOString() },
-        ];
-
-        setVagasInternas([...internas, ...VAGAS_FICTICIAS].sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || '')));
+        setVagasInternas([...internas].sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || '')));
       } catch (e) {
         console.log('Erro vagas internas:', e);
       }
@@ -178,23 +167,44 @@ export default function SearchScreen() {
         <Text style={[styles.searchHint, { color: colors.textSecondary }]}>Dica: Pesquise por linguagens, cargos ou modelo de trabalho.</Text>
       </View>
 
-      {/* Filter Chips */}
-      <View style={styles.chipsContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsContent}
+      {/* Filter Button */}
+      <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
+        <TouchableOpacity 
+          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBackground, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}
+          onPress={() => setModalFiltrosVisible(true)}
         >
-        {FILTROS.map((filtro) => (
-          <FilterChip
-            key={filtro}
-            label={filtro}
-            active={filtroAtivo === filtro}
-            onPress={() => setFiltroAtivo(filtro)}
-          />
-        ))}
-        </ScrollView>
+          <MaterialIcons name="filter-list" size={20} color={colors.textMain} style={{ marginRight: 8 }} />
+          <Text style={{ color: colors.textMain, fontWeight: 'bold' }}>Filtro Atual: {filtroAtivo}</Text>
+        </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={modalFiltrosVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setModalFiltrosVisible(false)}
+      >
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.textMain }}>Filtrar Vagas</Text>
+              <TouchableOpacity onPress={() => setModalFiltrosVisible(false)}>
+                <MaterialIcons name="close" size={24} color={colors.textMain} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              {FILTROS.map((filtro) => (
+                <FilterChip
+                  key={filtro}
+                  label={filtro}
+                  active={filtroAtivo === filtro}
+                  onPress={() => { setFiltroAtivo(filtro); setModalFiltrosVisible(false); }}
+                />
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Tabs */}
       <View style={[styles.tabsContainer, { borderBottomColor: colors.border }]}>
