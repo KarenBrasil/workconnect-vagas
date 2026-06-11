@@ -18,7 +18,7 @@ import { auth, db } from '../src/services/firebaseConfig';
 import { MaterialIcons } from '@expo/vector-icons';
 import { PrimaryButton, TextInputField, COLORS } from '../components/ui';
 import { IlluOnboarding } from '../assets/illustrations';
-import { useTheme } from '../src/theme/ThemeContext';
+import { lightColors } from '../src/theme/colors';
 
 export default function Register() {
   const router = useRouter();
@@ -27,7 +27,8 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { colors, isDark } = useTheme();
+  const colors = lightColors;
+  const isDark = false;
 
   const handleRegister = async () => {
     const normalizedEmail = email.trim().toLowerCase();

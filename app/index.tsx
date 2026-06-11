@@ -3,11 +3,12 @@ import { useRouter } from 'expo-router';
 import { IlluOnboarding } from '../assets/illustrations';
 import { PrimaryButton, OutlineButton } from '../components/ui';
 import { BrandLogo } from '../components/BrandLogo';
-import { useTheme } from '../src/theme/ThemeContext';
+import { lightColors } from '../src/theme/colors';
 
 export default function Index() {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const colors = lightColors;
+  const isDark = false;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

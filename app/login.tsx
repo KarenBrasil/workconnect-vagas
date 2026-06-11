@@ -28,7 +28,7 @@ import { auth, db } from '../src/services/firebaseConfig';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS } from '../components/ui';
 import { IlluLogin } from '../assets/illustrations';
-import { useTheme } from '../src/theme/ThemeContext';
+import { lightColors } from '../src/theme/colors';
 
 export default function Login() {
   const router = useRouter();
@@ -37,7 +37,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const { colors, isDark } = useTheme();
+  const colors = lightColors;
+  const isDark = false;
 
   // Animação de Flutuação (Float Animation)
   const floatAnim = useRef(new Animated.Value(0)).current;
