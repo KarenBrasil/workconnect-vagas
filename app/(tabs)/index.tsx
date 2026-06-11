@@ -63,9 +63,9 @@ export default function Home() {
         };
       });
 
-      if (locaisDb.length === 0 && auth.currentUser) {
-        // Auto-seed: Injetar 15 vagas no banco de dados
-        console.log("Banco de dados vazio. Auto-gerando 15 vagas fictícias...");
+      if (locaisDb.length < 10 && auth.currentUser) {
+        // Auto-seed: Injetar vagas no banco de dados para popular a área
+        console.log("Poucas vagas detectadas. Auto-gerando vagas fictícias...");
         const seedVagas = [
           {
             titulo: "Desenvolvedor Front-end React Pleno",
