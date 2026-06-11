@@ -17,7 +17,7 @@ import { useRouter } from 'expo-router';
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithCredential,
+  signInWithPopup,
   createUserWithEmailAndPassword,
   signOut,
   sendEmailVerification,
@@ -27,10 +27,6 @@ import { auth, db } from '../src/services/firebaseConfig';
 import { MaterialIcons } from '@expo/vector-icons';
 import { PrimaryButton, GoogleButton, TextInputField, COLORS } from '../components/ui';
 import { IlluLogin } from '../assets/illustrations';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-
-WebBrowser.maybeCompleteAuthSession();
 
 export default function Login() {
   const router = useRouter();
@@ -60,51 +56,31 @@ export default function Login() {
     ).start();
   }, [floatAnim]);
 
-  // Configuração do Google Auth Session
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '189326429321-kntm9qp3db45chg2ricg0ijov7rf8ilf.apps.googleusercontent.com',
-  });
-
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.params;
-      const credential = GoogleAuthProvider.credential(id_token);
-      
-      setLoading(true);
-      signInWithCredential(auth, credential).then(async (userCred) => {
-        await setDoc(
-          doc(db, 'users', userCred.user.uid),
-          {
-            nome: userCred.user.displayName || 'Usuário Google',
-            email: userCred.user.email,
-            uid: userCred.user.uid,
-            criadoEm: new Date().toISOString(),
-          },
-          { merge: true }
-        );
-        router.replace('/(tabs)');
-      }).catch((error) => {
-        console.error("ERRO FIREBASE CREDENTIAL:", error);
-        setErrorMessage(error.message || 'Erro ao autenticar');
-        Alert.alert('Falha no Login', error.message || 'Erro ao autenticar com o Google.');
-      }).finally(() => {
-        setLoading(false);
-      });
-    } else if (response?.type === 'error') {
-      setErrorMessage('Erro ao autenticar com o Google.');
-      Alert.alert('Falha no Login', 'Erro ao autenticar com o Google.');
-    }
-  }, [response]);
-
   const handleGoogleLogin = async () => {
     try {
       setErrorMessage('');
-      promptAsync();
+      setLoading(true);
+      const provider = new GoogleAuthProvider();
+      
+      const userCred = await signInWithPopup(auth, provider);
+      await setDoc(
+        doc(db, 'users', userCred.user.uid),
+        {
+          nome: userCred.user.displayName || 'Usuário Google',
+          email: userCred.user.email,
+          uid: userCred.user.uid,
+          criadoEm: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+      router.replace('/(tabs)');
     } catch (error: any) {
-      console.error("ERRO AUTH SESSION:", error);
-      const msg = error.message || 'Ocorreu um erro ao iniciar o login com o Google.';
+      console.error("ERRO FIREBASE POPUP:", error);
+      const msg = error.message || 'Ocorreu um erro ao fazer login com o Google.';
       setErrorMessage(msg);
-      Alert.alert('Falha', msg);
+      Alert.alert('Falha no Login', msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -201,12 +177,6 @@ export default function Login() {
               </View>
             ) : null}
 
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>ou</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
             {/* Form */}
             <View style={styles.formContainer}>
               <TextInputField
@@ -254,18 +224,25 @@ export default function Login() {
             />
             {loading && <ActivityIndicator color={COLORS.primary} size="large" style={styles.loader} />}
 
-            <TouchableOpacity 
-              style={[styles.googleButtonSolid, { marginTop: 16 }]} 
-              onPress={handleGoogleLogin}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              <Image 
-                source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png' }} 
-                style={{ width: 20, height: 16, marginRight: 8, resizeMode: 'contain' }} 
-              />
-              <Text style={styles.googleButtonSolidText}>Gmail</Text>
-            </TouchableOpacity>
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>ou</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <View style={{ alignItems: 'center', marginTop: 8 }}>
+              <TouchableOpacity 
+                style={styles.googleIconBtn} 
+                onPress={handleGoogleLogin}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                <Image 
+                  source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png' }} 
+                  style={{ width: 28, height: 28, resizeMode: 'contain' }} 
+                />
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Não tem uma conta? </Text>
@@ -349,21 +326,20 @@ const styles = StyleSheet.create({
   loader: {
     marginVertical: 16,
   },
-  googleButtonSolid: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  googleIconBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#fff',
     justifyContent: 'center',
-    backgroundColor: '#E8F5E9',
-    paddingVertical: 16,
-    borderRadius: 30,
-    marginBottom: 20,
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#C8E6C9',
-  },
-  googleButtonSolidText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2E9D4D',
+    borderColor: '#E0E0E0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   dividerContainer: {
     flexDirection: 'row',
