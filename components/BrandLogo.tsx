@@ -1,20 +1,25 @@
 import { StyleSheet, Text, View } from 'react-native';
+import Svg, { Rect, Path } from 'react-native-svg';
+import { COLORS } from './ui/Colors';
 
 type BrandLogoProps = {
   compact?: boolean;
+  color?: string;
+  size?: number;
 };
 
-export function BrandLogo({ compact = false }: BrandLogoProps) {
+export function BrandLogo({ compact = false, color = COLORS.primary, size }: BrandLogoProps) {
+  const finalSize = size || (compact ? 36 : 72);
+  
   return (
     <View style={[styles.container, compact && styles.compactContainer]}>
-      <View style={[styles.mark, compact && styles.compactMark]}>
-        <View style={[styles.circle, styles.greenCircle]} />
-        <View style={[styles.circle, styles.purpleCircle]} />
-        <Text style={[styles.markText, compact && styles.compactMarkText]}>W</Text>
-      </View>
+      <Svg width={finalSize} height={finalSize} viewBox="0 0 100 100">
+        <Rect x="25" y="28" width="55" height="12" fill={color} />
+        <Path d="M35 46 h45 v12 h-25 q-8 0 -8 8 v24 h-12 z" fill={color} />
+      </Svg>
       {!compact && (
         <Text style={styles.logoText}>
-          Work<Text style={styles.logoTextHighlight}>Connect</Text>
+          Tech<Text style={[styles.logoTextHighlight, { color }]}>Connect</Text>
         </Text>
       )}
     </View>
@@ -31,53 +36,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  mark: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8F2EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  compactMark: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-  },
-  circle: {
-    position: 'absolute',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    opacity: 0.95,
-  },
-  greenCircle: {
-    left: 10,
-    top: 12,
-    backgroundColor: '#2E9D4D',
-  },
-  purpleCircle: {
-    right: 10,
-    bottom: 12,
-    backgroundColor: '#6A3093',
-  },
-  markText: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: '900',
-  },
-  compactMarkText: {
-    fontSize: 18,
-  },
   logoText: {
     fontSize: 34,
     fontWeight: '800',
     color: '#312651',
   },
   logoTextHighlight: {
-    color: '#2E9D4D',
+    color: COLORS.primary,
   },
 });

@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, StatusBar, TouchableOpacity } from 'react-nativ
 import { useRouter } from 'expo-router';
 import { IlluOnboarding } from '../assets/illustrations';
 import { PrimaryButton, OutlineButton, COLORS } from '../components/ui';
+import { BrandLogo } from '../components/BrandLogo';
 
 export default function Index() {
   const router = useRouter();
@@ -11,11 +12,11 @@ export default function Index() {
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
       {/* Logo Topo */}
-      <View style={styles.logoContainer}>
-        <View style={styles.logoBox}>
-          <Text style={styles.logoIcon}>⚡</Text>
-        </View>
-        <Text style={styles.logoText}>TechConnect</Text>
+      <View style={{ marginTop: 20, marginBottom: 30 }}>
+        <BrandLogo compact={true} />
+        <Text style={[styles.logoText, { textAlign: 'center', marginTop: 8 }]}>
+          Tech<Text style={{ color: COLORS.primary }}>Connect</Text>
+        </Text>
       </View>
 
       {/* Ilustração */}

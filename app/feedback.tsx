@@ -4,6 +4,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { collection, addDoc, serverTimestamp, doc, setDoc, increment } from 'firebase/firestore';
 import { db } from '../src/services/firebaseConfig';
 import { useRouter } from 'expo-router';
+import { BrandLogo } from '../components/BrandLogo';
 
 type RespostaType = any; 
 
@@ -462,7 +463,7 @@ export default function PesquisaWizardScreen() {
 
         <View style={styles.cardContainer}>
           <View style={styles.headerLogoRow}>
-            <View style={styles.logoBox}><Text style={styles.logoLetter}>T</Text></View>
+            <BrandLogo compact={true} size={36} color="#CDFE00" />
             <Text style={styles.logoText}>TECHCONNECT</Text>
           </View>
 
