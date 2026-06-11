@@ -22,6 +22,7 @@ import { COLORS, Card, Tag, FilterChip, TextInputField } from '../../components/
 import { BrandLogo } from '../../components/BrandLogo';
 import { IlluSearch } from '../../assets/illustrations';
 import { useTheme } from '../../src/theme/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface VagaInterna {
   id: string;
@@ -38,6 +39,7 @@ const FILTROS = ['Todos', 'Nacionais', 'Internacionais', 'Remoto', 'Híbrido', '
 
 export default function SearchScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [searchText, setSearchText] = useState('');
   const [abaAtiva, setAbaAtiva] = useState<'externas' | 'internas'>('externas');
   const [filtroAtivo, setFiltroAtivo] = useState('Todos');
@@ -152,7 +154,7 @@ export default function SearchScreen() {
   const hasInteracted = searchText.trim().length > 0 || filtroAtivo !== 'Todos';
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {/* Header */}
       <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
         <BrandLogo />

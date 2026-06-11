@@ -15,9 +15,11 @@ import { useRouter } from 'expo-router';
 import { COLORS, Card, Tag, FilterChip } from '../../components/ui';
 import { BrandLogo } from '../../components/BrandLogo';
 import { useTheme } from '../../src/theme/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Home() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [userName, setUserName] = useState('');
   const [vagasGlobais, setVagasGlobais] = useState<any[]>([]);
   const [vagasLocais, setVagasLocais] = useState<any[]>([]);
@@ -92,7 +94,7 @@ export default function Home() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={{ alignItems: 'center', marginBottom: 20 }}>

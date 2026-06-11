@@ -6,9 +6,11 @@ import { auth } from '../../src/services/firebaseConfig';
 import { useIsFocused } from '@react-navigation/native';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { IlluSavedJobs } from '../../assets/illustrations';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Favorites() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [favoritos, setFavoritos] = useState<Favorito[]>([]);
   const [loading, setLoading] = useState(true);
   const isFocused = useIsFocused();
@@ -74,7 +76,7 @@ export default function Favorites() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border, paddingTop: insets.top + 20 }]}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>Meus Favoritos</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Vagas que você salvou</Text>
       </View>
@@ -107,7 +109,7 @@ export default function Favorites() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { padding: 24, paddingTop: 60, paddingBottom: 20, borderBottomWidth: 1 },
+  header: { padding: 24, paddingBottom: 20, borderBottomWidth: 1 },
   title: { fontSize: 24, fontWeight: 'bold' },
   subtitle: { fontSize: 14, marginTop: 4 },
   listContent: { padding: 24 },

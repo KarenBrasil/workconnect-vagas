@@ -16,6 +16,9 @@ import { db, auth } from '../../src/services/firebaseConfig';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { PrimaryButton, TextInputField, Card, COLORS } from '../../components/ui';
+import { IlluPostJob } from '../../assets/illustrations';
+import { BrandLogo } from '../../components/BrandLogo';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface VagaPublicada {
   id: string;
@@ -28,6 +31,7 @@ interface VagaPublicada {
 
 export default function PostJob() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [abaAtiva, setAbaAtiva] = useState<'nova' | 'gerenciar'>('nova');
   const [titulo, setTitulo] = useState('');
   const [empresa, setEmpresa] = useState('');
@@ -120,7 +124,7 @@ export default function PostJob() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Tabs */}
       <View style={styles.tabsContainer}>
         <TouchableOpacity
@@ -147,6 +151,13 @@ export default function PostJob() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <ScrollView contentContainerStyle={styles.formContent} keyboardShouldPersistTaps="handled">
+            {/* Illustration and Logo */}
+            <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
+              <BrandLogo />
+            </View>
+            <View style={{ alignItems: 'center', marginBottom: 10 }}>
+              <IlluPostJob width={140} height={120} />
+            </View>
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.title}>Publicar Vaga</Text>

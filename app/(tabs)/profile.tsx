@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { IlluResume } from '../../assets/illustrations';
 import { OutlineButton, PrimaryButton } from '../../components/ui';
 import { BrandLogo } from '../../components/BrandLogo';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface PerfilProfissional {
   nome: string;
@@ -28,6 +29,7 @@ const PERFIL_VAZIO: PerfilProfissional = {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { themeMode, setThemeMode, colors, isDark } = useTheme();
   const [perfil, setPerfil] = useState<PerfilProfissional>(PERFIL_VAZIO);
   const [editando, setEditando] = useState(false);
@@ -128,7 +130,7 @@ export default function ProfileScreen() {
   const iniciais = nomeExibido.slice(0, 2).toUpperCase();
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.scrollContent}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]} contentContainerStyle={styles.scrollContent}>
       {/* Brand Logo no Topo */}
       <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
         <BrandLogo />
